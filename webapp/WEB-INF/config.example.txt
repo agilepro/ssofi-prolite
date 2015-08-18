@@ -1,0 +1,34 @@
+# CONFIGURATION FOR SSOFI OopenID Provider
+#
+# You must pick an auth style from the following two:
+# authStyle=local
+#    this is for email based authentication where users specify a password
+# authStyle=ldap
+#    this is for authenticating against an LDAP server
+authStyle=local
+
+#The baseURL is the address of the server FROM THE USER perspective
+#If you are working through a firewall or reverse proxy which change the
+#address, then set here the EXTERNAL view of that address
+baseURL=http://yourhostname:8080/id/
+
+#the pattern says how you want the openID to be constructed
+#is always must be baseURL with {id} on the end
+pattern=http://yourhostname:8080/id/{id}
+
+#the next 7 settings are for LDAP usage
+java.naming.factory.initial=com.sun.jndi.ldap.LdapCtxFactory
+java.naming.provider.url=ldap://infrassotest.fjcs.net:389
+java.naming.security.authentication=simple
+java.naming.security.principal=cn\=orcladmin
+java.naming.security.credentials=xxxxx
+queryBase=dc=fjcs,dc=net
+queryFilter=cn={id}
+
+#if sessionFolder is set, then the session information will be stored
+#in files in that folder.  For cluster, set this folder to be a shared drive
+#sessionFolder=c:/sessions
+
+//Captcha
+captchaPublicKey=
+captchaPrivateKey=

@@ -1,0 +1,81 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+ * Copyright 2013 Keith D Swenson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
+ * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
+ * -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Corporate LDAP - Open Id Provider</title>
+    <link rel="stylesheet" type="text/css" href="$/global.css" />
+    <link rel="openid.server" href="{{root}}" />
+    <link rel="openid.delegate" href="{{root}}" />
+    <link rel="openid2.provider" href="{{root}}" />
+    </head>
+    <script>
+    function copyToClipboard (text) {
+      window.prompt ("Copy OpenID to Clipboard: Press Ctrl+C, then Enter", text);
+    }
+    </script>
+    <body>
+        <!--justLoggedIn.htm-->
+        <div id="bodyWrapper">
+            <table cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td>
+                        <img src="$/ldapSSOFIHeader.gif" width="970" height="121" alt="" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table cellpadding="0" cellspacing="0">
+                            <tr>
+                                <td class="contentArea">
+                                    <div class="mainContentArea">
+                                    </div>
+                                    <div class="loginArea">
+                                        <div class="signInImage"></div>
+                                        <div class="sideLinks"><a href="{{loggedOpenId}}?openid.mode=passwordView" title="View Profile">Change Password</a> &nbsp; &nbsp;
+                                                               <a href="{{loggedOpenId}}" title="View Profile">View Your Profile</a></div>
+                                        <div class="mainLoginArea">
+                                            <span class="greenAlert">You are logged in as <span class="blueText">{{loggedUserId}}</span>.  <br/>
+                                            <span class="redText">{{userError}}</span></span>
+                                            <div class="loginLabelArea">
+                                                Your OpenID:<br/>
+                                                {{loggedOpenId}}<br/>
+                                                <button onclick="copyToClipboard('{{loggedOpenId}}')" class="btnBlue">Copy OpenID</button>
+                                            </div>
+                                        </div>
+                                        <form method="post" action="{{thisPage}}">
+                                            <input type="hidden" name="openid.mode" value="logout">
+                                            <input type="hidden" name="go" value="{{thisPage}}"/>
+                                            <div class="buttonArea">
+                                                <input type="submit" class="btnGreen" title="Log Out" value="Log Out" />
+                                            </div>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                         </table>
+                     </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>

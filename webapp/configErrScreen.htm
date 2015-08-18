@@ -1,0 +1,210 @@
+
+<!--
+ * Copyright 2013 Keith D Swenson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
+ * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
+ * -->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="$/global.css" />
+</head>
+<body>
+<h1>LDAP / OpenID Provider</h1>
+<p>Server is not properly configured for use and can not start up.</p>
+<p>Error received was:</p>
+<table>
+    <col width="200">
+    <col width="400">
+    <tr bgcolor="#FFEEEE">
+        <td colspan="2">
+        <hr />
+        <b>{{serverError}}</b>
+        <hr />
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2"><br />
+        Make sure that WEB-INF/config.txt has the following settings in it:</td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>pattern</tt></td>
+        <td>set this to the URL pattern that the OpenID values will have.
+        Put a {id} token in the place where the id will be substituted.<br />
+        Something like<br />
+        &nbsp; &nbsp;<tt>http://my.host.com/{id}</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>authStyle</tt></td>
+        <td>Set this to "LDAP" or "local" or "ModelAPI" for one of those
+        styles of Provider.</td>
+    </tr>
+    <tr valign="top" bgcolor="#DDDDFF">
+        <td colspan="2"><b>For 'LDAP' style OpendID Provider</td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>java.naming.factory.initial</tt></td>
+        <td>set this to the java class that will handle LDAP connection<br />
+        &nbsp; &nbsp;<tt>com.sun.jndi.ldap.LdapCtxFactory</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>java.naming.provider.url</tt></td>
+        <td>set this to the URL for the LDAP connection<br />
+        &nbsp; &nbsp;<tt>ldap://infrassotest.fjcs.net:389</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>java.naming.security.authentication</tt></td>
+        <td>set this to the authentication style<br />
+        &nbsp; &nbsp;<tt>simple</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>java.naming.security.principal</tt></td>
+        <td>set this to the user name that will be used to access LDAP
+        directory<br />
+        &nbsp; &nbsp;<tt>cn=orcladmin</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>java.naming.security.credentials</tt></td>
+        <td>set this to the password that will be used to access LDAP
+        directory<br />
+        &nbsp; &nbsp;<tt>********</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>adminGroup</tt></td>
+        <td>set this to the admin group of LDAP directory. This is the
+        group of special members in LDAP directory and member of this
+        group will be treated as admin for openid application<br />
+        &nbsp; &nbsp;<tt>Directory Administrators</tt></td>
+    </tr>
+    <tr valign="top">
+        <td colspan="2" bgcolor="#DDDDFF"><b>For 'local' style
+        OpendID Provider</td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"></td>
+        <td>For "local" style provider, you need a file named <b>users.xml</b>
+        in the WEB-INF folder. It should have something like this structure in
+        it:<br />
+        <pre>
+&lt;users&gt;
+  &lt;user&gt;
+    &lt;address&gt;kswenson@us.fujitsu.com&lt;/address&gt;
+    &lt;address&gt;swensonkeith@gmail.com&lt;/address&gt;
+    &lt;password&gt;pwd&lt;/password&gt;
+    &lt;admin&gt;true&lt;/admin&gt;
+  &lt;/user&gt;
+  &lt;user&gt;
+    &lt;address&gt;squader@us.fujitsu.com&lt;/address&gt;
+    &lt;password&gt;pwd&lt;/password&gt;
+    &lt;admin&gt;false&lt;/admin&gt;
+  &lt;/user&gt;
+&lt;/users&gt;
+      </pre></td>
+    </tr>
+
+    <tr valign="top" bgcolor="#DDDDFF">
+        <td colspan="2"><b>For 'ModelAPI' style OpendID Provider</td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF">&nbsp;</td>
+        <td>to set the configurations of 'ModelAPI' provider take reference of iFlowClient.properties
+        (located at &lt;Interstage BPM Installation
+        Directory&gt;/client)</td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>HostName</tt></td>
+        <td>set this to the host name<br />
+        &nbsp; &nbsp;<tt>FCN14231</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSCommandTopic</tt></td>
+        <td><tt>iflow.CommandTopic</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSEmailNotificationTopic</tt></td>
+        <td><tt>iflow.EmailNotificationTopic</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSFactory</tt></td>
+        <td><tt>ConnectionFactory</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSNamingProvider</tt></td>
+        <td><tt>org.jnp.interfaces.NamingContextFactory</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSNamingProviderURL</tt></td>
+        <td>set this to jnp\://hostname\:port<br />
+        &nbsp; &nbsp;<tt>jnp\://FCN14231\:1100</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSNotificationTopic</tt></td>
+        <td><tt>iflow.NotificationTopic</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSResponseTopic</tt></td>
+        <td><tt>iflow.ResponseTopic</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSSQNotificationTopic</tt></td>
+        <td><tt>iflow.SQNotificationTopic</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JMSSpecifications</tt></td>
+        <td><tt>JMS1.1</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>JmsFilterEnabled</tt></td>
+        <td><tt>false</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>NamingProvider</tt></td>
+        <td><tt>org.jnp.interfaces.NamingContextFactory</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>NamingProviderURL</tt></td>
+        <td>set this to jnp\://hostname\:port<br />
+        &nbsp; &nbsp;<tt>jnp\://FCN14231\:1100</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>NumberOfDispatcherThread</tt></td>
+        <td><tt>1</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>TWFTransportType</tt></td>
+        <td><tt>EE</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>TenantName</tt></td>
+        <td><tt>Default</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>UserAgentServiceName</tt></td>
+        <td><tt>iflow.UserAgentService</tt></td>
+    </tr>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>modelAPI.admin.userName</tt></td>
+        <td>set this to the admin username to get admin session<br />
+        &nbsp; &nbsp;<tt>Directory Administrators</tt></td>
+    <tr valign="top">
+        <td bgcolor="#DDFFFF"><tt>modelAPI.admin.password</tt></td>
+        <td>set this to the admin password to get admin session<br />
+        &nbsp; &nbsp;<tt>********</tt></td>
+    </tr>
+</table>
+</body>
+</html>

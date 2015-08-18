@@ -1,0 +1,157 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+ * Copyright 2013 Keith D Swenson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
+ * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
+ * -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+    <!-- promptedLogin.htm -->
+        <meta http-equiv="X-UA-Compatible" content="IE=8" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Corporate LDAP - Open Id Provider</title>
+        <link rel="openid.server" href="{{root}}" />
+        <link rel="openid.delegate" href="{{root}}" />
+        <style>
+            body {
+                background-color:#013a5f;
+                font-family:Arial,Helvetica,Verdana,sans-serif;
+                font-size:14px;
+                color:#666666;
+                margin:0px;
+                padding:0px;
+            }
+            a:link, a:visited, a:active{
+                text-decoration:none;
+                color:#5377AC;
+            }
+            a:hover{
+                text-decoration:underline;
+            }
+            #loginWrapper {
+                margin:100px auto 0px auto;
+                width:548px;
+                position:relative;
+                background-color:#fff;
+            }
+            .loginWrapperContentArea{
+                padding:20px 20px;
+            }
+            .loginSpacing{
+                padding:20px 70px;
+                line-height:20px;
+                color:#000;
+            }
+            .inputGeneral350{
+                height:20px;
+                line-height:20px;
+                padding-left:5px;
+                width:350px;
+                font-size:12px;
+                color:#666;
+                }
+            .inputGeneral300{
+                height:20px;
+                line-height:20px;
+                padding-left:5px;
+                width:274px;
+                font-size:12px;
+                color:#666;
+                }
+            .registerArea td{
+                border-top:1px solid #dadada;
+                padding:10px 20px;
+             }
+             .btnGray{
+                background-color:#666;
+                height:26px;
+                line-height:26px;
+                padding:0px 15px 0px 15px;
+                *padding:0px 10px 0px 10px;
+                border:1px solid #bababa;
+                color:#fff;
+                cursor:pointer;
+            }
+            .btnGreen{
+                background-color:#81c72e;
+                height:26px;
+                line-height:26px;
+                padding:0px 15px 0px 15px;
+                *padding:0px 10px 0px 10px;
+                border:0px solid #81c72e;
+                color:#ffffff;
+                cursor:pointer
+            }
+            .errorArea{
+                color:#F00;
+            }
+            td.noteSection{
+                padding:10px 30px;
+                font-style:italic;
+                font-size:11px;
+            }
+            span.redText{
+                color:#c40000;
+                font-weight:bold;
+            }
+        </style>
+    </head>
+    <body onload="document.getElementById('entered-id').focus();">
+        <div id="loginWrapper">
+            <form method="post" action="{{thisPage}}">
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td colspan="2"><img src="$/loginLDAPHeader.gif" width="548" height="162" alt="" /></td>
+                    </tr>
+                    <tr>
+                        <td class="loginWrapperContentArea" colspan="2">
+                            <p>
+                               This service has requested OpenID verification:
+                               <a href="{{return_to}}" title="{{return_to}}"><span class="redText">{{return_to_app_name}}</span></a>
+                            </p>
+                            <span class="errorArea"><strong>{{userError}}</strong></span>
+                            <div class="loginSpacing">
+                                <input type="hidden" name="openid.mode" value="loginAction"/>
+                                <input type="hidden" name="go" value="{{go}}"/>
+                                <input type="hidden" name="display-id" value="{{id}}"/>
+                                <strong>User Id:</strong><br />
+                                <input type="text" name="entered-id" id="entered-id" class="inputGeneral350" value="{{reqUserId}}"/><br /><br />
+                                <strong>Password:</strong><br />
+                                <input type="password" name="password" class="inputGeneral300" />
+                                <input type="submit" class="btnGreen" title="Log In" name="op" value="Log In" /><br />
+                                <a href="{{thisPage}}?openid.mode=register" title="Forgot Your Password">Forgot Your Password?</a>
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <input type="hidden" name="openid.mode" value="login"/>
+                            <input type="hidden" name="go" value="{{thisPage}}"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2" class="noteSection"><b>Note:</b> {{Note}}</td>
+                    </tr>
+                    <tr class="registerArea">
+                        <td>New users can <b><a href="{{thisPage}}?openid.mode=register" title="Register Here">Register Here</a></b></td>
+                        <td align="right"><input type="submit" class="btnGray" title="Cancel" name="op" value="Cancel" /></td>
+                    </tr>
+                </table>
+            </form>
+        </div>
+    </body>
+</html>

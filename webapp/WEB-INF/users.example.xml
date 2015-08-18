@@ -1,0 +1,15 @@
+<users>
+  <user>
+    <address>kswenson@us.fujitsu.com</address>
+    <address>swensonkeith@gmail.com</address>
+    <fullname>Keith Swenson</fullname>
+    <password>pwd</password>
+    <admin>true</admin>
+  </user>
+  <user>
+    <address>squader@us.fujitsu.com</address>
+    <password>pwd</password>
+    <fullname>Shamim Quader</fullname>
+    <admin>false</admin>
+  </user>
+</users>

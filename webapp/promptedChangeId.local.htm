@@ -1,0 +1,86 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!--
+ * Copyright 2013 Keith D Swenson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
+ * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
+ * -->
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="X-UA-Compatible" content="IE=8" />
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>Corporate LDAP - Open Id Provider</title>
+        <link rel="stylesheet" type="text/css" href="$/global.css" />
+    </head>
+    <body>
+        <div id="bodyWrapper">
+            <table width="100%" cellpadding="0" cellspacing="0">
+                <tr>
+                    <td>
+                        <img src="$/emailSSOFIHeader.gif" width="970" height="121" alt="" />
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <table cellpadding="0" cellspacing="0" height="100%">
+                            <tr>
+                                <td class="contentArea">
+                                    <div class="mainContentArea infoArea">
+                                        <p>
+                                            <table cellpadding="0" cellspacing="0" height="100%">
+                                                <tr>
+                                                    <td><img src="$/iconAlert.gif" width="62" height="57" alt="Alert" /></td>
+                                                </tr>
+                                                <tr><td style="height:10px;"></td></tr>
+                                                <tr><td>
+                                                    <p>
+                                                        A service has requested verification of this id:
+                                                        <span class="blueText">{{reqUserId}}</span>
+                                                    </p>
+                                                    <p>
+                                                        You are logged in as a different id: <span class="blueText">{{loggedUserId}}</span>.
+                                                    </p>
+                                                    <p>
+                                                        You have three options:
+                                                    </p>
+                                                    <p><form>
+                                                       <input type="hidden" name="openid.mode" value="acceptPreviousLogin"/>
+                                                       1. <input type="submit" class="btnGreen" value="Continue" />
+                                                       and remain logged in as {{loggedUserId}}
+                                                       </form>
+                                                    <p><form>
+                                                       <input type="hidden" name="openid.mode" value="relogin"/>
+                                                       2. <input type="submit" class="btnGreen" value="Log Out" />
+                                                       and have the option to log in as another user.
+                                                       </form>
+                                                    <p><form>
+                                                       <input type="hidden" name="openid.mode" value="cancelAction"/>
+                                                       3. <input type="submit" class="btnGreen" value="Cancel" />
+                                                       and return as if this never happened.
+                                                       </form>
+                                                    </td>
+                                                </tr>
+                                            </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </body>
+</html>
