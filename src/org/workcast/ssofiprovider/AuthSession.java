@@ -82,6 +82,7 @@ public class AuthSession implements Serializable {
     public void logout() {
         authIdentity = null;
         authName = null;
+        quickLogin = false;
     }
 
     public String loggedUserId() {

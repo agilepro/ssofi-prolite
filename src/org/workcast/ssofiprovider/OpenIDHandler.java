@@ -468,6 +468,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 handleAPICommand(mode);
             }
             else {
+                aSession.quickLogin = false;
                 modeOfficialOpenIDRequest(mode);
             }
         }
@@ -732,12 +733,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     "Session time out... too much time to login in and no longer have information about where to return to.");
             response.sendRedirect(baseURL);
             return;
-        }
-
-        //if you are not really doing the openid protocol, then you can get out quickly
-        //just debug testing ... this method only for openid protocol
-        if (aSession.quickLogin) {
-            throw new Exception("should not be getting to returnLoginSuccess on the QUICK path");
         }
 
         AuthRequest authReq = AuthRequest.createAuthRequest(aSession.paramlist,
