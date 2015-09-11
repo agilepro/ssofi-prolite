@@ -13,7 +13,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.URLEncoder;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -464,7 +463,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     displayRootPage();
                 }
             }
-            else if ("apiWho".equals(mode) || "apiGenerate".equals(mode) || "apiVerify".equals(mode)) {
+            else if (mode.startsWith("api")) {
                 handleAPICommand(mode);
             }
             else {
@@ -563,6 +562,15 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     postedObject.put("verified", false);
                     sendJSON(200, postedObject);
                 }
+                return;
+            }
+            if ("apiLogout".equals(mode)) {
+                //whether you are logged in or not, you get the same response
+                //from this command:  you are now logged out.
+                aSession.logout();
+                JSONObject jo = new JSONObject();
+                jo.put("msg", "User logged out");
+                sendJSON(200, jo);
                 return;
             }
             if (!aSession.loggedIn()) {
@@ -1084,6 +1092,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
+    /*
     private String getCompleteURL() throws Exception {
         String method = request.getMethod();
         String qstr = null;
@@ -1109,6 +1118,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
+
     private void addValueIfPresent(StringBuffer res, String key) throws Exception {
         String val = request.getParameter(key);
         if (val != null) {
@@ -1120,7 +1130,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             res.append(URLEncoder.encode(val, "UTF-8"));
         }
     }
-
+*/
     public void serveUpAsset(String resourceName) throws Exception {
         ServletContext sc = session.getServletContext();
         String path = sc.getRealPath("/$/" + resourceName);
