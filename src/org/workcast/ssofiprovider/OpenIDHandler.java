@@ -78,6 +78,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private static SessionHandler sHand = null;
     private static EmailHandler emailHandler = null;
     private static SecurityHandler securityHandler = null;
+    
+    private static int sessionDurationSeconds = 2500000;   //30 days
 
     HttpServletRequest request;
     HttpServletResponse response;
@@ -91,11 +93,25 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private String loggedOpenId;
 
     private boolean isDisplaying = false;
-    private UserInformation displayInfo = null;
 
+    // addressedUserId is the id of the user you are DISPLAYING
+    // which may have nothing to do with the user who is logged in
+    // Any logged in user, can display any other user.
     private String addressedUserId;
+
+    // If the UI is DISPLAYING user info, then this
+    // member will hold the information to display
+    private UserInformation displayInfo = null;
+    
+    // OpenID has a parameter called the assoc_handle and it 
+    // must be passed as part of the protocol, but I don't
+    // know what it represents.  (you can probably guess.)
     private String assoc_handle;
 
+    // This is the user that is attempting to log in, which 
+    // might have been passed as part of the protocol to 
+    // request authentication, or it might come from the 
+    // cookies that remember who you logged in as last time.
     private AddressParser requestedIdentity = null;
 
     static boolean isLDAPMode = false;
@@ -190,22 +206,29 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             emailHandler = new EmailHandler(sc, emailConfigSettings);
 
             manager = new ServerManager();
+            
+            
             // configure the OpenID Provider's endpoint URL
-
             String pattern = getRequiredConfigProperty(configSettings, "pattern").toLowerCase();
             AddressParser.initialize(pattern);
-
             int idPos = pattern.indexOf("{id}");
             if (idPos < 0) {
                 throw new Exception(
                         "The pattern setting value MUST have the token, {id}, within it "
                                 + "to indicate the location that the id will be in the URL");
             }
-
             manager.setOPEndpointUrl(baseURL);
-            // for a working demo, not enforcing RP realm discovery
-            // since this new feature is not deployed
-            // manager.getRealmVerifier().setEnforceRpId(false);
+            
+            
+            String sessionDurationStr = configSettings.getProperty("sessionDurationSeconds");
+            if (sessionDurationStr!=null) {
+                int durVal = Integer.parseInt(sessionDurationStr);
+                if (durVal>600) {
+                	//it is not realistic to have a session duration shorter than 10 minutes
+                	//so only set if we have a value greater than 600 seconds.
+                	sessionDurationSeconds = durVal;
+                }
+            }
 
             initialized = true;
         }
@@ -214,7 +237,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             initFailure = e;
             // get something into the log as well in case nobody accesses the
             // server
-            e.printStackTrace();
+            System.out.println("\n##### ERROR DURING SSOFI PROVIDER INITIALIZATION #####");
+            e.printStackTrace(System.out);
+            System.out.println("##### ##### #####\n");
         }
     }
 
@@ -352,10 +377,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             // anything below here is LIKELY to change the session
             saveSession = true;
             String mode = defParam("openid.mode", "display");
-            System.out.println("SSOFI: " + request.getRequestURL().toString().trim() + " @"
-                    + mode);
-            //System.out.println("    P: "+request.getQueryString());
-            //System.out.println("    Q: "+aSession.quickLogin+" return: "+aSession.return_to);
+            System.out.println("SSOFI: " + request.getRequestURL().toString().trim() + " mode="
+                    + mode + "  isDisplaying="+isDisplaying + "  loggedIn="+aSession.loggedIn());
+            
+            
+            if (requestedIdentity!=null) {
+            	System.out.println("SSOFI: requestedIdentity: "+requestedIdentity.getOpenId());
+            }
+            else {
+            	System.out.println("SSOFI: requestedIdentity is NULL");
+            }
 
             if ("lookup".equals(mode)) {
                 redirectToIdentityPage(authStyle.searchForID(reqParam("entered-id")));
@@ -622,11 +653,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         Writer out = response.getWriter();
         jo.write(out);
         out.flush();
-        System.out.println("SSOFI LAuth - sent a JSON response");
         java.io.StringWriter sw = new java.io.StringWriter();
         jo.write(sw, 2, 2);
-        System.out.println(sw.toString());
-        System.out.println("SSOFI LAuth - ---------------------");
     }
 
 
@@ -657,8 +685,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     private void modeLoginView() throws Exception {
         // whoever they logged in last time as...
-        // requestedIdentity = findCookieValue("SSOFIUser");
-        streamTemplate("promptedLogin");
+    	if (addressedUserId==null || addressedUserId.length()==0) {
+    		String lastTimeId = findCookieValue("SSOFIUser");
+    		if (lastTimeId!=null && lastTimeId.length()>0) {
+    			addressedUserId = lastTimeId;
+    		}
+    	}
+    	streamTemplate("promptedLogin");
         aSession.clearError();
     }
 
@@ -1092,45 +1125,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
-    /*
-    private String getCompleteURL() throws Exception {
-        String method = request.getMethod();
-        String qstr = null;
-        if ("GET".equals(method)) {
-            qstr = request.getQueryString();
-        }
-        else {
-            StringBuffer queryString = new StringBuffer();
-            addValueIfPresent(queryString, "openid.mode");
-            addValueIfPresent(queryString, "openid.identity");
-            addValueIfPresent(queryString, "openid.return_to");
-            addValueIfPresent(queryString, "openid.trust_root");
-            addValueIfPresent(queryString, "openid.assoc_handle");
-            if (queryString.length() > 0) {
-                qstr = queryString.toString();
-            }
-        }
-        if (qstr == null) {
-            return request.getRequestURL().toString();
-        }
-        else {
-            return request.getRequestURL().toString() + "?" + qstr;
-        }
-    }
-
-
-    private void addValueIfPresent(StringBuffer res, String key) throws Exception {
-        String val = request.getParameter(key);
-        if (val != null) {
-            if (res.length() > 0) {
-                res.append("&");
-            }
-            res.append(key);
-            res.append("=");
-            res.append(URLEncoder.encode(val, "UTF-8"));
-        }
-    }
-*/
     public void serveUpAsset(String resourceName) throws Exception {
         ServletContext sc = session.getServletContext();
         String path = sc.getRealPath("/$/" + resourceName);
@@ -1233,7 +1227,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else if ("reqUserId".equals(tokenName)) {
                 if (requestedIdentity != null) {
+                	System.out.append("SSOFI: displaying requested id: "+requestedIdentity.getUserId());
                     writeHtml(out, requestedIdentity.getUserId());
+                }
+                else {
+                	//if no requested user id, then write out the Cookie value
+                	System.out.append("SSOFI: NO requested ID, so looking up the cookie");
+            		String lastTimeId = findCookieValue("SSOFIUser");
+            		if (lastTimeId!=null) {
+            			writeHtml(out, lastTimeId);
+            		}
                 }
             }
             else if ("reqOpenId".equals(tokenName)) {
@@ -1380,18 +1383,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             sessionId = "S" + session.getId();
         }
         Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(30000); // about 6 hours
+        previousId.setMaxAge(sessionDurationSeconds); // about 6 hours
         previousId.setPath("/"); // everything on the server
         response.addCookie(previousId);
         return sessionId;
     }
 
-    /*
-     * private static void appendLetters(StringBuffer sb, long value) { while
-     * (value>0) { int letterVal = (int) (value % 36); if (letterVal>25) {
-     * sb.append((char)('A'+letterVal)); } else {
-     * sb.append((char)('0'+letterVal-26)); } value = value / 36; } }
-     */
 
     public String findCookieValue(String cookieName) {
         Cookie[] cookies = request.getCookies();

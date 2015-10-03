@@ -1,4 +1,4 @@
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 <!--
  * Copyright 2013 Keith D Swenson
  *
@@ -23,70 +23,185 @@
         <meta http-equiv="X-UA-Compatible" content="IE=8" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>Corporate LDAP - Open Id Provider</title>
-        <link rel="stylesheet" type="text/css" href="$/global.css" />
         <link rel="openid.server" href="{{root}}" />
         <link rel="openid.delegate" href="{{root}}" />
         <link rel="openid2.provider" href="{{root}}" />
+        <style>
+            body {
+                font-family:Arial,Helvetica,Verdana,sans-serif;
+                font-size:14px;
+                color:#666666;
+                margin:0px;
+                padding:0px;
+            }
+            a:link, a:visited, a:active{
+                text-decoration:none;
+                color:#5377AC;
+            }
+            a:hover{
+                text-decoration:underline;
+            }
+            #loginWrapper {
+                margin:60px auto 0px auto;
+                width:548px;
+                position:relative;
+                background-color:#fff;
+                border:1px solid #8c8c8c;
+            }
+            .loginWrapperContentArea{
+                padding:20px 20px;
+            }
+            .loginWrapperContentArea h3{
+                font-size:14px;
+                padding:0px;
+                margin:0px;
+                padding-bottom:10px;
+            }
+            .loginWrapperContentArea h3 span{
+                color:#000;
+                font-weight:bold;
+            }
+            .loginSpacing{
+                padding:20px 70px;
+                line-height:20px;
+                color:#000;
+            }
+            .inputGeneral350{
+                height:20px;
+                line-height:20px;
+                padding-left:5px;
+                width:350px;
+                font-size:12px;
+                color:#666;
+                }
+            .inputGeneral300{
+                height:20px;
+                line-height:20px;
+                padding-left:5px;
+                width:274px;
+                font-size:12px;
+                color:#666;
+                }
+            .registerArea{
+                padding:10px 50px 20px 20px;
+            }
+            .registerArea span{
+                color:#575757;
+                font-size:13px;
+            }
+            .registerArea b{
+                color:#484848;
+            }
+            .btnGreen{
+                background-color:#81c72e;
+                height:26px;
+                line-height:26px;
+                padding:0px 15px 0px 15px;
+                *padding:0px 10px 0px 10px;
+                border:0px solid #81c72e;
+                color:#ffffff;
+                cursor:pointer
+            }
+            .btnGray{
+                background-color:#575757;
+                height:26px;
+                line-height:26px;
+                padding:0px 15px 0px 15px;
+                *padding:0px 10px 0px 10px;
+                border:0px solid #575757;
+                color:#ffffff;
+                cursor:pointer
+            }
+            .errorArea{
+                color:#F00;
+            }
+            td.noteSection{
+                padding:10px 30px;
+                font-style:italic;
+                font-size:11px;
+            }
+            #userDisplayWrapper {
+                margin:60px auto 0px auto;
+                width:548px;
+                position:relative;
+                background-color:#fff;
+                border:1px solid #8c8c8c;
+            }
+            .userNameClass {
+                font-size:26px;
+                font-style:bold;
+            }
+        </style>
     </head>
-    <!--displayAnonymous.local.htm-->
+    <body onload="document.getElementById('entered-id').focus();">
 
-    <body>
-        <div id="bodyWrapper">
-            <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                    <td>
-                        <img src="$/emailSSOFIHeader.gif" width="970" height="121" alt="" />
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td class="contentArea">
-                                    <div class="mainContentArea infoArea">
-                                        <p>
-                                            <table cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <th>Full Name:</th>
-                                                    <td> &nbsp; </td>
-                                                    <td><h1>{{fullName}}</h1></td>
-                                                </tr>
+        <div id="userDisplayWrapper">
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td><img src="$/headerUserInfo.gif" width="548" alt="" /></td>
+                    </tr>
+                    <tr>
+                        <td class="loginWrapperContentArea">
+                            <div>
+                                <table >
+                                    <tr>
+                                        <td>Full Name:</td>
+                                        <td> &nbsp; </td>
+                                        <td><span class="userNameClass">{{fullName}}</span></td>
+                                    </tr>
 
-                                                <tr>
-                                                    <th>Email Address:</th>
-                                                    <td> &nbsp; </td>
-                                                    <td>{{emailAddress}}</td>
-                                                </tr>
-                                            </table>
-                                         </p>
-                                         <p><br/><br/></p>
-                                    </div>
-                                    <div class="loginArea">
-                                        <form method="post" action="{{thisPage}}">
-                                        <div class="signInImage"></div>
-                                        <div class="sideLinks"><a href="{{thisPage}}?openid.mode=register" title="Register Now">Register Now</a> &nbsp;
-                                                      <a href="{{thisPage}}?openid.mode=register" title="Reset Password">Reset Password</a></div>
-                                        <div class="mainLoginArea">
-                                            <span class="greenAlert">You are not logged In.</span>
-                                            <span class="redText"><strong>{{userError}}</strong></span>
-                                            <div class="loginLabelArea">
-                                                <form method="post">
-                                                <div class="buttonArea">
-                                                <button type="submit" class="btnGreen" formaction="{{thisPage}}">Log In</button>
-                                                <button type="submit" class="btnGreen" formaction="{{thisPage}}?openid.mode=register">Register</button>
-                                                <button type="submit" class="btnGreen" formaction="{{thisPage}}?openid.mode=register">Reset Password</button>
-                                                </div>
-                                                </form>
-                                            </div>
-                                        </div>
-                                        </form>
-                                    </div>
-                                 </td>
-                            </tr>
-                       </table>
-                    </td>
-                </tr>
-            </table>
+                                    <tr>
+                                        <td>Email Address:</td>
+                                        <td> &nbsp; </td>
+                                        <td>{{emailAddress}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Key:</td>
+                                        <td> &nbsp; </td>
+                                        <td>{{id}}</td>
+                                    </tr>
+                                </table>
+                             </div>
+                        </td>
+                    </tr>
+                </table>
+        </div>
+
+
+
+        <div id="loginWrapper">
+            <form method="post" action="{{thisPage}}">
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td><img src="$/headerFujitsuID.gif" width="548" height="136" alt="" /></td>
+                    </tr>
+                    <tr>
+                        <td class="loginWrapperContentArea">
+                            <span class="errorArea"><strong>{{userError}}</strong></span>
+                            <div class="loginSpacing">
+                                <strong>Email Address:</strong><br />
+                                <input type="text" id="entered-id" name="entered-id" class="inputGeneral350" value="{{reqUserId}}"/><br /><br />
+                                <strong>Password:</strong><br />
+                                <input type="password" name="password" class="inputGeneral300" placeholder="Enter your password"/>
+                                <input type="submit" class="btnGray" title="Log In" value="Log In" /><br />
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <input type="hidden" name="openid.mode" value="login"/>
+                            <input type="hidden" name="go" value="{{thisPage}}"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="registerArea">
+                            <b><a href="{{thisPage}}?openid.mode=register" title="Register for free account">Register for free account</a></b>
+                            &nbsp;&nbsp;|&nbsp;&nbsp;<a href="{{thisPage}}?openid.mode=register" title="Forgot Your Password">Forgot Your Password?</a><br /><br />
+                            <span><b>Note:</b> Enter your email address and password. If you have never set up a password for your email address then use <b>Register for free account</b> link for a new value, or if you have forgotten your password, you should use the <b>Forgot your password</b> link to reset your password.</span>
+                       </td>
+                    </tr>
+                </table>
+            </form>
         </div>
     </body>
 </html>

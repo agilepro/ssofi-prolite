@@ -29,6 +29,10 @@ queryFilter=cn={id}
 #in files in that folder.  For cluster, set this folder to be a shared drive
 #sessionFolder=c:/sessions
 
+#Set the logged in session duration.  This sets the duration of the cookie
+#sent to the browser in seconds.  2500000 is about 1 month.
+sessionDurationSeconds=2500000
+
 //Captcha
 captchaPublicKey=
 captchaPrivateKey=
