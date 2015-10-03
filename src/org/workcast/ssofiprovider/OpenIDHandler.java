@@ -684,13 +684,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     private void modeLoginView() throws Exception {
-        // whoever they logged in last time as...
-    	if (addressedUserId==null || addressedUserId.length()==0) {
-    		String lastTimeId = findCookieValue("SSOFIUser");
-    		if (lastTimeId!=null && lastTimeId.length()>0) {
-    			addressedUserId = lastTimeId;
-    		}
-    	}
     	streamTemplate("promptedLogin");
         aSession.clearError();
     }
@@ -765,13 +758,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private void returnLoginSuccess() throws Exception {
 
         // it could be that the user have been sitting there for a long time,
-        // and the
-        // session has completely timed out. If so, handle gracefully as
-        // possible
-        // by just redirecting to the root of the application.
+        // and the session has completely timed out. If so, handle gracefully as
+        // possible by just redirecting to the root of the application.
+    	// It is also possible that this login was started by just accessing
+    	// the SSOFI, and there is no place to return to.
         if (aSession.paramlist == null) {
             aSession.errMsg = new Exception(
-                    "Session time out... too much time to login in and no longer have information about where to return to.");
+                    "If you started from an application, return to that application and start the login from there again.");
             response.sendRedirect(baseURL);
             return;
         }
@@ -1104,8 +1097,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             aSession.login(loggedId, ui.fullName);
             loggedOpenId = AddressParser.composeOpenId(loggedId);
 
+            // This is a 'low security' cookie.  It keeps the Id of the usr
+            // that successfully logged in so that next time we can 
+            // remember and save the user having to type in again.
+            // But there is no security value here.
             Cookie userIdCookie = new Cookie("SSOFIUser", loggedId);
-            userIdCookie.setMaxAge(30000000); // about 1 year
+            userIdCookie.setMaxAge(31000000); // about 1 year
             userIdCookie.setPath("/"); // everything on the server
             response.addCookie(userIdCookie);
         }

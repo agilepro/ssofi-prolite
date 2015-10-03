@@ -179,15 +179,17 @@
                         <td class="loginWrapperContentArea">
                             <span class="errorArea"><strong>{{userError}}</strong></span>
                             <div class="loginSpacing">
-                                You are logged in as:<br />
-                                <span><b>{{reqUserId}}</b></span><br /><br />
-                                <input type="submit" class="btnGray" title="Log Out" value="Log Out" /><br />
+                                You are logged in as:<br /><br/>
+                                <span class="userNameClass">{{loggedName}}</span><br />
+                                <span><b><a href="{{loggedUserId}}">{{loggedUserId}}</a></b></span><br /><br />
+                                <button type="submit" class="btnGray" name="openid.mode" value="logout">Log Out</button>
+                                &nbsp;
+                                <button type="submit" class="btnGray" name="openid.mode" value="passwordView">Edit Profile or Password</button>
                             </div>
                         </td>
                     </tr>
                     <tr>
                         <td>
-                            <input type="hidden" name="openid.mode" value="logout"/>
                             <input type="hidden" name="go" value="{{thisPage}}"/>
                         </td>
                     </tr>

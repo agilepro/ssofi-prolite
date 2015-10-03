@@ -120,11 +120,22 @@
                 font-style:italic;
                 font-size:11px;
             }
+            #userDisplayWrapper {
+                margin:60px auto 0px auto;
+                width:548px;
+                position:relative;
+                background-color:#fff;
+                border:1px solid #8c8c8c;
+            }
+            .userNameClass {
+                font-size:26px;
+                font-style:bold;
+            }
         </style>
     </head>
     <body onload="document.getElementById('entered-id').focus();">
         <div id="loginWrapper">
-            <form method="post" action="{{thisPage}}">
+            <form method="get" action="{{thisPage}}">
                 <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                         <td><img src="$/headerFujitsuID.gif" width="548" height="136" alt="" /></td>
@@ -133,15 +144,18 @@
                         <td class="loginWrapperContentArea">
                             <span class="errorArea"><strong>{{userError}}</strong></span>
                             <div class="loginSpacing">
-                                You are logged in as:<br />
-                                <span><b>{{reqUserId}}</b></span><br /><br />
-                                <input type="submit" class="btnGray" title="Log Out" value="Log Out" /><br />
+                                You are logged in as:<br /><br/>
+                                <span class="userNameClass">{{loggedName}}</span><br />
+                                <span><b><a href="{{loggedUserId}}">{{loggedUserId}}</a></b></span><br /><br />
+                                <button type="submit" class="btnGray" name="openid.mode" value="logout">Log Out</button>
+                                &nbsp;
+                                <button type="submit" class="btnGray" name="openid.mode" value="passwordView">Edit Profile or Password</button>
+                                <br />
                             </div>
                         </td>
                     </tr>
                     <tr>
                         <td>
-                            <input type="hidden" name="openid.mode" value="logout"/>
                             <input type="hidden" name="go" value="{{thisPage}}"/>
                         </td>
                     </tr>
