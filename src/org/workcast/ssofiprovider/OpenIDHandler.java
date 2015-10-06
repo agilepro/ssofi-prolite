@@ -78,7 +78,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private static SessionHandler sHand = null;
     private static EmailHandler emailHandler = null;
     private static SecurityHandler securityHandler = null;
-    
+
     private static int sessionDurationSeconds = 2500000;   //30 days
 
     HttpServletRequest request;
@@ -102,15 +102,15 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     // If the UI is DISPLAYING user info, then this
     // member will hold the information to display
     private UserInformation displayInfo = null;
-    
-    // OpenID has a parameter called the assoc_handle and it 
+
+    // OpenID has a parameter called the assoc_handle and it
     // must be passed as part of the protocol, but I don't
     // know what it represents.  (you can probably guess.)
     private String assoc_handle;
 
-    // This is the user that is attempting to log in, which 
-    // might have been passed as part of the protocol to 
-    // request authentication, or it might come from the 
+    // This is the user that is attempting to log in, which
+    // might have been passed as part of the protocol to
+    // request authentication, or it might come from the
     // cookies that remember who you logged in as last time.
     private AddressParser requestedIdentity = null;
 
@@ -156,12 +156,20 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             String blockedIpListFilePath = bipfile.getPath();
 
-            String sessionFolder = configSettings.getProperty("sessionFolder");
-            if (sessionFolder == null) {
+            String sessionPath = configSettings.getProperty("sessionFolder");
+            System.out.println("sessionFolder is set to: "+sessionPath);
+
+            if (sessionPath == null) {
                 sHand = new SessionHandlerMemory();
             }
             else {
-                sHand = new SessionHandlerFile(new File(sessionFolder));
+                File sessionFolder = new File(sessionPath);
+                if (sessionFolder.exists()) {
+                    sHand = new SessionHandlerFile(sessionFolder, sessionDurationSeconds);
+                }
+                else {
+                    sHand = new SessionHandlerMemory();
+                }
             }
             isLDAPMode = "LDAP".equalsIgnoreCase(configSettings.getProperty("authStyle"));
 
@@ -206,8 +214,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             emailHandler = new EmailHandler(sc, emailConfigSettings);
 
             manager = new ServerManager();
-            
-            
+
+
             // configure the OpenID Provider's endpoint URL
             String pattern = getRequiredConfigProperty(configSettings, "pattern").toLowerCase();
             AddressParser.initialize(pattern);
@@ -218,8 +226,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                                 + "to indicate the location that the id will be in the URL");
             }
             manager.setOPEndpointUrl(baseURL);
-            
-            
+
+
             String sessionDurationStr = configSettings.getProperty("sessionDurationSeconds");
             if (sessionDurationStr!=null) {
                 int durVal = Integer.parseInt(sessionDurationStr);
@@ -314,11 +322,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 JSONTokener jt = new JSONTokener(is);
                 postedObject = new JSONObject(jt);
                 is.close();
-                System.out.println("SSOFI - received POST body successfully");
-                java.io.StringWriter sw = new java.io.StringWriter();
-                postedObject.write(sw, 2, 2);
-                System.out.println(sw.toString());
-                System.out.println("SSOFI - ---------------------");
             }
 
             //this does not throw anything, but only call if above successful
@@ -348,8 +351,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             String requestURL = request.getRequestURL().toString();
 
             if (baseURL == null) {
-                // if not set at initialization time, set it here on first
-                // request
+                // if not set at initialization time, set it here on first request
                 baseURL = request.getRequestURL().toString();
             }
 
@@ -374,19 +376,32 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 isDisplaying = true;
             }
 
-            // anything below here is LIKELY to change the session
-            saveSession = true;
             String mode = defParam("openid.mode", "display");
             System.out.println("SSOFI: " + request.getRequestURL().toString().trim() + " mode="
                     + mode + "  isDisplaying="+isDisplaying + "  loggedIn="+aSession.loggedIn());
-            
-            
+
+
             if (requestedIdentity!=null) {
             	System.out.println("SSOFI: requestedIdentity: "+requestedIdentity.getOpenId());
             }
             else {
             	System.out.println("SSOFI: requestedIdentity is NULL");
             }
+
+            if (mode.startsWith("api")) {
+                // Want to avoid saving a session as a result of every API call.  The API call will never
+                // add or remove a session, it is only used to verify existing sessions.  In general API
+                // round trips should be fast ... only a few seconds ... so persistence is not an
+                // issue.  The problem is API calls made from the server do not preserve cookies, and a
+                // new session is started every access, causing a flood of sessions, each potentially
+                // lasting for a long time (a month) so persisting these sessions would be a waste.
+                saveSession = false;
+                handleAPICommand(mode);
+                return;
+            }
+
+            // anything below here is LIKELY to change the session
+            saveSession = true;
 
             if ("lookup".equals(mode)) {
                 redirectToIdentityPage(authStyle.searchForID(reqParam("entered-id")));
@@ -493,9 +508,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 else {
                     displayRootPage();
                 }
-            }
-            else if (mode.startsWith("api")) {
-                handleAPICommand(mode);
             }
             else {
                 aSession.quickLogin = false;
@@ -1098,7 +1110,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             loggedOpenId = AddressParser.composeOpenId(loggedId);
 
             // This is a 'low security' cookie.  It keeps the Id of the usr
-            // that successfully logged in so that next time we can 
+            // that successfully logged in so that next time we can
             // remember and save the user having to type in again.
             // But there is no security value here.
             Cookie userIdCookie = new Cookie("SSOFIUser", loggedId);
@@ -1378,6 +1390,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             // id and use that. The value does not matter so much, just needs to be unique.
             // However, this cookie will have a wider scope than normal Tomcat cookies.
             sessionId = "S" + session.getId();
+            System.out.println("SSOFI: did not find a cookie, so creating new session ID: "+sessionId);
+        }
+        else {
+            System.out.println("SSIFO: found session cookie: "+sessionId);
         }
         Cookie previousId = new Cookie("SSOFISession", sessionId);
         previousId.setMaxAge(sessionDurationSeconds); // about 6 hours

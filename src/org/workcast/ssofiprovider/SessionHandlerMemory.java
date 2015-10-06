@@ -10,6 +10,10 @@ public class SessionHandlerMemory implements SessionHandler {
     Hashtable<String, AuthSession> allSessions = new Hashtable<String, AuthSession>();
     Hashtable<String, Long> allTimes = new Hashtable<String, Long>();
 
+    public SessionHandlerMemory() throws Exception {
+        System.out.println("SSOFI: Using the MEMORY session handler");
+    }
+
     public AuthSession getAuthSession(String sessionId) throws Exception {
         // this represents the earliest time value where the entry could still be valid
         long oneHourAgo = System.currentTimeMillis() - 3600000;
@@ -23,6 +27,7 @@ public class SessionHandlerMemory implements SessionHandler {
             thisSession = new AuthSession();
             saveAuthSession(sessionId, thisSession);
         }
+
         // return a copy of this to make sure that update is being done properly
         // and so this memory version is a valid test of the file version
         return thisSession.copy();

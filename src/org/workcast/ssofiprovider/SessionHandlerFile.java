@@ -12,16 +12,29 @@ import java.io.ObjectOutputStream;
 public class SessionHandlerFile implements SessionHandler {
     File folder;
 
-    public SessionHandlerFile(File mainFolder) throws Exception {
+    /**
+     * This is the limit, in seconds, on how old a session can be.
+     * Throw away any session after this many seconds since authentication.
+     * This is detected by the file timestamp of the file that holds the
+     * session information.  Every log in must write the file again, causing
+     * the timestamp to update.  That is the time of the last login.
+     * Once you exceed this time limit, user is forced to log in again.
+     * Time limit policy is set by the config file and that is the
+     * MAXIMUM time limit.  Some users may choose shorter limits.
+     */
+    long timeLimit;
+
+    public SessionHandlerFile(File mainFolder, long _timeLimit) throws Exception {
+        timeLimit = _timeLimit;
         if (!mainFolder.exists()) {
             throw new Exception("SessionFolder does not exist (" + mainFolder.toString() + ")");
         }
         folder = mainFolder;
 
         // clean out old files
-        long oneHourAgo = System.currentTimeMillis() - 3600000;
+        long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
         for (File child : folder.listFiles()) {
-            if (child.lastModified() < oneHourAgo) {
+            if (child.lastModified() < oldestTimeStampAllowed) {
                 if (child.getName().endsWith(".session")) {
                     child.delete();
                 }
@@ -30,26 +43,28 @@ public class SessionHandlerFile implements SessionHandler {
                 }
             }
         }
+
+        System.out.println("SSOFI: Using the FILE session handler: "+mainFolder);
     }
 
     /**
      * pass in the session id, and get the session information back
      */
     public synchronized AuthSession getAuthSession(String sessionId) throws Exception {
-        long oneHourAgo = System.currentTimeMillis() - 3600000;
+        long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
         File sessionFile = new File(folder, sessionId + ".session");
         AuthSession as = null;
         if (sessionFile.exists()) {
-            if (oneHourAgo < sessionFile.lastModified()) {
+            if (sessionFile.lastModified() < oldestTimeStampAllowed) {
+                // timestamp is too old, so remove the file
+                sessionFile.delete();
+            }
+            else {
                 FileInputStream fileIn = new FileInputStream(sessionFile);
                 ObjectInputStream in = new ObjectInputStream(fileIn);
                 as = (AuthSession) in.readObject();
                 in.close();
                 fileIn.close();
-            }
-            else {
-                // timestamp is too old, so remove the file
-                sessionFile.delete();
             }
         }
         if (as == null) {
@@ -92,8 +107,12 @@ public class SessionHandlerFile implements SessionHandler {
      * timestamp to the current time.
      */
     public synchronized void markSessionTime(String sessionId) throws Exception {
-        File sessionFile = new File(folder, sessionId + ".session");
-        sessionFile.setLastModified(System.currentTimeMillis());
+        //don't do this for file based manager
+        //timeout is from LOGIN not simply last access.
+        //for a long logout time (like a month) you might NEVER have to log in again
+        //
+        //File sessionFile = new File(folder, sessionId + ".session");
+        //sessionFile.setLastModified(System.currentTimeMillis());
     }
 
 }

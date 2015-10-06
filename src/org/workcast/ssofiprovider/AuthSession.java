@@ -1,5 +1,11 @@
 package org.workcast.ssofiprovider;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.ObjectOutputStream;
+import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.util.Enumeration;
 import java.util.Properties;
@@ -9,6 +15,7 @@ import java.util.Vector;
 import javax.servlet.http.HttpServletRequest;
 
 import org.openid4java.message.ParameterList;
+import org.workcast.json.JSONObject;
 
 /**
  * Holds all the information that we need for a session
@@ -231,4 +238,35 @@ public class AuthSession implements Serializable {
         long createdTime;
     }
 
+
+    public void writeSessionToFile(File outputFile) throws Exception {
+        JSONObject persistable = new JSONObject();
+        persistable.put("authIdentity", authIdentity);
+        persistable.put("authName",     authName);
+        persistable.put("regEmail",     regEmail);
+        persistable.put("regMagicNo",   regMagicNo);
+        persistable.put("identity",     identity);
+
+        FileOutputStream fileOut = new FileOutputStream(outputFile);
+        ObjectOutputStream out = new ObjectOutputStream(fileOut);
+        OutputStreamWriter w = new OutputStreamWriter(out, "UTF-8");
+        persistable.write(w,0,2);
+        out.close();
+        fileOut.close();
+    }
+
+    public AuthSession readSessionFromFile(File sessionFile) throws Exception {
+        FileInputStream fileIn = new FileInputStream(sessionFile);
+        InputStreamReader in = new InputStreamReader(fileIn);
+        JSONObject restored = new JSONObject(in);
+        in.close();
+        fileIn.close();
+        AuthSession as = new AuthSession();
+        as.authIdentity = restored.getString("authIdentity");
+        as.authName = restored.getString("authName");
+        as.regEmail = restored.getString("regEmail");
+        as.regMagicNo = restored.getString("regMagicNo");
+        as.identity = restored.getString("identity");
+        return as;
+    }
 }
