@@ -33,9 +33,14 @@ public class SessionHandlerMemory implements SessionHandler {
         return thisSession.copy();
     }
 
-    public void saveAuthSession(String sessionId, AuthSession thisSession) throws Exception {
+    public synchronized void saveAuthSession(String sessionId, AuthSession thisSession) throws Exception {
         allSessions.put(sessionId, thisSession);
         allTimes.put(sessionId, new Long(System.currentTimeMillis()));
+    }
+
+    public synchronized void deleteAuthSession(String sessionId) throws Exception {
+        allSessions.remove(sessionId);
+        allTimes.remove(sessionId);
     }
 
     /**

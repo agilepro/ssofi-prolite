@@ -1,15 +1,18 @@
 package org.workcast.ssofiprovider;
 
 import java.util.Enumeration;
+import java.util.Random;
 import java.util.Vector;
 
 /**
- * Generates two types of ID
+ * Generates three types of ID
  *
- * (1) generates an alphanumeric id based on timestamp
+ * (1) generates an alphanumeric unique id based on timestamp
  *
  * (2) generates a four digit timestamp unique within a set
  *
+ * (3) generates a magic number which is the alphanumeric unique id with
+ *     some random digits in the middle making it hard to predict in advance
  */
 public class IdGenerator {
     static long lastKey = 0;
@@ -77,6 +80,25 @@ public class IdGenerator {
             id = id / 10;
         }
         return res.toString();
+    }
+
+
+    public static String createMagicNumber() {
+        Random rand = new Random();
+        String nineLetters = generateKey();
+        StringBuffer betterNumber = new StringBuffer(20);
+        betterNumber.append(nineLetters.substring(0, 3));
+        betterNumber.append("-");
+        betterNumber.append((char) ('A' + rand.nextInt(26)));
+        betterNumber.append((char) ('A' + rand.nextInt(26)));
+        betterNumber.append("-");
+        betterNumber.append(nineLetters.substring(3, 6));
+        betterNumber.append("-");
+        betterNumber.append((char) ('A' + rand.nextInt(26)));
+        betterNumber.append((char) ('A' + rand.nextInt(26)));
+        betterNumber.append("-");
+        betterNumber.append(nineLetters.substring(6, 9));
+        return betterNumber.toString();
     }
 
 }

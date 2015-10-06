@@ -9,7 +9,6 @@ import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.util.Enumeration;
 import java.util.Properties;
-import java.util.Random;
 import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
@@ -114,7 +113,7 @@ public class AuthSession implements Serializable {
 
     public String startRegistration(String email) {
         regEmail = email;
-        regMagicNo = createMagicNumber();
+        regMagicNo = IdGenerator.createMagicNumber();
         regEmailConfirmed = false;
         return regMagicNo;
     }
@@ -133,23 +132,6 @@ public class AuthSession implements Serializable {
         return savedParams.getProperty(name);
     }
 
-    private static String createMagicNumber() {
-        Random rand = new Random();
-        String nineLetters = IdGenerator.generateKey();
-        StringBuffer betterNumber = new StringBuffer(20);
-        betterNumber.append(nineLetters.substring(0, 3));
-        betterNumber.append("-");
-        betterNumber.append((char) ('A' + rand.nextInt(26)));
-        betterNumber.append((char) ('A' + rand.nextInt(26)));
-        betterNumber.append("-");
-        betterNumber.append(nineLetters.substring(3, 6));
-        betterNumber.append("-");
-        betterNumber.append((char) ('A' + rand.nextInt(26)));
-        betterNumber.append((char) ('A' + rand.nextInt(26)));
-        betterNumber.append("-");
-        betterNumber.append(nineLetters.substring(6, 9));
-        return betterNumber.toString();
-    }
 
     /**
      * return a copy of this object
@@ -189,7 +171,7 @@ public class AuthSession implements Serializable {
         ChallengeTokenEntry cte = new ChallengeTokenEntry();
         cte.challenge = challenge;
         cte.authSession = this;
-        cte.token = createMagicNumber();
+        cte.token = IdGenerator.createMagicNumber();
         cte.identity = authIdentity;
         cte.createdTime = System.currentTimeMillis();
 

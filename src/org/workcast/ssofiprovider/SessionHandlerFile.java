@@ -102,6 +102,13 @@ public class SessionHandlerFile implements SessionHandler {
         }
     }
 
+    public synchronized void deleteAuthSession(String sessionId) throws Exception {
+        File sessionFile = new File(folder, sessionId + ".session");
+        if (sessionFile.exists()) {
+            sessionFile.delete();
+        }
+    }
+
     /**
      * call this to indicate that the session has been accessed, and to set the
      * timestamp to the current time.

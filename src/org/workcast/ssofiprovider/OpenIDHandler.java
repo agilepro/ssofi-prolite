@@ -87,6 +87,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     AuthSession aSession;
     boolean saveSession = false;
+    boolean destroySession = false;
 
     private String paramGo = "";
 
@@ -288,7 +289,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             // is being saved whether an error occurs or not! That is the right
             // thing because the session object holds the error message for the
             // next page
-            if (saveSession) {
+            if (destroySession) {
+                sHand.deleteAuthSession(sessionId);
+            }
+            else if (saveSession) {
                 sHand.saveAuthSession(sessionId, aSession);
             }
         }
@@ -497,6 +501,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             else if ("logout".equals(mode)) {
                 aSession.return_to = reqParam("go");
                 aSession.quickLogin = true;
+                destroySession = true;
+                //set the cookie, but otherwise ignore the new sessionid
+                createSSOFISessionId();
                 setLogin(null);
                 response.sendRedirect(aSession.return_to);
             }
@@ -611,6 +618,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //whether you are logged in or not, you get the same response
                 //from this command:  you are now logged out.
                 aSession.logout();
+                destroySession = true;
+                //set the cookie, but otherwise ignore the new sessionid
+                createSSOFISessionId();
                 JSONObject jo = new JSONObject();
                 jo.put("msg", "User logged out");
                 sendJSON(200, jo);
@@ -1386,17 +1396,34 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public String getSSOFISessionId() {
         String sessionId = findCookieValue("SSOFISession");
         if (sessionId == null || sessionId.length() < 10) {
-            // if our cookie does not have a value, then just take the current session
-            // id and use that. The value does not matter so much, just needs to be unique.
-            // However, this cookie will have a wider scope than normal Tomcat cookies.
-            sessionId = "S" + session.getId();
-            System.out.println("SSOFI: did not find a cookie, so creating new session ID: "+sessionId);
+            return createSSOFISessionId();
         }
-        else {
-            System.out.println("SSIFO: found session cookie: "+sessionId);
-        }
+
+
+        System.out.println("SSOFI: found existing session cookie: "+sessionId);
+
+        //TODO: determine if it is right to refresh the time period
+        //of this session in the cookie.  Perhaps this time should
+        //be set only when the session is created
         Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(sessionDurationSeconds); // about 6 hours
+        previousId.setMaxAge(sessionDurationSeconds);
+        previousId.setPath("/"); // everything on the server
+        response.addCookie(previousId);
+        return sessionId;
+    }
+
+    /**
+     * Generate a new, different session ID.
+     * This should be called immediately after logout so that on the next
+     * request the browser is using a new session.
+     * The previous session object should be destroyed as well.
+     */
+    public String createSSOFISessionId() {
+        String sessionId = "S" + IdGenerator.createMagicNumber();
+        System.out.println("SSOFI: NEW session id generated: "+sessionId);
+
+        Cookie previousId = new Cookie("SSOFISession", sessionId);
+        previousId.setMaxAge(sessionDurationSeconds);
         previousId.setPath("/"); // everything on the server
         response.addCookie(previousId);
         return sessionId;
