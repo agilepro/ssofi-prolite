@@ -30,7 +30,7 @@ public class OpenIDServlet extends HttpServlet {
         //the cookies with "withCredentials" then it will not allows the '*'
         //setting on allow origin any more.  The only alternative is that you
         //MUST copy the origin from the request into the response.
-        //This is truely strange, but required.
+        //This is truly strange, but required.
 
         String origin = req.getHeader("Origin");
         if (origin==null || origin.length()==0) {
@@ -40,7 +40,7 @@ public class OpenIDServlet extends HttpServlet {
         resp.setHeader("Access-Control-Allow-Origin",      origin);
         resp.setHeader("Access-Control-Allow-Credentials", "true");
         resp.setHeader("Access-Control-Allow-Methods",     "GET, POST, OPTIONS");
-        resp.setHeader("Access-Control-Allow-Headers",     "Authorization");
+        resp.setHeader("Access-Control-Allow-Headers",     "Origin, X-Requested-With, Content-Type, Accept, Authorization");
         resp.setHeader("Access-Control-Max-Age",           "1");
         resp.setHeader("Vary",                             "*");
     }
