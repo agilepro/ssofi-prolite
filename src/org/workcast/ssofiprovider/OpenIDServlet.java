@@ -43,6 +43,7 @@ public class OpenIDServlet extends HttpServlet {
         resp.setHeader("Access-Control-Allow-Headers",     "Origin, X-Requested-With, Content-Type, Accept, Authorization");
         resp.setHeader("Access-Control-Max-Age",           "1");
         resp.setHeader("Vary",                             "*");
+        resp.setHeader("Cache-Control",                    "no-cache");
     }
 
     /**
