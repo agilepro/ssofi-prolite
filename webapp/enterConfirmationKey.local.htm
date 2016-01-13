@@ -42,7 +42,7 @@
                                     <div class="mainContentArea">
                                     </div>
                                     <div class="loginArea">
-                                        <form method="post" action="{{thisPage}}?openid.mode=validateKeyAction">
+                                        <form method="post" action="{{thisPage}}">
                                         <div class="registerImg"></div>
                                         <div class="mainLoginArea">
                                         <center>
@@ -56,7 +56,9 @@
                                                     <tr>
                                                         <td><strong>Email address:</strong></td>
                                                         <td width="10px"></td>
-                                                        <td>{{registeredEmailId}}<input type="hidden" name="registerEmail" value="{{registeredEmailId}}"/>
+                                                        <td>
+                                                            {{registeredEmailId}}
+                                                            <input type="hidden" name="registerEmail" value="{{registeredEmailId}}"/>
                                                         </td>
                                                     </tr>
                                                     <tr>
@@ -69,7 +71,8 @@
                                             <span class="noteSection"><b>Check your email:</b> You should receive an email message with a secret key in it. Copy that key value, and paste it into the space above.</span>
                                         </div>
                                         <div class="buttonArea">
-                                            <input type="submit" class="btnGray" title="Confirm Email" value="Confirm Email Address" />
+                                            <button type="submit" class="btnGray" name="openid.mode" value="registerNewAction">Resend Email</button>
+                                            <button type="submit" class="btnGray" name="openid.mode" value="validateKeyAction">Confirm Email Address</button>
                                         </div>
                                         </form>
                                     </div>

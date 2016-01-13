@@ -26,7 +26,6 @@ import org.workcast.mendocino.Mel;
 public class EmailHandler {
 
     private Vector<String> existingIds = null;
-    String overrideAddress;
     String smtpUser;
     String smtpPwd;
     String protocol;
@@ -53,7 +52,6 @@ public class EmailHandler {
 
     public EmailHandler(ServletContext sc, Properties props) throws Exception {
 
-        overrideAddress = defProp(props, "overrideAddress", null);
         smtpUser = requiredProp(props, "mail.smtp.user");
         smtpPwd = requiredProp(props, "mail.smtp.password");
         protocol = defProp(props, "mail.transport.protocol", "smtp");
@@ -82,19 +80,10 @@ public class EmailHandler {
         pattern = Pattern.compile(EMAIL_PATTERN);
     }
 
-    public void sendEmail(String emailId, int reqType, String magicNumber) throws Exception {
+    public void sendVerifyEmail(String emailId, String magicNumber, String app) throws Exception {
         Transport transport = null;
         try {
 
-            /*
-            Properties props = new Properties();
-            props.put("mail.smtp.auth", smtpAuth);
-            props.put("mail.smtp.starttls.enable", "true");
-            props.put("mail.smtp.host", smtpHost);
-            props.put("mail.smtp.port", smtpPort);
-            props.put("mail.smtp.user", smtpUser);
-            props.put("mail.smtp.password", smtpPwd);
-            */
             String option = "Email Address Confirmation Message";
 
             Authenticator authenticator = new MyAuthenticator(savedProps);
@@ -105,20 +94,17 @@ public class EmailHandler {
 
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(smtpFrom));
-            if (overrideAddress != null) {
-                message.setRecipients(Message.RecipientType.TO,
-                        InternetAddress.parse(overrideAddress));
-            }
-            else {
-                message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailId));
-            }
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailId));
 
             message.setSubject(option);
 
             String registerAddr = OpenIDHandler.baseURL
                     + "?openid.mode=validateKeyAction&registerEmail="
-                    + URLEncoder.encode(emailId, "UTF-8") + "&registeredEmailKey="
-                    + URLEncoder.encode(magicNumber, "UTF-8");
+                    + URLEncoder.encode(emailId, "UTF-8") 
+                    + "&registeredEmailKey="
+                    + URLEncoder.encode(magicNumber, "UTF-8")
+		            + "&app="
+		            + URLEncoder.encode(app, "UTF-8");
             StringWriter clone = new StringWriter();
             clone.write("<html><body>\n");
             clone.write("<p>This message was sent to verify your email address: ");
@@ -158,6 +144,71 @@ public class EmailHandler {
             }
         }
     }
+    
+    public void sendInviteEmail(String emailId, String body, String magicNumber, String app) throws Exception {
+        Transport transport = null;
+        try {
+
+            String subject = "Invitation to Collaborate";
+
+            Authenticator authenticator = new MyAuthenticator(savedProps);
+            Session session = Session.getInstance(savedProps, authenticator);
+            session.setDebug(true);
+            transport = session.getTransport();
+            transport.connect();
+
+            Message message = new MimeMessage(session);
+            message.setFrom(new InternetAddress(smtpFrom));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailId));
+
+            message.setSubject(subject);
+
+            String registerAddr = OpenIDHandler.baseURL
+                    + "?openid.mode=validateKeyAction&registerEmail="
+                    + URLEncoder.encode(emailId, "UTF-8") 
+                    + "&registeredEmailKey="
+                    + URLEncoder.encode(magicNumber, "UTF-8")
+		            + "&app="
+		            + URLEncoder.encode(app, "UTF-8");
+            StringWriter clone = new StringWriter();
+            clone.write("<html><body>\n");
+            clone.write("<p>");
+            OpenIDHandler.writeHtml(clone, body);
+            clone.write("</p>\n");
+            clone.write("<p>Click on <a href=\"");
+            OpenIDHandler.writeHtml(clone, registerAddr);
+            clone.write("\">this link</a> or copy the following address into your browser:</p>");
+            clone.write("<p>");
+            OpenIDHandler.writeHtml(clone, registerAddr);
+            clone.write("</p>");
+            clone.write("<p>Your confirmation key is <b>");
+            clone.write(magicNumber);
+            clone.write("</b>.</p>");
+            clone.write("<p>If you don't know the persion who made the request, and you are not ");
+            clone.write("aware of the project you can safely ignore this message.  It is possible ");
+            clone.write("that someone entered your email address by accident.</p>");
+            clone.write("</body></html>");
+
+            MimeBodyPart textPart = new MimeBodyPart();
+            textPart.setContent(clone.toString(), "text/html;encoding=UTF-8");
+
+            Multipart mp = new MimeMultipart();
+            mp.addBodyPart(textPart);
+            message.setContent(mp);
+            transport.sendMessage(message, message.getAllRecipients());
+
+        }
+        catch (Exception e) {
+            throw new RuntimeException("Unable to send an email message for (" + emailId + ")", e);
+        } finally {
+            if (transport != null) {
+                try {
+                    transport.close();
+                } catch (Exception ce) { /* ignore this exception */
+                }
+            }
+        }
+    }    
 
     private static String defProp(Properties props, String key, String defVal) throws Exception {
         String val = props.getProperty(key);

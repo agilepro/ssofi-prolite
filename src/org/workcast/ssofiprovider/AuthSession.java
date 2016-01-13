@@ -29,10 +29,11 @@ public class AuthSession implements Serializable {
     Exception errMsg = null;
 
     // this is where the entire exchange will return to once done logging in
-    String return_to;
+    // by default, return to the main page of the ID server
+    String return_to = OpenIDHandler.baseURL;
 
     // this is the originally passed identity to VERIFY
-    String identity;
+    String presumedId;
 
     // this is the verified identity that the user is logged in as
     // null when use not logged in.
@@ -42,14 +43,11 @@ public class AuthSession implements Serializable {
     // null when use not logged in.
     private String authName;
 
-    // FOLLOWING THREE FIELDS FOR REGISTRATION OR RESETTING PASSWORD
+    // FOLLOWING TWO FIELDS FOR REGISTRATION OR RESETTING PASSWORD
     // This is the email address supplied by the user and tested
-    // for registering a new email address.
+    // for registering a new email address.  We keep this here
+    // so it can be included in the UI template.
     String regEmail;
-
-    // This is the generated magic number which the user must receive
-    // in the email address, and supply to prove that it was received
-    String regMagicNo;
 
     // When the user has successfully confirmed receipt of the magic
     // number at the specified email address and entered it.
@@ -107,15 +105,16 @@ public class AuthSession implements Serializable {
     public void reinit(HttpServletRequest request) {
         paramlist = new ParameterList(request.getParameterMap());
         return_to = request.getParameter("openid.return_to");
-        identity = request.getParameter("openid.identity");
+        presumedId = request.getParameter("openid.identity");
+        if (presumedId==null) {
+        	//get it from the cookie
+        }
         errMsg = null;
     }
 
-    public String startRegistration(String email) {
-        regEmail = email;
-        regMagicNo = IdGenerator.createMagicNumber();
+    public void startRegistration(String email) {
+    	regEmail = email;
         regEmailConfirmed = false;
-        return regMagicNo;
     }
 
     public void saveParameterList(HttpServletRequest request) {
@@ -141,11 +140,10 @@ public class AuthSession implements Serializable {
         myCopy.errMsg = this.errMsg;
         myCopy.authIdentity = this.authIdentity;
         myCopy.authName = this.authName;
-        myCopy.identity = this.identity;
+        myCopy.presumedId = this.presumedId;
         myCopy.paramlist = this.paramlist;
         myCopy.regEmail = this.regEmail;
         myCopy.regEmailConfirmed = this.regEmailConfirmed;
-        myCopy.regMagicNo = this.regMagicNo;
         myCopy.return_to = this.return_to;
         myCopy.savedParams = this.savedParams;
         myCopy.quickLogin = this.quickLogin;
@@ -225,9 +223,9 @@ public class AuthSession implements Serializable {
         JSONObject persistable = new JSONObject();
         persistable.put("authIdentity", authIdentity);
         persistable.put("authName",     authName);
+        persistable.put("presumedId",   presumedId);
         persistable.put("regEmail",     regEmail);
-        persistable.put("regMagicNo",   regMagicNo);
-        persistable.put("identity",     identity);
+        persistable.put("return_to",    return_to);
 
         FileOutputStream fileOut = new FileOutputStream(outputFile);
         ObjectOutputStream out = new ObjectOutputStream(fileOut);
@@ -246,9 +244,9 @@ public class AuthSession implements Serializable {
         AuthSession as = new AuthSession();
         as.authIdentity = restored.getString("authIdentity");
         as.authName = restored.getString("authName");
+        as.presumedId = restored.getString("presumedId");
         as.regEmail = restored.getString("regEmail");
-        as.regMagicNo = restored.getString("regMagicNo");
-        as.identity = restored.getString("identity");
+        as.return_to = restored.getString("return_to");
         return as;
     }
 }

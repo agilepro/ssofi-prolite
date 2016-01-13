@@ -36,7 +36,6 @@ import org.openid4java.message.ax.AxMessage;
 import org.openid4java.message.ax.FetchRequest;
 import org.openid4java.message.ax.FetchResponse;
 import org.openid4java.server.ServerManager;
-import org.workcast.json.JSONArray;
 import org.workcast.json.JSONObject;
 import org.workcast.json.JSONTokener;
 import org.workcast.streams.SSLPatch;
@@ -78,7 +77,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private static SessionHandler sHand = null;
     private static EmailHandler emailHandler = null;
     private static SecurityHandler securityHandler = null;
-
+    private static EmailTokenManager tokenManager = null;
+    
     private static int sessionDurationSeconds = 2500000;   //30 days
 
     HttpServletRequest request;
@@ -214,6 +214,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             Properties emailConfigSettings = propEmail;
             emailHandler = new EmailHandler(sc, emailConfigSettings);
 
+            File emailTokenFile = new File(webInfPath, "EmailTokens.json");
+            tokenManager = new EmailTokenManager(emailTokenFile);
+
             manager = new ServerManager();
 
 
@@ -284,6 +287,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
             aSession = sHand.getAuthSession(sessionId);
+            if (aSession.presumedId == null ||  aSession.presumedId.length()==0) {
+            	//if the session does not have an assumed user id in it, then 
+            	//get the last good ID from the cookie.
+            	aSession.presumedId = findCookieValue("SSOFIUser");
+            }
+
             doGetWithSession();
             // doGetWithSession never throws an exception, which means that this
             // is being saved whether an error occurs or not! That is the right
@@ -312,7 +321,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     public void doPost() {
         try {
-            System.out.println("SSOFI - received a POST: "+request.getRequestURI());
+            System.out.println("SSOFI POST: "+request.getRequestURI());
 
             String postType = request.getHeader("Content-Type");
             if (postType!=null && (postType.toLowerCase().startsWith("text/plain")
@@ -381,8 +390,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             String mode = defParam("openid.mode", "display");
-            System.out.println("SSOFI: " + request.getRequestURL().toString().trim() + " mode="
-                    + mode + "  isDisplaying="+isDisplaying + "  loggedIn="+aSession.loggedIn());
+            System.out.println("SSOFI: " + request.getRequestURL().toString().trim() 
+            		+ " mode=" + mode
+            		+ "  isDisplaying="+isDisplaying 
+            		+ "  loggedIn="+aSession.loggedIn());
 
 
             if (requestedIdentity!=null) {
@@ -400,7 +411,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 // new session is started every access, causing a flood of sessions, each potentially
                 // lasting for a long time (a month) so persisting these sessions would be a waste.
                 saveSession = false;
-                handleAPICommand(mode);
+                APIHelper theApi = new APIHelper(aSession, postedObject, response, emailHandler, tokenManager);
+                destroySession = theApi.handleAPICommand(mode);
+                if (destroySession) {
+                	//clear out any existing session id
+                	createSSOFISessionId();
+                }
                 return;
             }
 
@@ -431,16 +447,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 modeRegisterNewAction();
             }
             else if ("confirmationKey".equals(mode)) {
-                if (aSession.regEmail==null) {
-                    aSession.errMsg = new Exception("Sorry, it has been too long and your session has been lost.");
-                    redirectToIdentityPage(defParam("display-id", ""));
-                }
-                else {
-                    // this is the mode that displays prompt to change id
-                    // which then posts to 'validateKeyAction'
-                    displayInfo = authStyle.getOrCreateUser(aSession.regEmail);
-                    streamTemplate("enterConfirmationKey");
-                }
+            	modeConfirmationKey();
             }
             else if ("validateKeyAction".equals(mode)) {
                 modeValidateKeyAction();
@@ -457,6 +464,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 // this takes the action of logging the user in, and returning
                 // if all OK
                 String enteredId = reqParam("entered-id");
+                aSession.presumedId = enteredId;
                 String password = reqParam("password");
                 boolean flag = authStyle.authenticateUser(enteredId, password);
                 if (flag) {
@@ -579,107 +587,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
 
-    private void handleAPICommand(String mode) throws Exception {
-        try {
-            System.out.println("SSOFI LAuth request: "+mode);
-            //do not need to be logged in to verify a token
-            if ("apiVerify".equals(mode)) {
-                if (postedObject==null) {
-                    throw new Exception("Received a request for verifying a token without any posted JSON information");
-                }
-                String identity  = postedObject.getString("userId");
-                String challenge = postedObject.getString("challenge");
-                String token     = postedObject.getString("token");
-                AuthSession auth = AuthSession.verifyToken(identity, challenge, token);
-                if (auth!=null) {
-                    JSONObject responseObj = new JSONObject();
-                    responseObj.put("userId", auth.loggedUserId());
-                    String name = auth.loggedUserName();
-                    responseObj.put("userName", name);
-                    if (name==null || name.length()==0) {
-                        responseObj.put("userName", "User: "+auth.loggedUserId());
-                    }
-                    responseObj.put("challenge", challenge);  //do we need this?
-                    responseObj.put("token", token);          //do we need this?
-                    responseObj.put("verified", true);
-                    responseObj.put("msg", "Token matches with the challenge");
-                    sendJSON(200, responseObj);
-                }
-                else {
-                    postedObject.put("msg", "failure, the token does not match");
-                    postedObject.remove("userId");
-                    postedObject.remove("userName");
-                    postedObject.put("verified", false);
-                    sendJSON(200, postedObject);
-                }
-                return;
-            }
-            if ("apiLogout".equals(mode)) {
-                //whether you are logged in or not, you get the same response
-                //from this command:  you are now logged out.
-                aSession.logout();
-                destroySession = true;
-                //set the cookie, but otherwise ignore the new sessionid
-                createSSOFISessionId();
-                JSONObject jo = new JSONObject();
-                jo.put("msg", "User logged out");
-                sendJSON(200, jo);
-                return;
-            }
-            if (!aSession.loggedIn()) {
-                JSONObject jo = new JSONObject();
-                jo.put("msg", "User not found, not authenticated");
-                sendJSON(200, jo);
-                return;
-            }
-            if ("apiWho".equals(mode)) {
-                JSONObject jo = new JSONObject();
-                jo.put("msg", "User logged in");
-                jo.put("userId",   aSession.loggedUserId());
-                jo.put("userName", aSession.loggedUserName());
-                sendJSON(200, jo);
-                return;
-            }
-            if ("apiGenerate".equals(mode)) {
-                if (postedObject==null) {
-                    throw new Exception("Received a request for generating a token without any posted JSON information: content type: "+request.getHeader("Content-Type"));
-                }
-                String challenge = postedObject.getString("challenge");
-                String token = aSession.generateToken(challenge);
-                postedObject.put("userId",   aSession.loggedUserId());
-                postedObject.put("userName", aSession.loggedUserName());
-                postedObject.put("token",    token);
-                sendJSON(200, postedObject);
-                return;
-            }
-            throw new Exception("Authentication API can not understand mode "+mode);
-        }
-        catch(Exception e) {
-            System.out.println("SSOFI LAuth EXCEPTION: "+e.toString());
-            e.printStackTrace(System.out);
-            JSONObject jo = new JSONObject();
-            JSONArray msgs = new JSONArray();
-            Throwable t = e;
-            while (t!=null) {
-                msgs.put(t.toString());
-                t = t.getCause();
-            }
-            jo.put("exception", msgs);
-            sendJSON(200, jo);
-        }
-    }
-
-    private void sendJSON(int code, JSONObject jo) throws Exception {
-        response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(code);
-        Writer out = response.getWriter();
-        jo.write(out);
-        out.flush();
-        java.io.StringWriter sw = new java.io.StringWriter();
-        jo.write(sw, 2, 2);
-    }
-
-
 
     /**
      * Root page is the page that is displayed when no user is specified. This
@@ -711,7 +618,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     private void modeChangeIdView() throws Exception {
-        requestedIdentity = new AddressParser(aSession.identity);
+        requestedIdentity = new AddressParser(aSession.presumedId);
         streamTemplate("promptedChangeId");
     }
 
@@ -779,6 +686,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     private void returnLoginSuccess() throws Exception {
 
+        if (aSession.return_to != null) {
+            response.sendRedirect(aSession.return_to);
+            return;
+        }
+        
         // it could be that the user have been sitting there for a long time,
         // and the session has completely timed out. If so, handle gracefully as
         // possible by just redirecting to the root of the application.
@@ -983,29 +895,60 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
 
         aSession.savedParams.clear();
+        String magicNumber = tokenManager.generateEmailToken(userId);
         aSession.startRegistration(userId);
-        System.out.println("SSOFI: Email Registration regMagicNo :" + aSession.regMagicNo + ":");
-        emailHandler.sendEmail(userId, 2, aSession.regMagicNo);
+        emailHandler.sendVerifyEmail(userId, magicNumber, aSession.return_to);
         response.sendRedirect("?openid.mode=confirmationKey");
     }
 
+	private void modeConfirmationKey() throws Exception {
+	    if (aSession.regEmail==null) {
+	        aSession.errMsg = new Exception("Sorry, it has been too long and your session has been lost.");
+	        redirectToIdentityPage(defParam("display-id", ""));
+	    }
+	    else {
+	        // this is the mode that displays prompt to change id
+	        // which then posts to 'validateKeyAction'
+	        displayInfo = authStyle.getOrCreateUser(aSession.regEmail);
+	        streamTemplate("enterConfirmationKey");
+	    }
+	}
+    
+	/*
+	 * The email is  
+	 * {baseURL}?openid.mode=validateKeyAction&registerEmail={emailId}&registeredEmailKey={magicNumber}
+	 * so if you get both of those, and they match, then you have validated
+	 * a particular email address.  Who does it belong to?  we don't care, but probably you need
+	 * to start a new session if this user has logged in with a different email address. 
+	 */
     private void modeValidateKeyAction() throws Exception {
         String registerEmail = reqParam("registerEmail");
-        if (!registerEmail.equals(aSession.regEmail)) {
-            aSession.errMsg = new Exception(
-                    "Something is wrong, please start over.  Current implementation requires that you keep the browser open, that you enter the security key into the same browser requested from, and that you do this before requesting again.");
-            response.sendRedirect("?openid.mode=confirmationKey");
-            return;
-        }
         String confirmKey = reqParam("registeredEmailKey");
-        if (!confirmKey.equals(aSession.regMagicNo)) {
+        String app = defParam("app", null);
+        
+        boolean valid = tokenManager.validateAndConsume(registerEmail, confirmKey);
+        
+        if (!valid) {
             aSession.errMsg = new Exception(
-                    "Confirmation Key entered is incorrect for the current attempt.  Make sure you are using the correct email message.");
+                    "Confirmation Key supplied does not match our records.  Confirmation keys can only be used once.  "
+            		+"Make sure you are using the correct email message, or request a new email message with key.");
             response.sendRedirect("?openid.mode=confirmationKey");
             return;
         }
-        aSession.regEmailConfirmed = true;
-        response.sendRedirect("?openid.mode=registrationForm");
+        
+        if (valid) {
+        	//ok, they win the prize, this is a valid link, a valid match between the email address
+        	//and the magic number.  They have this email address.  We can NOW consider them logged in.
+        	//If they had been logged in as someone else, cancel that, and consider them logged in here
+        	aSession.regEmailConfirmed = true;
+	        aSession.regEmail = registerEmail;
+	        if (app!=null) {
+	        	aSession.return_to = app;
+	        }
+        	setLogin(registerEmail);
+
+	        response.sendRedirect("?openid.mode=registrationForm");
+        }
     }
 
     private void modeOfficialOpenIDRequest(String mode) throws Exception {
@@ -1020,9 +963,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            requestedIdentity = new AddressParser(aSession.identity);
+            requestedIdentity = new AddressParser(aSession.presumedId);
 
-            if (!aSession.identity.equals(loggedOpenId) && !requestedIdentity.isRoot()) {
+            if (!aSession.presumedId.equals(loggedOpenId) && !requestedIdentity.isRoot()) {
                 response.sendRedirect("?openid.mode=changeIdView");
                 return;
             }
@@ -1082,8 +1025,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return;
         }
 
-        Message resMsg = manager.authResponse(aSession.paramlist, aSession.identity,
-                aSession.identity, false);
+        Message resMsg = manager.authResponse(aSession.paramlist, aSession.presumedId,
+                aSession.presumedId, false);
 
         String urlTail = resMsg.wwwFormEncoding();
         int questionPos = aSession.return_to.indexOf("?");
@@ -1206,9 +1149,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 if (displayInfo != null && displayInfo.exists) {
                     writeHtml(out, displayInfo.fullName);
                 }
-                else {
-                    writeHtml(out, "- unknown user - ");
-                }
             }
             else if ("emailAddress".equals(tokenName)) {
                 if (displayInfo != null && displayInfo.exists) {
@@ -1251,11 +1191,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 }
                 else {
                 	//if no requested user id, then write out the Cookie value
+                	/*
                 	System.out.append("SSOFI: NO requested ID, so looking up the cookie");
             		String lastTimeId = findCookieValue("SSOFIUser");
             		if (lastTimeId!=null) {
             			writeHtml(out, lastTimeId);
             		}
+            		*/
+                	writeHtml(out, aSession.presumedId);
                 }
             }
             else if ("reqOpenId".equals(tokenName)) {
