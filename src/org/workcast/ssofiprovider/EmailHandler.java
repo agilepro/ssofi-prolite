@@ -3,6 +3,7 @@ package org.workcast.ssofiprovider;
 import java.io.File;
 import java.io.StringWriter;
 import java.net.URLEncoder;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Vector;
@@ -22,6 +23,7 @@ import javax.mail.internet.MimeMultipart;
 import javax.servlet.ServletContext;
 
 import org.workcast.mendocino.Mel;
+import org.workcast.streams.HTMLWriter;
 
 public class EmailHandler {
 
@@ -94,13 +96,14 @@ public class EmailHandler {
 
             Message message = new MimeMessage(session);
             message.setFrom(new InternetAddress(smtpFrom));
+            message.setSentDate(new Date());
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailId));
 
             message.setSubject(option);
 
             String registerAddr = OpenIDHandler.baseURL
                     + "?openid.mode=validateKeyAction&registerEmail="
-                    + URLEncoder.encode(emailId, "UTF-8") 
+                    + URLEncoder.encode(emailId, "UTF-8")
                     + "&registeredEmailKey="
                     + URLEncoder.encode(magicNumber, "UTF-8")
 		            + "&app="
@@ -108,13 +111,13 @@ public class EmailHandler {
             StringWriter clone = new StringWriter();
             clone.write("<html><body>\n");
             clone.write("<p>This message was sent to verify your email address: ");
-            OpenIDHandler.writeHtml(clone, emailId);
+            HTMLWriter.writeHtml(clone, emailId);
             clone.write(".</p>\n");
             clone.write("<p>Click on <a href=\"");
-            OpenIDHandler.writeHtml(clone, registerAddr);
+            HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("\">this link</a> or copy the following address into your browser:</p>");
             clone.write("<p>");
-            OpenIDHandler.writeHtml(clone, registerAddr);
+            HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("</p>");
             clone.write("<p>Your confirmation key is <b>");
             clone.write(magicNumber);
@@ -144,8 +147,8 @@ public class EmailHandler {
             }
         }
     }
-    
-    public void sendInviteEmail(String emailId, String body, String magicNumber, String app) throws Exception {
+
+    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String magicNumber, String app) throws Exception {
         Transport transport = null;
         try {
 
@@ -158,14 +161,15 @@ public class EmailHandler {
             transport.connect();
 
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(smtpFrom));
+            message.setFrom(new InternetAddress(fromEmail, fromName));
+            message.setSentDate(new Date());
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailId));
 
             message.setSubject(subject);
 
             String registerAddr = OpenIDHandler.baseURL
                     + "?openid.mode=validateKeyAction&registerEmail="
-                    + URLEncoder.encode(emailId, "UTF-8") 
+                    + URLEncoder.encode(emailId, "UTF-8")
                     + "&registeredEmailKey="
                     + URLEncoder.encode(magicNumber, "UTF-8")
 		            + "&app="
@@ -173,13 +177,13 @@ public class EmailHandler {
             StringWriter clone = new StringWriter();
             clone.write("<html><body>\n");
             clone.write("<p>");
-            OpenIDHandler.writeHtml(clone, body);
+            HTMLWriter.writeHtmlWithLines(clone, body);
             clone.write("</p>\n");
             clone.write("<p>Click on <a href=\"");
-            OpenIDHandler.writeHtml(clone, registerAddr);
+            HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("\">this link</a> or copy the following address into your browser:</p>");
             clone.write("<p>");
-            OpenIDHandler.writeHtml(clone, registerAddr);
+            HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("</p>");
             clone.write("<p>Your confirmation key is <b>");
             clone.write(magicNumber);
@@ -208,7 +212,7 @@ public class EmailHandler {
                 }
             }
         }
-    }    
+    }
 
     private static String defProp(Properties props, String key, String defVal) throws Exception {
         String val = props.getProperty(key);

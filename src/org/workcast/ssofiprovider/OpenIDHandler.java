@@ -38,6 +38,7 @@ import org.openid4java.message.ax.FetchResponse;
 import org.openid4java.server.ServerManager;
 import org.workcast.json.JSONObject;
 import org.workcast.json.JSONTokener;
+import org.workcast.streams.HTMLWriter;
 import org.workcast.streams.SSLPatch;
 
 /**
@@ -78,7 +79,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private static EmailHandler emailHandler = null;
     private static SecurityHandler securityHandler = null;
     private static EmailTokenManager tokenManager = null;
-    
+
     private static int sessionDurationSeconds = 2500000;   //30 days
 
     HttpServletRequest request;
@@ -288,7 +289,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             aSession = sHand.getAuthSession(sessionId);
             if (aSession.presumedId == null ||  aSession.presumedId.length()==0) {
-            	//if the session does not have an assumed user id in it, then 
+            	//if the session does not have an assumed user id in it, then
             	//get the last good ID from the cookie.
             	aSession.presumedId = findCookieValue("SSOFIUser");
             }
@@ -390,9 +391,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             String mode = defParam("openid.mode", "display");
-            System.out.println("SSOFI: " + request.getRequestURL().toString().trim() 
+            System.out.println("SSOFI: " + request.getRequestURL().toString().trim()
             		+ " mode=" + mode
-            		+ "  isDisplaying="+isDisplaying 
+            		+ "  isDisplaying="+isDisplaying
             		+ "  loggedIn="+aSession.loggedIn());
 
 
@@ -690,7 +691,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             response.sendRedirect(aSession.return_to);
             return;
         }
-        
+
         // it could be that the user have been sitting there for a long time,
         // and the session has completely timed out. If so, handle gracefully as
         // possible by just redirecting to the root of the application.
@@ -913,21 +914,21 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 	        streamTemplate("enterConfirmationKey");
 	    }
 	}
-    
+
 	/*
-	 * The email is  
+	 * The email is
 	 * {baseURL}?openid.mode=validateKeyAction&registerEmail={emailId}&registeredEmailKey={magicNumber}
 	 * so if you get both of those, and they match, then you have validated
 	 * a particular email address.  Who does it belong to?  we don't care, but probably you need
-	 * to start a new session if this user has logged in with a different email address. 
+	 * to start a new session if this user has logged in with a different email address.
 	 */
     private void modeValidateKeyAction() throws Exception {
         String registerEmail = reqParam("registerEmail");
         String confirmKey = reqParam("registeredEmailKey");
         String app = defParam("app", null);
-        
+
         boolean valid = tokenManager.validateAndConsume(registerEmail, confirmKey);
-        
+
         if (!valid) {
             aSession.errMsg = new Exception(
                     "Confirmation Key supplied does not match our records.  Confirmation keys can only be used once.  "
@@ -935,7 +936,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             response.sendRedirect("?openid.mode=confirmationKey");
             return;
         }
-        
+
         if (valid) {
         	//ok, they win the prize, this is a valid link, a valid match between the email address
         	//and the magic number.  They have this email address.  We can NOW consider them logged in.
@@ -1143,33 +1144,33 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void writeTokenValue(Writer out, String tokenName) throws Exception {
         try {
             if ("thisPage".equals(tokenName)) {
-                writeHtml(out, baseURL);
+                HTMLWriter.writeHtml(out, baseURL);
             }
             else if ("fullName".equals(tokenName)) {
                 if (displayInfo != null && displayInfo.exists) {
-                    writeHtml(out, displayInfo.fullName);
+                    HTMLWriter.writeHtml(out, displayInfo.fullName);
                 }
             }
             else if ("emailAddress".equals(tokenName)) {
                 if (displayInfo != null && displayInfo.exists) {
-                    writeHtml(out, displayInfo.emailAddress);
+                    HTMLWriter.writeHtml(out, displayInfo.emailAddress);
                 }
             }
             else if ("id".equals(tokenName)) {
                 if (displayInfo != null && displayInfo.exists) {
-                    writeHtml(out, displayInfo.key);
+                    HTMLWriter.writeHtml(out, displayInfo.key);
                 }
             }
             else if ("loggedUserId".equals(tokenName)) {
                 if (aSession.loggedIn()) {
-                    writeHtml(out, aSession.loggedUserId());
+                    HTMLWriter.writeHtml(out, aSession.loggedUserId());
                 }
             }
             else if ("loggedName".equals(tokenName)) {
                 if (aSession.loggedIn()) {
                     UserInformation userInfo = authStyle.getOrCreateUser(aSession.loggedUserId());
                     if (userInfo.exists) {
-                        writeHtml(out, userInfo.fullName);
+                        HTMLWriter.writeHtml(out, userInfo.fullName);
                     }
                 }
             }
@@ -1177,17 +1178,17 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 if (aSession.loggedIn()) {
                     UserInformation userInfo = authStyle.getOrCreateUser(aSession.loggedUserId());
                     if (userInfo.exists) {
-                        writeHtml(out, userInfo.key);
+                        HTMLWriter.writeHtml(out, userInfo.key);
                     }
                 }
             }
             else if ("loggedOpenId".equals(tokenName)) {
-                writeHtml(out, loggedOpenId);
+                HTMLWriter.writeHtml(out, loggedOpenId);
             }
             else if ("reqUserId".equals(tokenName)) {
                 if (requestedIdentity != null) {
                 	System.out.append("SSOFI: displaying requested id: "+requestedIdentity.getUserId());
-                    writeHtml(out, requestedIdentity.getUserId());
+                	HTMLWriter.writeHtml(out, requestedIdentity.getUserId());
                 }
                 else {
                 	//if no requested user id, then write out the Cookie value
@@ -1198,31 +1199,31 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             			writeHtml(out, lastTimeId);
             		}
             		*/
-                	writeHtml(out, aSession.presumedId);
+                    HTMLWriter.writeHtml(out, aSession.presumedId);
                 }
             }
             else if ("reqOpenId".equals(tokenName)) {
                 if (requestedIdentity != null) {
-                    writeHtml(out, requestedIdentity.getOpenId());
+                    HTMLWriter.writeHtml(out, requestedIdentity.getOpenId());
                 }
             }
             else if ("addrOpenId".equals(tokenName)) {
                 if (addressedUserId != null) {
-                    writeHtml(out, addressedUserId);
+                    HTMLWriter.writeHtml(out, addressedUserId);
                 }
             }
             else if ("addrId".equals(tokenName)) {
                 if (addressedUserId != null) {
-                    writeHtml(out, addressedUserId);
+                    HTMLWriter.writeHtml(out, addressedUserId);
                 }
             }
             else if ("registeredEmailId".equals(tokenName)) {
                 if (aSession != null) {
-                    writeHtml(out, aSession.regEmail);
+                    HTMLWriter.writeHtml(out, aSession.regEmail);
                 }
             }
             else if ("root".equals(tokenName)) {
-                writeHtml(out, baseURL);
+                HTMLWriter.writeHtml(out, baseURL);
             }
             else if ("Note".equals(tokenName)) {
                 String note = "";
@@ -1237,23 +1238,23 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                             + ", or if you have forgotten your password, you should use the \"Forgot Your Password\" link "
                             + "to reset your password.";
                 }
-                writeHtml(out, note);
+                HTMLWriter.writeHtml(out, note);
             }
             else if ("go".equals(tokenName)) {
-                writeHtml(out, paramGo);
+                HTMLWriter.writeHtml(out, paramGo);
             }
             else if ("return_to".equals(tokenName)) {
 
-                writeHtml(out, aSession.return_to);
+                HTMLWriter.writeHtml(out, aSession.return_to);
             }
             else if ("return_to_app_name".equals(tokenName)) {
                 String return_to_app_name = aSession.return_to.substring(aSession.return_to
                         .lastIndexOf("/") + 1);
-                writeHtml(out, return_to_app_name);
+                HTMLWriter.writeHtml(out, return_to_app_name);
             }
             else if ("assoc_handle".equals(tokenName)) {
 
-                writeHtml(out, assoc_handle);
+                HTMLWriter.writeHtml(out, assoc_handle);
             }
             else if ("serverError".equals(tokenName)) {
                 writeHtmlException(out, initFailure);
@@ -1272,24 +1273,18 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 String pinputEmail = aSession.getSavedParameter("registerEmail");
                 if (pinputEmail != null) {
                     String tokValue = "value=" + pinputEmail;
-                    writeHtml(out, tokValue);
+                    HTMLWriter.writeHtml(out, tokValue);
                 }
             }
             else if ("json".equals(tokenName)) {
 
             }
             else {
-                writeHtml(out, "<" + tokenName + ">");
+                HTMLWriter.writeHtml(out, "<" + tokenName + ">");
             }
         }
         catch (Exception e) {
             throw new Exception("Unable to supply value for token: "+tokenName, e);
-        }
-    }
-
-    public static void writeHtml(Writer w, String t) throws Exception {
-        if (t!=null) {
-            TemplateStreamer.writeHtml(w, t);
         }
     }
 
@@ -1307,7 +1302,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             if (needBreak) {
                 out.write("<br/> \n ");
             }
-            writeHtml(out, msg);
+            HTMLWriter.writeHtml(out, msg);
             t = t.getCause();
             needBreak = true;
         }
@@ -1328,12 +1323,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         int slashPos = urlValue.indexOf("/");
         while (slashPos >= 0) {
 
-            writeHtml(out, urlValue.substring(startPos, slashPos));
+            HTMLWriter.writeHtml(out, urlValue.substring(startPos, slashPos));
             out.write(" / ");
             startPos = slashPos + 1;
             slashPos = urlValue.indexOf("/", startPos);
         }
-        writeHtml(out, urlValue.substring(startPos));
+        HTMLWriter.writeHtml(out, urlValue.substring(startPos));
     }
 
     public String getSSOFISessionId() {

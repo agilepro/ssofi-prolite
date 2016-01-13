@@ -8,15 +8,15 @@ import org.workcast.json.JSONArray;
 import org.workcast.json.JSONObject;
 
 public class APIHelper {
-	
+
 	private JSONObject postedObject;
 	private AuthSession aSession;
 	private HttpServletResponse response;
 	private EmailHandler emailHandler = null;
 	private EmailTokenManager tokenManager;
 	boolean destroySession = false;
-	
-	public APIHelper(AuthSession _aSession, JSONObject _postedObject, HttpServletResponse _response, 
+
+	public APIHelper(AuthSession _aSession, JSONObject _postedObject, HttpServletResponse _response,
 			EmailHandler _emailHandler, EmailTokenManager _tokenManager) {
 		aSession     = _aSession;
 		postedObject = _postedObject;
@@ -44,9 +44,9 @@ public class APIHelper {
             sendJSON(200, jo);
         }
         return destroySession;
-    }	
-	
-    
+    }
+
+
     private JSONObject getResponse(String mode) throws Exception {
         System.out.println("SSOFI LAuth request: "+mode);
         //do not need to be logged in to verify a token
@@ -127,9 +127,9 @@ public class APIHelper {
             okResponse.put("result", "ok");
             return okResponse;
         }
-        throw new Exception("Authentication API can not understand mode "+mode);    	
+        throw new Exception("Authentication API can not understand mode "+mode);
     }
-    
+
 
     private void sendInviteEmail(String userId, String userName, String msg, String returnUrl) throws Exception {
         if (!emailHandler.validate(userId)) {
@@ -137,10 +137,10 @@ public class APIHelper {
                     + ") does not appear to be a valid email address.");
         }
         String magicNumber = tokenManager.generateEmailToken(userId);
-        emailHandler.sendInviteEmail(userId, msg, magicNumber, returnUrl);
+        emailHandler.sendInviteEmail(aSession.loggedUserId(), aSession.loggedUserName(), userId, msg, magicNumber, returnUrl);
     }
-        
-    
+
+
     private void sendJSON(int code, JSONObject jo) throws Exception {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(code);
@@ -148,5 +148,5 @@ public class APIHelper {
         jo.write(out,2,2);
         out.flush();
     }
-    
+
 }
