@@ -16,7 +16,9 @@
  *
  * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
  * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
- * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi, Todd Palmer, Tom Yang, 
+ *
+ * justAnonymous.htm
  * -->
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
@@ -26,94 +28,32 @@
         <link rel="openid.server" href="{{root}}" />
         <link rel="openid.delegate" href="{{root}}" />
         <link rel="openid2.provider" href="{{root}}" />
-        <style>
-            body {
-                background-color:#013a5f;
-                font-family:Arial,Helvetica,Verdana,sans-serif;
-                font-size:14px;
-                color:#666666;
-                margin:0px;
-                padding:0px;
-            }
-            a:link, a:visited, a:active{
-                text-decoration:none;
-                color:#5377AC;
-            }
-            a:hover{
-                text-decoration:underline;
-            }
-            #loginWrapper {
-                margin:100px auto 0px auto;
-                width:548px;
-                position:relative;
-                background-color:#fff;
-            }
-            .loginWrapperContentArea{
-                padding:20px 20px;
-            }
-            .loginSpacing{
-                padding:20px 70px;
-                line-height:20px;
-                color:#000;
-            }
-            .inputGeneral350{
-                height:20px;
-                line-height:20px;
-                padding-left:5px;
-                width:350px;
-                font-size:12px;
-                color:#666;
-                }
-            .inputGeneral300{
-                height:20px;
-                line-height:20px;
-                padding-left:5px;
-                width:274px;
-                font-size:12px;
-                color:#666;
-                }
-            .registerArea{
-                border-top:1px solid #dadada;
-                padding:10px 30px;
-                text-align:right;
-            }
-            .btnGreen{
-                background-color:#81c72e;
-                height:26px;
-                line-height:26px;
-                padding:0px 15px 0px 15px;
-                *padding:0px 10px 0px 10px;
-                border:0px solid #81c72e;
-                color:#ffffff;
-                cursor:pointer
-            }
-            .errorArea{
-                color:#F00;
-            }
-            td.noteSection{
-                padding:10px 30px;
-                font-style:italic;
-                font-size:11px;
-            }
-        </style>
+        <link rel="stylesheet" href="$/bootstrap.min.css">
+        <script src="$/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="$/fujitsu.css">
     </head>
-    <body onload="document.getElementById('entered-id').focus();">
+    <body onload="document.getElementById('entered-id').focus();" style="background-color:skyblue;">
         <div id="loginWrapper">
             <form method="post" action="{{thisPage}}">
                 <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>
-                        <td><img src="$/loginLDAPHeader.gif" width="548" height="162" alt="" /></td>
+                        <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
                     </tr>
                     <tr>
                         <td class="loginWrapperContentArea">
                             <span class="errorArea"><strong>{{userError}}</strong></span>
                             <div class="loginSpacing">
-                                <strong>Corporate ID:</strong><br />
-                                <input type="text" id="entered-id" name="entered-id" class="inputGeneral350" value="{{addrId}}"/><br /><br />
+                                <strong>User ID from LDAP Directory Server:</strong><br />
+                                <input type="text" id="entered-id" name="entered-id" class="form-control" 
+                                       value="{{reqUserId}}"/>
+                            </div>
+                            <div class="loginSpacing">
                                 <strong>Password:</strong><br />
-                                <input type="password" name="password" class="inputGeneral300" />
-                                <input type="submit" class="btnGreen" title="Log In" value="Log In" /><br />
-                                <a href="{{thisPage}}?openid.mode=register" title="Forgot Your Password">Forgot Your Password?</a>
+                                <input type="password" name="password" class="form-control" 
+                                       placeholder="Enter your password"/>
+                            </div>
+                            <div class="loginSpacing">
+                                <input type="submit" class="btn btn-primary" title="Log In" value="Log In" /><br />
                             </div>
                         </td>
                     </tr>
@@ -124,10 +64,15 @@
                         </td>
                     </tr>
                     <tr>
-                        <td class="noteSection"><b>Note:</b> {{Note}}</td>
-                    </tr>
-                    <tr>
-                        <td class="registerArea">New users can <b><a href="{{thisPage}}?openid.mode=register" title="Register Here">Register Here</a></b></td>
+                        <td class="registerArea">
+                            <b><a href="{{thisPage}}?openid.mode=register" title="Register for free account">
+                                Register for free account</a>
+                                &nbsp;&nbsp;|&nbsp;&nbsp;
+                                <a href="{{thisPage}}?openid.mode=register" title="Forgot Your Password">
+                                Reset your password?</a></b>
+                                <br /><br />
+                            <span><b>Note:</b> Enter your email address and password. If you have never set up a password here for your email address then use register for free account.  If you have forgotten your password, reset your password to get in.</span>
+                       </td>
                     </tr>
                 </table>
             </form>
