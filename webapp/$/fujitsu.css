@@ -91,3 +91,17 @@ td.noteSection{
     font-style:italic;
     font-size:11px;
 }
+#userDisplayWrapper {
+    margin:60px auto 0px auto;
+    width:548px;
+    position:relative;
+    background-color:#fff;
+    border:1px solid #8c8c8c;
+}
+.userNameClass {
+    font-size:26px;
+    font-style:bold;
+}
+.spaceyTable tr td {
+    padding:5px;
+}

@@ -16,86 +16,114 @@
  *
  * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
  * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
- * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
- * -->
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi, Todd Palmer, Tom Yang, 
+ *
+ * displayAnonymous.local.htm
+ -->
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta http-equiv="X-UA-Compatible" content="IE=8" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>Corporate LDAP - Open Id Provider</title>
-        <link rel="stylesheet" type="text/css" href="$/global.css" />
         <link rel="openid.server" href="{{root}}" />
         <link rel="openid.delegate" href="{{root}}" />
         <link rel="openid2.provider" href="{{root}}" />
-    </head>
-    <!--displayAnonymous.htm-->
+        <link rel="stylesheet" href="$/bootstrap.min.css">
+        <script src="$/jquery.min.js"></script>
+        <script src="$/angular.min.js"></script>
+        <link rel="stylesheet" href="$/fujitsu.css">
 
-    <body>
-        <div id="bodyWrapper">
-            <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                    <td>
-                        <img src="$/ldapSSOFIHeader.gif" width="970" height="121" alt="" />
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td class="contentArea">
-                                    <div class="mainContentArea infoArea">
-                                        <p>
-                                        <h1>{{fullName}}</h1>
-                                        <table cellpadding="0" cellspacing="0">
-                                            <tr>
-                                                <th>Corp ID:</th>
-                                                <td width="15px"></td>
-                                                <td>{{id}}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Email:</th>
-                                                <td></td>
-                                                <td>{{emailAddress}}</td>
-                                            </tr>
-                                        </table>
-                                        <form action="{{thisPage}}">
-                                            <div class="labelArea">Enter Corporate ID:&nbsp;&nbsp;
-                                                <input type="text" name="entered-id" class="inputGeneral300" />
-                                                <input type="submit" class="btnBlue" title="Lookup" value="Lookup" />
-                                                <input type="hidden" name="openid.mode" value="lookup"/>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    <div class="loginArea">
-                                        <form method="post" action="{{thisPage}}">
-                                        <div class="signInImage"></div>
-                                        <div class="sideLinks"><a href="{{thisPage}}?openid.mode=register" title="Register Now">Register Now</a> &nbsp;
-                                                      <a href="{{thisPage}}?openid.mode=register" title="Reset Password">Reset Password</a></div>
-                                        <div class="mainLoginArea">
-                                            <span class="greenAlert">You are not logged In.</span>
-                                            <span class="redText">{{userError}}</span>
-                                            <div class="loginLabelArea">
-                                                Corporate ID:&nbsp;&nbsp;
-                                                <input type="text" name="entered-id" class="inputGeneral" value="{{addrId}}"/>
-                                                <input type="hidden" name="openid.mode" value="login"/>
-                                                <input type="hidden" name="go" value="{{thisPage}}"/>
-                                                &nbsp;&nbsp;&nbsp;&nbsp;
-                                                Password:&nbsp;&nbsp;
-                                                <input type="password" name="password" class="inputGeneral" />
-                                            </div>
-                                            <span class="noteSection"><b>Note:</b> The user name and password that you
-                                                 enter above will the checked against a directory server using
-                                                 LDAP protocol.</span>
-                                        </div>
-                                        <div class="buttonArea"><input type="submit" class="btnGreen" title="Log In" value="Log In" /></div>
-                                        </form>
-                                    </div>
-                                 </td>
-                            </tr>
-                       </table>
-                    </td>
-                </tr>
-            </table>
+        <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function($scope, $http) {
+            $scope.info = {{userInfo}};
+            $scope.userId = "{{reqUserId}}";
+            
+            $scope.thisPageAddr = $scope.info.baseUrl + $scope.info.dispEmail;
+            //$scope.info.isLocal = false;
+            //$scope.info.isLDAP = true;
+            $scope.bodyStyle = "";
+            if ($scope.info.isLDAP) {
+                $scope.bodyStyle = "background-color:skyblue";
+            }
+        });
+        </script>
+    </head>
+    <body onload="document.getElementById('entered-id').focus();" ng-app="myApp" ng-controller="myCtrl" 
+          style="{{bodyStyle}}">
+
+        <div id="userDisplayWrapper">
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td><img src="$/headerUserInfo.gif" width="546" alt="" /></td>
+                    </tr>
+                    <tr>
+                        <td class="loginWrapperContentArea">
+                            <div>
+                                <table class="spaceyTable">
+                                    <tr>
+                                        <td>Full Name:</td>
+                                        <td><span class="userNameClass">{{info.dispName}}</span></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Email Address:</td>
+                                        <td>{{info.dispEmail}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Key:</td>
+                                        <td>{{info.dispId}}</td>
+                                    </tr>
+                                </table>
+                             </div>
+                        </td>
+                    </tr>
+                </table>
+        </div>
+
+
+
+        <div id="loginWrapper">
+            <form method="post" action="{{thisPageAddr}}">
+                <input type="hidden" name="openid.mode" value="loginAction"/>
+                <input type="hidden" name="go" value="{{thisPageAddr}}"/>
+                <!--input type="hidden" name="display-id" value="{{id}}"/-->
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
+                    </tr>
+                    <tr>
+                        <td class="loginWrapperContentArea">
+                            <span ng-show="info.userError" class="errorArea"><strong>{{info.userError}}</strong></span>
+                            <div class="loginSpacing">
+                                <strong>Email Address:</strong><br />
+                                <input type="text" id="entered-id" name="entered-id" class="form-control" 
+                                       ng-model="userId"/>
+                            </div>
+                            <div class="loginSpacing">
+                                <strong>Password:</strong><br />
+                                <input type="password" name="password" class="form-control" 
+                                       placeholder="Enter your password" ng-model="userPass"/>
+                            </div>
+                            <div class="loginSpacing"></div>
+                            <div class="loginSpacing" style="float:right;">
+                                <input type="submit" class="btn btn-primary" title="Log In" name="op" value="Log In" />
+                            </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="registerArea" style="text-align:center">
+                            <b><a href="{{info.baseUrl}}?openid.mode=register" title="Register for free account">
+                                Register for free account</a>
+                                &nbsp;&nbsp;|&nbsp;&nbsp;
+                                <a href="{{info.baseUrl}}?openid.mode=register" title="Forgot Your Password">
+                                Reset your password</a></b>
+                                <br /><br />
+                            <span><b>Note:</b> Enter your email address and password. If you have never set up a password here for your email address then use register for free account.<br/>If you have forgotten your password, use reset.</span>
+                       </td>
+                    </tr>
+                </table>
+            </form>
         </div>
     </body>
 </html>

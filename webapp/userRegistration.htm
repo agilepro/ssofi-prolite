@@ -16,64 +16,67 @@
  *
  * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
  * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
- * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
- * -->
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi, Todd Palmer, Tom Yang, 
+ *
+ * userRegistration.htm
+ -->
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta http-equiv="X-UA-Compatible" content="IE=8" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>Corporate LDAP - Open Id Provider</title>
+        <link rel="stylesheet" href="$/bootstrap.min.css">
+        <script src="$/jquery.min.js"></script>
+        <script src="$/angular.js"></script>
         <link rel="stylesheet" type="text/css" href="$/global.css" />
+        <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function($scope, $http) {
+            $scope.info = {{userInfo}};
+            $scope.userId = $scope.info.expectedUser;
+            
+            $scope.action = $scope.info.baseUrl + "?openid.mode=registerNewAction";
+            //$scope.info.isLocal = false;
+            //$scope.info.isLDAP = true;
+            $scope.bodyStyle = "";
+            if ($scope.info.isLDAP) {
+                $scope.bodyStyle = "background-color:skyblue";
+            }
+        });
+        </script>
     </head>
-    <body>
-        <!-- userRegistration.htm -->
+    <body ng-app="myApp" ng-controller="myCtrl" >
         <div id="bodyWrapper">
-            <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                    <td>
-                        <img src="$/logoFujitsuID.gif" width="215" height="102" alt="" />
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table cellpadding="0" cellspacing="0">
+            <img src="$/logoFujitsuID.gif" width="215" height="102" alt="" />
+            <div class="contentArea">
+                <div class="loginArea">
+                    <form method="post" action="{{action}}">
+                    <div class="registerImg"></div>
+                    <div class="mainLoginArea">
+                        <center>
+                            <img src="$/step1.gif" width="442" height="46" alt="" />
+                            <h4>Register with your corporate email address</h4>
+                        </center>
+                        <div ng-show="info.userError" class="errorArea">
+                            <strong>{{info.userError}}</strong></div>
+                        <table class="spaceyTable">
                             <tr>
-                                <td class="contentArea">
-                                    <div class="mainContentArea">
-                                    </div>
-                                    <div class="loginArea">
-                                        <form method="post" action="{{thisPage}}?openid.mode=registerNewAction">
-                                        <div class="registerImg"></div>
-                                        <div class="mainLoginArea">
-                                            <center>
-                                                <img src="$/step1.gif" width="442" height="46" alt="" />
-                                                <h4>Register with your corporate email address</h4>
-                                            </center>
-                                            <span class="errorArea"><strong>{{userError}}</strong></span>
-                                            <div class="loginSpacing">
-                                                <table>
-                                                    <tr>
-                                                        <td><strong>Enter email address:</strong></td>
-                                                        <td><input type="text" name="registerEmail" value="{{reqUserId}}" class="inputEmail"/></td>
-                                                    </tr>
-                                                     <tr>
-                                                        <td><td>{{captcha}}</td>
-                                                     </tr>
-                                                </table>
-                                            </div>
-                                            <span class="noteSection"><b>Note:</b> You will receive an email notification to the email address you enter for confirmation. After entering the key in that email message you would be able to set or reset your password.</span>
-                                        </div>
-                                        <div class="buttonArea">
-                                            <input type="submit" class="btnGray" title="Send Email" value="Send Email Now" />
-                                        </div>
-                                        </form>
-                                    </div>
-                                 </td>
+                                <td><strong>Enter email address:</strong></td>
+                                <td><input type="text" name="registerEmail" 
+                                   ng-model="userId" class="form-control" style="width:400px"/></td>
                             </tr>
-                       </table>
-                    </td>
-                </tr>
-            </table>
+                             <tr>
+                                <td><td>{{captcha}}</td>
+                             </tr>
+                        </table>
+                        <span class="noteSection"><b>Note:</b> You will receive an email notification to the email address you enter for confirmation. After entering the key in that email message you would be able to set or reset your password.</span>
+                    </div>
+                    <div class="buttonArea">
+                        <input type="submit" class="btn btn-primary" title="Send Email" value="Send Email Now" />
+                    </div>
+                    </form>
+                </div>
+             </div>
         </div>
     </body>
 </html>

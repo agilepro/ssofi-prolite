@@ -16,86 +16,95 @@
  *
  * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
  * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
- * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
- * -->
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi, Todd Palmer, Tom Yang, 
+ *
+ * displayLoggedIn.htm
+ -->
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta http-equiv="X-UA-Compatible" content="IE=8" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>Corporate LDAP - Open Id Provider</title>
-        <link rel="stylesheet" type="text/css" href="$/global.css" />
         <link rel="openid.server" href="{{root}}" />
         <link rel="openid.delegate" href="{{root}}" />
         <link rel="openid2.provider" href="{{root}}" />
-    </head>
-    <!--displayLoggedIn.htm-->
+        <link rel="stylesheet" href="$/bootstrap.min.css">
+        <script src="$/jquery.min.js"></script>
+        <script src="$/angular.min.js"></script>
+        <link rel="stylesheet" href="$/fujitsu.css">
 
-    <body>
-        <div id="bodyWrapper">
-            <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                    <td>
-                        <img src="$/ldapSSOFIHeader.gif" width="970" height="121" alt="" />
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table cellpadding="0" cellspacing="0">
-                            <tr>
-                                <td class="contentArea">
-                                    <div class="mainContentArea infoArea">
-                                        <p>
-                                            <h1>{{fullName}}</h1>
-                                            <table cellpadding="0" cellspacing="0">
-                                                <tr>
-                                                    <th>Corp ID:</th>
-                                                    <td width="15px"></td>
-                                                    <td>{{id}}</td>
-                                                </tr>
-                                                <tr>
-                                                    <th>Email:</th>
-                                                    <td></td>
-                                                    <td>{{emailAddress}}</td>
-                                                </tr>
-                                            </table>
-                                        <form action="{{thisPage}}">
-                                        <div class="labelArea">Enter Corporate ID:&nbsp;&nbsp;
-                                        <input type="text" name="entered-id" class="inputGeneral" />
-                                        <input type="submit" class="btnBlue" title="Lookup" value="Lookup" />
-                                        <input type="hidden" name="openid.mode" value="lookup"/>
-                                        </div>
-                                        </form>
-                                    </div>
-                                    <div class="loginArea">
-                                        <div class="signInImage"></div>
-                                        <div class="sideLinks"><a href="{{loggedOpenId}}?openid.mode=passwordView" title="View Profile">Change Password</a> &nbsp; &nbsp;
-                                                               <a href="{{loggedOpenId}}" title="View Profile">View Your Profile</a></div>
-                                        <div class="mainLoginArea">
-                                            <span class="greenAlert">You are logged in as <span class="blueText">{{loggedUserId}}</span>.</span>
-                                            <div class="loginLabelArea">
-                                                and can use this openid:&nbsp;&nbsp;
-                                                <form method="post" action="{{thisPage}}">
-                                                    <input type="hidden" name="openid.mode" value="Copy"/>
-                                                    <input type="hidden" name="go" value="{{loggedOpenId}}"/>
-                                                    <input type="text" name="loggedOpenId" class="inputGeneralBig" value="{{loggedOpenId}}" />
-                                                    <input type="submit" class="btnBlue" title="Copy" value="Copy" />
-                                                </form>
-                                            </div>
-                                        </div>
-                                        <form method="post" action="{{thisPage}}">
-                                        <input type="hidden" name="openid.mode" value="logout">
-                                        <input type="hidden" name="go" value="{{thisPage}}"/>
-                                        <div class="buttonArea">
-                                        <input type="submit" class="btnGreen" title="Log Out" value="Log Out" />
-                                        </div>
-                                        </form>
-                                    </div>
-                                 </td>
-                            </tr>
-                       </table>
-                    </td>
-                </tr>
-            </table>
+        <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function($scope, $http) {
+            $scope.info = {{userInfo}};
+            $scope.userId = "{{reqUserId}}";
+            $scope.thisPageAddr = $scope.info.baseUrl + $scope.info.dispEmail;
+            $scope.info.isLocal = false;
+            $scope.info.isLDAP = true;
+            $scope.bodyStyle = "";
+            if ($scope.info.isLDAP) {
+                $scope.bodyStyle = "background-color:skyblue";
+            }
+        });
+        </script>
+    </head>
+    <body ng-app="myApp" ng-controller="myCtrl" 
+          style="{{bodyStyle}}">
+
+
+        <div id="userDisplayWrapper">
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td><img src="$/headerUserInfo.gif" width="546" alt="" /></td>
+                    </tr>
+                    <tr>
+                        <td class="loginWrapperContentArea">
+                            <div>
+                                <table class="spaceyTable">
+                                    <tr>
+                                        <td>Full Name:</td>
+                                        <td><span class="userNameClass">{{info.dispName}}</span></td>
+                                    </tr>
+
+                                    <tr>
+                                        <td>Email Address:</td>
+                                        <td>{{info.dispEmail}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Key:</td>
+                                        <td>{{info.dispId}}</td>
+                                    </tr>
+                                </table>
+                             </div>
+                        </td>
+                    </tr>
+                </table>
+        </div>
+
+
+
+        <div id="loginWrapper">
+            <form method="post" action="{{thisPageAddr}}">
+                <input type="hidden" name="go" value="{{thisPageAddr}}"/>
+                <table cellpadding="0" cellspacing="0" width="100%">
+                    <tr>
+                        <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
+                    </tr>
+                    <tr>
+                        <td class="loginWrapperContentArea">
+                            <span class="errorArea"><strong>{{info.userError}}</strong></span>
+                            <div class="loginSpacing">
+                                You are logged in as:<br /><br/>
+                                <span class="userNameClass">{{info.userName}}</span><br />
+                                <span><b><a href="{{info.userId}}">{{info.userId}}</a></b></span><br /><br />
+                                <button type="submit" class="btn btn-primary" name="openid.mode" value="logout">Log Out</button>
+                                &nbsp;
+                                <button type="submit" class="btn btn-primary" name="openid.mode" value="passwordView">Edit Profile or Password</button>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </form>
         </div>
     </body>
 </html>

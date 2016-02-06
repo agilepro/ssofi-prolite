@@ -18,7 +18,7 @@
  * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
  * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi, Todd Palmer, Tom Yang, 
  *
- * justLoggedIn.local.htm
+ * justLoggedIn.htm
  * -->
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
@@ -29,24 +29,39 @@
         <link rel="openid.delegate" href="{{root}}" />
         <link rel="openid2.provider" href="{{root}}" />
         <link rel="stylesheet" href="$/bootstrap.min.css">
-        <script src="$/bootstrap.min.js"></script>
+        <script src="$/jquery.min.js"></script>
+        <script src="$/angular.min.js"></script>
         <link rel="stylesheet" href="$/fujitsu.css">
 
+        <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function($scope, $http) {
+            $scope.info = {{userInfo}};
+            $scope.userId = "{{reqUserId}}";
+            //$scope.info.isLocal = false;
+            //$scope.info.isLDAP = true;
+            $scope.bodyStyle = "";
+            if ($scope.info.isLDAP) {
+                $scope.bodyStyle = "background-color:skyblue";
+            }
+        });
+        </script>
+
     </head>
-    <body onload="document.getElementById('entered-id').focus();" style="background-color:skyblue;">
+    <body ng-app="myApp" ng-controller="myCtrl" style="{{bodyStyle}}">
         <div id="loginWrapper">
-            <form method="get" action="{{thisPage}}">
+            <form method="get" action="{{info.baseUrl}}">
                 <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                         <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
                     </tr>
                     <tr>
                         <td class="loginWrapperContentArea">
-                            <span class="errorArea"><strong>{{userError}}</strong></span>
+                            <span class="errorArea"><strong>{{info.userError}}</strong></span>
                             <div class="loginSpacing">
                                 You are logged in as:<br /><br/>
-                                <span class="userNameClass">{{loggedName}}</span><br />
-                                <span><b><a href="{{loggedUserId}}">{{loggedUserId}}</a></b></span><br /><br />
+                                <span class="userNameClass">{{info.userName}}</span><br />
+                                <span><b><a href="{{info.userId}}">{{info.userId}}</a></b></span><br /><br />
                                 <button type="submit" class="btn btn-primary" name="openid.mode"
                                         value="logout">Log Out</button>
                                 &nbsp;

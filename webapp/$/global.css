@@ -157,11 +157,13 @@ span.blueText{
     font-weight:bold;
     line-height: 20px;
 }
-span.noteSection{
+.noteSection{
 	color:#575757;
 	font-size:13px;
+    margin-top:10px;
+    margin-bottom:10px;
 }
-span.noteSection b{
+.noteSection b{
 	color:#484848;
 }
 td.noteSection{
@@ -208,4 +210,7 @@ td.noteSection{
 }
 .errorArea{
     color:#F00;
+}
+.spaceyTable tr td {
+    padding:5px;
 }

@@ -16,69 +16,76 @@
  *
  * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
  * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
- * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
- * -->
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi, Todd Palmer, Tom Yang, 
+ *
+ * enterConfirmationKey.htm
+ -->
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta http-equiv="X-UA-Compatible" content="IE=8" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>Corporate LDAP - Open Id Provider</title>
+        <link rel="stylesheet" href="$/bootstrap.min.css">
+        <script src="$/jquery.min.js"></script>
+        <script src="$/angular.js"></script>
         <link rel="stylesheet" type="text/css" href="$/global.css" />
+        <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function($scope, $http) {
+            $scope.info = {{userInfo}};
+            $scope.userId = $scope.info.expectedUser;
+            
+            $scope.action = $scope.info.baseUrl + "?openid.mode=registerNewAction";
+            //$scope.info.isLocal = false;
+            //$scope.info.isLDAP = true;
+            $scope.bodyStyle = "";
+            if ($scope.info.isLDAP) {
+                $scope.bodyStyle = "background-color:skyblue";
+            }
+        });
+        </script>
     </head>
-    <body>
+    <body ng-app="myApp" ng-controller="myCtrl" >
         <!-- userRegistrationThroughKey.htm -->
         <div id="bodyWrapper">
-            <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                    <td>
-                        <img src="$/logoFujitsuID.gif" width="215" height="102" alt="" />
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                        <table cellpadding="0" cellspacing="0">
+            <img src="$/logoFujitsuID.gif" width="215" height="102" alt="" />
+            <div class="contentArea">
+                <div class="mainContentArea">
+                </div>
+                <div class="loginArea">
+                    <form method="post" action="{{info.baseUrl}}">
+                    <div class="registerImg"></div>
+                    <div class="mainLoginArea">
+                        <center>
+                            <img src="$/step2.gif" width="442" height="46" alt="" />
+                            <h4>Validate your corporate email address</h4>
+                        </center>
+                        <span class="errorArea"><strong>{{userError}}</strong></span>
+                        <table class="spaceyTable">
                             <tr>
-                                <td class="contentArea">
-                                    <div class="mainContentArea">
-                                    </div>
-                                    <div class="loginArea">
-                                        <form method="post" action="{{thisPage}}?openid.mode=validateKeyAction">
-                                        <div class="registerImg"></div>
-                                        <div class="mainLoginArea">
-                                        <center>
-                                            <img src="$/step2.gif" width="442" height="46" alt="" />
-                                            <h4>Validate your corporate email address</h4>
-                                        </center>
-                                        <span class="errorArea"><strong>{{userError}}</strong></span>
-                                            <div class="loginSpacing">
-
-                                                <table>
-                                                    <tr>
-                                                        <td><strong>Email address:</strong></td>
-                                                        <td width="10px"></td>
-                                                        <td>{{registeredEmailId}}<input type="hidden" name="registerEmail" value="{{registeredEmailId}}"/>
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td><strong>Enter Key:</strong></td>
-                                                        <td width="10px"></td>
-                                                        <td><input type="text" name="registeredEmailKey" class="inputGeneral300"/></td>
-                                                    </tr>
-                                                </table>
-                                            </div>
-                                            <span class="noteSection"><b>Check your email:</b> You should receive an email message with a secret key in it. Copy that key value, and paste it into the space above.</span>
-                                        </div>
-                                        <div class="buttonArea">
-                                            <input type="submit" class="btnGray" title="Confirm Email" value="Confirm Email Address" />
-                                        </div>
-                                        </form>
-                                    </div>
-                                 </td>
+                                <td><strong>Email address:</strong></td>
+                                <td width="10px"></td>
+                                <td>
+                                    {{userId}}
+                                    <input type="hidden" name="registerEmail" value="{{userId}}"/>
+                                </td>
                             </tr>
-                       </table>
-                    </td>
-                </tr>
-            </table>
+                            <tr>
+                                <td><strong>Enter Key:</strong></td>
+                                <td width="10px"></td>
+                                <td><input type="text" name="registeredEmailKey"
+                                    class="form-control" style="width:400px"/></td>
+                            </tr>
+                        </table>
+                        <div class="noteSection"><b>Check your email:</b> You should receive an email message with a secret key in it. Copy that key value, and paste it into the space above.</div>
+                    </div>
+                    <div class="buttonArea">
+                        <button type="submit" class="btn btn-primary" name="openid.mode" value="registerNewAction">Resend Email</button>
+                        <button type="submit" class="btn btn-primary" name="openid.mode" value="validateKeyAction">Confirm Email Address</button>
+                    </div>
+                    </form>
+                </div>
+             </div>
         </div>
     </body>
 </html>

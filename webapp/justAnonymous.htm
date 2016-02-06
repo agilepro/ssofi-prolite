@@ -29,49 +29,65 @@
         <link rel="openid.delegate" href="{{root}}" />
         <link rel="openid2.provider" href="{{root}}" />
         <link rel="stylesheet" href="$/bootstrap.min.css">
-        <script src="$/bootstrap.min.js"></script>
+        <script src="$/jquery.min.js"></script>
+        <script src="$/angular.min.js"></script>
         <link rel="stylesheet" href="$/fujitsu.css">
+
+        <script>
+        var app = angular.module('myApp', []);
+        app.controller('myCtrl', function($scope, $http) {
+            $scope.info = {{userInfo}};
+            $scope.userId = $scope.info.expectedUser;
+            //$scope.info.isLocal = false;
+            //$scope.info.isLDAP = true;
+            $scope.bodyStyle = "";
+            if ($scope.info.isLDAP) {
+                $scope.bodyStyle = "background-color:skyblue";
+            }
+        });
+        </script>
+        
     </head>
-    <body onload="document.getElementById('entered-id').focus();" style="background-color:skyblue;">
+    <body onload="document.getElementById('entered-id').focus();" ng-app="myApp" ng-controller="myCtrl" 
+          style="{{bodyStyle}}">
         <div id="loginWrapper">
-            <form method="post" action="{{thisPage}}">
+            <form method="post" action="{{info.baseUrl}}">
+                <input type="hidden" name="openid.mode" value="loginAction"/>
+                <!--input type="hidden" name="go" value="{{info.go}}"/-->
+                <!--input type="hidden" name="display-id" value="{{id}}"/-->
                 <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                         <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
                     </tr>
                     <tr>
                         <td class="loginWrapperContentArea">
-                            <span class="errorArea"><strong>{{userError}}</strong></span>
+                            <span ng-show="info.userError" class="errorArea"><strong>{{info.userError}}</strong></span>
                             <div class="loginSpacing">
-                                <strong>User ID from LDAP Directory Server:</strong><br />
+                                <strong ng-show="info.isLocal">Email Address:</strong>
+                                <strong ng-show="info.isLDAP">User ID from LDAP Directory Server:</strong>
                                 <input type="text" id="entered-id" name="entered-id" class="form-control" 
-                                       value="{{reqUserId}}"/>
+                                       ng-model="userId"/>
                             </div>
                             <div class="loginSpacing">
-                                <strong>Password:</strong><br />
+                                <strong>Password:</strong>
                                 <input type="password" name="password" class="form-control" 
-                                       placeholder="Enter your password"/>
+                                       placeholder="Enter your password" ng-model="userPass"/>
                             </div>
-                            <div class="loginSpacing">
-                                <input type="submit" class="btn btn-primary" title="Log In" value="Log In" /><br />
+                            <div class="loginSpacing"></div>
+                            <div class="loginSpacing" style="float:right;">
+                                <input type="submit" class="btn btn-primary" title="Log In" name="op" value="Log In" />
                             </div>
                         </td>
                     </tr>
-                    <tr>
-                        <td>
-                            <input type="hidden" name="openid.mode" value="login"/>
-                            <input type="hidden" name="go" value="{{thisPage}}"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td class="registerArea">
-                            <b><a href="{{thisPage}}?openid.mode=register" title="Register for free account">
+                    <tr ng-show="info.isLocal">
+                        <td class="registerArea" style="text-align:center">
+                            <b><a href="{{info.baseUrl}}?openid.mode=register" title="Register for free account">
                                 Register for free account</a>
                                 &nbsp;&nbsp;|&nbsp;&nbsp;
-                                <a href="{{thisPage}}?openid.mode=register" title="Forgot Your Password">
-                                Reset your password?</a></b>
+                                <a href="{{info.baseUrl}}?openid.mode=register" title="Forgot Your Password">
+                                Reset your password</a></b>
                                 <br /><br />
-                            <span><b>Note:</b> Enter your email address and password. If you have never set up a password here for your email address then use register for free account.  If you have forgotten your password, reset your password to get in.</span>
+                            <span><b>Note:</b> Enter your email address and password. If you have never set up a password here for your email address then use register for free account.<br/>If you have forgotten your password, use reset.</span>
                        </td>
                     </tr>
                 </table>
