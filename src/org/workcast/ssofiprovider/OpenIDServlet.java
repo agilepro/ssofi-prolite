@@ -4,6 +4,7 @@
 package org.workcast.ssofiprovider;
 
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
 import javax.servlet.ServletConfig;
@@ -22,6 +23,13 @@ import org.workcast.streams.HTMLWriter;
 public class OpenIDServlet extends HttpServlet {
 
     private void setIncrediblyStrangeSecurityHeaders(HttpServletRequest req, HttpServletResponse resp) {
+        try {
+			req.setCharacterEncoding("UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			//UTF-8 is always supported
+		}
+        
+        
         //this is an API to be read by others, for these really strange rules
         //set up by the browsers, you have to set the CORS to
         //allow scripts to read this data from a browser.
