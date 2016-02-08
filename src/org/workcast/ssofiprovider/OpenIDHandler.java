@@ -170,6 +170,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     sHand = new SessionHandlerFile(sessionFolder, sessionDurationSeconds);
                 }
                 else {
+                	System.out.println("SSOSI: WARNING using the in-memory session manager");
                     sHand = new SessionHandlerMemory();
                 }
             }
@@ -1143,7 +1144,37 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     public void writeTokenValue(Writer out, String tokenName) throws Exception {
         try {
-            if ("thisPage".equals(tokenName)) {
+            if ("userInfo".equals(tokenName)) {
+                JSONObject jo = new JSONObject();
+                jo.put("isLDAP", isLDAPMode);
+                jo.put("isLocal", !isLDAPMode);
+                if (aSession.loggedIn()) {
+                    jo.put("userId", aSession.loggedUserId());
+                    jo.put("userEmail", aSession.regEmail);
+                    UserInformation userInfo = authStyle.getOrCreateUser(aSession.loggedUserId());
+                    if (userInfo.exists) {
+                        jo.put("userName", userInfo.fullName);
+                    }
+                    jo.put("openId", loggedOpenId);
+                }
+                if (displayInfo != null && displayInfo.exists) {
+                    jo.put("dispId", displayInfo.key);
+                    jo.put("dispName", displayInfo.fullName);
+                    jo.put("dispEmail", displayInfo.emailAddress);
+                }
+                if (requestedIdentity != null) {
+                	jo.put("expectedUser", requestedIdentity.getUserId());
+                }
+                else {
+                	jo.put("expectedUser", aSession.presumedId);
+                }
+                
+                jo.put("userError", aSession.errMsg);
+                jo.put("baseUrl", baseURL);
+                jo.put("go", paramGo);
+                jo.write(out,2,2);
+            }
+            else if ("thisPage".equals(tokenName)) {
                 HTMLWriter.writeHtml(out, baseURL);
             }
             else if ("fullName".equals(tokenName)) {
@@ -1191,14 +1222,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 	HTMLWriter.writeHtml(out, requestedIdentity.getUserId());
                 }
                 else {
-                	//if no requested user id, then write out the Cookie value
-                	/*
-                	System.out.append("SSOFI: NO requested ID, so looking up the cookie");
-            		String lastTimeId = findCookieValue("SSOFIUser");
-            		if (lastTimeId!=null) {
-            			writeHtml(out, lastTimeId);
-            		}
-            		*/
                     HTMLWriter.writeHtml(out, aSession.presumedId);
                 }
             }
@@ -1247,11 +1270,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
                 HTMLWriter.writeHtml(out, aSession.return_to);
             }
-            else if ("return_to_app_name".equals(tokenName)) {
-                String return_to_app_name = aSession.return_to.substring(aSession.return_to
-                        .lastIndexOf("/") + 1);
-                HTMLWriter.writeHtml(out, return_to_app_name);
-            }
             else if ("assoc_handle".equals(tokenName)) {
 
                 HTMLWriter.writeHtml(out, assoc_handle);
@@ -1269,18 +1287,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 }
                 out.write(securityHandler.getCaptchaHtML(cerr));
             }
-            else if ("inputEmail".equals(tokenName)) {
-                String pinputEmail = aSession.getSavedParameter("registerEmail");
-                if (pinputEmail != null) {
-                    String tokValue = "value=" + pinputEmail;
-                    HTMLWriter.writeHtml(out, tokValue);
-                }
-            }
-            else if ("json".equals(tokenName)) {
-
-            }
             else {
-                HTMLWriter.writeHtml(out, "<" + tokenName + ">");
+                //if we don't know what it means, write it back out, because
+                //it might be a AngularJS token which needs to be transmitted.
+                HTMLWriter.writeHtml(out, "{{" + tokenName + "}}");
             }
         }
         catch (Exception e) {
