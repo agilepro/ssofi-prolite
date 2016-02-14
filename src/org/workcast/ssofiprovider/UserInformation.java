@@ -9,6 +9,7 @@ import org.workcast.json.JSONObject;
 public class UserInformation {
 
     public boolean exists = false;
+    public boolean hasPassword = true;
     public String key;
     public String fullName;
     public String emailAddress;

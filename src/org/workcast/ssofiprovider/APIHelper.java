@@ -145,7 +145,7 @@ public class APIHelper {
         response.setContentType("application/json;charset=UTF-8");
         response.setStatus(code);
         Writer out = response.getWriter();
-        jo.write(out,2,2);
+        jo.write(out,2,0);
         out.flush();
     }
 

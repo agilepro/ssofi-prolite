@@ -81,6 +81,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private static EmailTokenManager tokenManager = null;
 
     private static int sessionDurationSeconds = 2500000;   //30 days
+    private static boolean isLDAPMode = false;
+    
+    
+    
+    //MEMBER VARIABLES
 
     HttpServletRequest request;
     HttpServletResponse response;
@@ -115,8 +120,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     // request authentication, or it might come from the
     // cookies that remember who you logged in as last time.
     private AddressParser requestedIdentity = null;
-
-    static boolean isLDAPMode = false;
 
     //if the operation was a POST, and if the contents is JSON
     //then the resulting parsed value will appear here
@@ -170,7 +173,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     sHand = new SessionHandlerFile(sessionFolder, sessionDurationSeconds);
                 }
                 else {
-                	System.out.println("SSOSI: WARNING using the in-memory session manager");
+                    System.out.println("SSOSI: WARNING using the in-memory session manager");
                     sHand = new SessionHandlerMemory();
                 }
             }
@@ -238,9 +241,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             if (sessionDurationStr!=null) {
                 int durVal = Integer.parseInt(sessionDurationStr);
                 if (durVal>600) {
-                	//it is not realistic to have a session duration shorter than 10 minutes
-                	//so only set if we have a value greater than 600 seconds.
-                	sessionDurationSeconds = durVal;
+                    //it is not realistic to have a session duration shorter than 10 minutes
+                    //so only set if we have a value greater than 600 seconds.
+                    sessionDurationSeconds = durVal;
                 }
             }
 
@@ -290,9 +293,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             aSession = sHand.getAuthSession(sessionId);
             if (aSession.presumedId == null ||  aSession.presumedId.length()==0) {
-            	//if the session does not have an assumed user id in it, then
-            	//get the last good ID from the cookie.
-            	aSession.presumedId = findCookieValue("SSOFIUser");
+                //if the session does not have an assumed user id in it, then
+                //get the last good ID from the cookie.
+                aSession.presumedId = findCookieValue("SSOFIUser");
             }
 
             doGetWithSession();
@@ -393,16 +396,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
             String mode = defParam("openid.mode", "display");
             System.out.println("SSOFI: " + request.getRequestURL().toString().trim()
-            		+ " mode=" + mode
-            		+ "  isDisplaying="+isDisplaying
-            		+ "  loggedIn="+aSession.loggedIn());
+                    + " mode=" + mode
+                    + "  isDisplaying="+isDisplaying
+                    + "  loggedIn="+aSession.loggedIn());
 
 
             if (requestedIdentity!=null) {
-            	System.out.println("SSOFI: requestedIdentity: "+requestedIdentity.getOpenId());
+                System.out.println("SSOFI: requestedIdentity: "+requestedIdentity.getOpenId());
             }
             else {
-            	System.out.println("SSOFI: requestedIdentity is NULL");
+                System.out.println("SSOFI: requestedIdentity is NULL");
             }
 
             if (mode.startsWith("api")) {
@@ -416,8 +419,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 APIHelper theApi = new APIHelper(aSession, postedObject, response, emailHandler, tokenManager);
                 destroySession = theApi.handleAPICommand(mode);
                 if (destroySession) {
-                	//clear out any existing session id
-                	createSSOFISessionId();
+                    //clear out any existing session id
+                    createSSOFISessionId();
                 }
                 return;
             }
@@ -449,7 +452,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 modeRegisterNewAction();
             }
             else if ("confirmationKey".equals(mode)) {
-            	modeConfirmationKey();
+                modeConfirmationKey();
             }
             else if ("validateKeyAction".equals(mode)) {
                 modeValidateKeyAction();
@@ -615,7 +618,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     private void modeLoginView() throws Exception {
-    	streamTemplate("promptedLogin");
+        streamTemplate("promptedLogin");
         aSession.clearError();
     }
 
@@ -696,8 +699,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         // it could be that the user have been sitting there for a long time,
         // and the session has completely timed out. If so, handle gracefully as
         // possible by just redirecting to the root of the application.
-    	// It is also possible that this login was started by just accessing
-    	// the SSOFI, and there is no place to return to.
+        // It is also possible that this login was started by just accessing
+        // the SSOFI, and there is no place to return to.
         if (aSession.paramlist == null) {
             aSession.errMsg = new Exception(
                     "If you started from an application, return to that application and start the login from there again.");
@@ -903,53 +906,109 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         response.sendRedirect("?openid.mode=confirmationKey");
     }
 
-	private void modeConfirmationKey() throws Exception {
-	    if (aSession.regEmail==null) {
-	        aSession.errMsg = new Exception("Sorry, it has been too long and your session has been lost.");
-	        redirectToIdentityPage(defParam("display-id", ""));
-	    }
-	    else {
-	        // this is the mode that displays prompt to change id
-	        // which then posts to 'validateKeyAction'
-	        displayInfo = authStyle.getOrCreateUser(aSession.regEmail);
-	        streamTemplate("enterConfirmationKey");
-	    }
-	}
+    private void modeConfirmationKey() throws Exception {
+        //if (aSession.regEmail==null) {
+        //    aSession.errMsg = new Exception("Sorry, it has been too long and your session has been lost.");
+        //    redirectToIdentityPage(defParam("display-id", ""));
+        //    return;
+        //}
 
-	/*
-	 * The email is
-	 * {baseURL}?openid.mode=validateKeyAction&registerEmail={emailId}&registeredEmailKey={magicNumber}
-	 * so if you get both of those, and they match, then you have validated
-	 * a particular email address.  Who does it belong to?  we don't care, but probably you need
-	 * to start a new session if this user has logged in with a different email address.
-	 */
+        // this is the mode that displays prompt to change id
+        // which then posts to 'validateKeyAction'
+        displayInfo = authStyle.getOrCreateUser(aSession.regEmail);
+        streamTemplate("enterConfirmationKey");
+    }
+
+    /*
+     * The email contains this link:
+     * 
+     * {baseURL}?openid.mode=validateKeyAction
+     *              &registerEmail={emailId}
+     *              &registeredEmailKey={magicNumber}
+     *              &app={application return URL}
+     *              
+     * so if you get both of those, and they match, then you have validated
+     * a particular email address.  
+     */
     private void modeValidateKeyAction() throws Exception {
         String registerEmail = reqParam("registerEmail");
         String confirmKey = reqParam("registeredEmailKey");
-        String app = defParam("app", null);
+        aSession.return_to = defParam("app", aSession.return_to);
 
+        UserInformation ui = authStyle.getOrCreateUser(registerEmail);
+        
+        if (aSession.loggedIn()) {
+            if (aSession.loggedUserId().equals(registerEmail)) {
+                //if user already logged in, as the correct person, 
+                //check to see if the user password has been set
+                //correctly.  If so, go ahead and redirect to the 
+                //application as if it was a normal link.
+                if (ui.hasPassword) {
+                    response.sendRedirect(aSession.return_to);
+                    return;
+                }
+        
+                    
+                
+                //The only way they can get here, being logged in, but not having
+                //a password, is if they got the password setting prompt, and 
+                //then closed the window -- without losing their session.
+                //Can anyone steal their session?
+                //Can someone jump in an set their password before they had a chance?
+                //good questions.   On the assumption this is not a real danger,
+                //go ahead and prompt again to set the password, because they 
+                //probably clicked on the link again, to try again to set password.
+                aSession.presumedId = registerEmail;
+                requestedIdentity = null;
+                response.sendRedirect("?openid.mode=registrationForm");
+                return;
+            }
+            
+            //if logged in as a different user: what to do?   
+            //Should this log-out and log-in again?  Invalidate the token?
+            //Just redirect back to app would be convenient.
+            //The problem with this is that if the user had been sent an invite
+            //for a different email address, it is possible that the current
+            //user does not have permission to access the app.  It might be
+            //better to warn the user that they are proceeding as a different user.
+            //On the other hand, if you are a user with redundant email addresses
+            //you might just want to follow the link, and forget about the invite aspect.
+            //The solution to this is to put both an invite and a non-invite link
+            //in the email so that the user has the choice.
+            throw new Exception("Sorry there is a problem.  You are logged in as "
+                    +aSession.loggedUserId()
+                    +" but you have clicked on a link validating the email for "
+                    +registerEmail
+                    +".  If you wish to validate that other email address, please logout before clicking on the link again.");
+        }
+
+        //we know they are not logged in here.  So check the token.  Set up as if this
+        //person is really trying to log in.
         boolean valid = tokenManager.validateAndConsume(registerEmail, confirmKey);
+        aSession.presumedId = registerEmail;
+        requestedIdentity = null;
 
         if (!valid) {
+            aSession.regEmail = registerEmail;
             aSession.errMsg = new Exception(
-                    "Confirmation Key supplied does not match our records.  Confirmation keys can only be used once.  "
-            		+"Make sure you are using the correct email message, or request a new email message with key.");
-            response.sendRedirect("?openid.mode=confirmationKey");
+                    "If you have set up a password, please log in.  "
+                    +"If not, request a new email registration email message.  "
+                    +"The confirmation key supplied has expired. ");
+            response.sendRedirect("?openid.mode=loginView");
             return;
         }
 
         if (valid) {
-        	//ok, they win the prize, this is a valid link, a valid match between the email address
-        	//and the magic number.  They have this email address.  We can NOW consider them logged in.
-        	//If they had been logged in as someone else, cancel that, and consider them logged in here
-        	aSession.regEmailConfirmed = true;
-	        aSession.regEmail = registerEmail;
-	        if (app!=null) {
-	        	aSession.return_to = app;
-	        }
-        	setLogin(registerEmail);
+            //ok, they win the prize, this is a valid link, a valid match between the email address
+            //and the magic number.  They have this email address.  We can NOW consider them logged in.
+            //If they had been logged in as someone else, cancel that, and consider them logged in here
+            aSession.regEmailConfirmed = true;
+            aSession.regEmail = registerEmail;
+            
+            setLogin(registerEmail);
 
-	        response.sendRedirect("?openid.mode=registrationForm");
+            //always go to register because they might have chose this link in order to reset their password
+            response.sendRedirect("?openid.mode=registrationForm");
         }
     }
 
@@ -1075,6 +1134,20 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
+    
+    public String getBestGuessId() {
+        if (aSession.loggedIn()) {
+            return aSession.loggedUserId();
+        }
+        else if (aSession.presumedId!=null && aSession.presumedId.length()>0){
+            return aSession.presumedId;
+        }
+        else {
+            return findCookieValue("SSOFIUser");
+        }
+    }
+
+    
     /**
      * returns null if not logged in checks the session. If no session, it
      * checks the cookies. if no cookies, or cookies invalid, then not logged
@@ -1162,17 +1235,21 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     jo.put("dispName", displayInfo.fullName);
                     jo.put("dispEmail", displayInfo.emailAddress);
                 }
-                if (requestedIdentity != null) {
-                	jo.put("expectedUser", requestedIdentity.getUserId());
-                }
-                else {
-                	jo.put("expectedUser", aSession.presumedId);
-                }
+                jo.put("expectedUser", getBestGuessId());
                 
-                jo.put("userError", aSession.errMsg);
+                String errStr = "";
+                if (aSession.errMsg!=null) {
+                    errStr = aSession.errMsg.toString();
+                    //strip off the class name if there is one
+                    if (errStr.startsWith("java.lang.Exception")) {
+                        int pos = errStr.indexOf(":");
+                        errStr = errStr.substring(pos+2);
+                    }
+                }
+                jo.put("userError", errStr);
                 jo.put("baseUrl", baseURL);
                 jo.put("go", paramGo);
-                jo.write(out,2,2);
+                jo.write(out,2,12);
             }
             else if ("thisPage".equals(tokenName)) {
                 HTMLWriter.writeHtml(out, baseURL);
@@ -1218,8 +1295,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else if ("reqUserId".equals(tokenName)) {
                 if (requestedIdentity != null) {
-                	System.out.append("SSOFI: displaying requested id: "+requestedIdentity.getUserId());
-                	HTMLWriter.writeHtml(out, requestedIdentity.getUserId());
+                    System.out.append("SSOFI: displaying requested id: "+requestedIdentity.getUserId());
+                    HTMLWriter.writeHtml(out, requestedIdentity.getUserId());
                 }
                 else {
                     HTMLWriter.writeHtml(out, aSession.presumedId);

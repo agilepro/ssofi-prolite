@@ -117,6 +117,7 @@ public class AuthStyleLocal implements AuthStyle {
             uret.key = User.generateKey();
             uret.emailAddress = searchEmail;
             uret.fullName = "User "+searchEmail;
+            uret.hasPassword = false;
             if (makeUpUsers) {
                 // generates a user record for any email address, just based on
                 // email address
@@ -131,6 +132,8 @@ public class AuthStyleLocal implements AuthStyle {
             uret.exists = true;
             uret.fullName = foundUser.getFullName();
             uret.emailAddress = foundUser.getEmailMatchingSearchTerm(searchEmail);
+            String password = foundUser.getPassword();
+            uret.hasPassword = (password!=null && password.length()>0);
         }
         System.out.println("FOUND: name="+uret.fullName+", key="+uret.key+", email="+uret.emailAddress);
         return uret;

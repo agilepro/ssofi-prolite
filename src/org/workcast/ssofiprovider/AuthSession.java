@@ -81,6 +81,10 @@ public class AuthSession implements Serializable {
             throw new RuntimeException("Program Logic Error: numm NAME passed at login time.  Why?");
         }
         authName = name;
+        
+        //we also wipe out any record of a previously sought after id, now that
+        //you are logged in we don't need to remember who we thought you might be.
+        presumedId = id;
     }
 
     public void logout() {
@@ -96,7 +100,7 @@ public class AuthSession implements Serializable {
     public String loggedUserName() {
         return authName;
     }
-
+    
     public void clearError() {
         errMsg = null;
         savedParams.clear();

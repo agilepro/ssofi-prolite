@@ -84,7 +84,7 @@ public class OpenIDServlet extends HttpServlet {
     public void init(ServletConfig config) throws ServletException {
 
         // called method must not throw any exception, and must
-        // rememboer any error encoutnered with the OpenIDHandler class
+        // remember any error encountered with the OpenIDHandler class
         OpenIDHandler.init(config);
     }
 
