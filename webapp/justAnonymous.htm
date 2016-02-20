@@ -61,7 +61,9 @@
                     </tr>
                     <tr>
                         <td class="loginWrapperContentArea">
-                            <span ng-show="info.userError" class="errorArea"><strong>{{info.userError}}</strong></span>
+                            <span ng-show="info.userError" class="errorArea">
+                                <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+                            </span>
                             <div class="loginSpacing">
                                 <strong ng-show="info.isLocal">Email Address:</strong>
                                 <strong ng-show="info.isLDAP">User ID from LDAP Directory Server:</strong>
@@ -84,7 +86,7 @@
                             <b><a href="{{info.baseUrl}}?openid.mode=register" title="Register for free account">
                                 Register for free account</a>
                                 &nbsp;&nbsp;|&nbsp;&nbsp;
-                                <a href="{{info.baseUrl}}?openid.mode=register" title="Forgot Your Password">
+                                <a href="{{info.baseUrl}}?openid.mode=register" title="Reset a forgotten Password">
                                 Reset your password</a></b>
                                 <br /><br />
                             <span><b>Note:</b> Enter your email address and password. If you have never set up a password here for your email address then use register for free account.<br/>If you have forgotten your password, use reset.</span>

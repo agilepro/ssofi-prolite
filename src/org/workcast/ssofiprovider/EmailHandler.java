@@ -226,7 +226,7 @@ public class EmailHandler {
         String val = props.getProperty(key);
         if (val == null) {
             throw new Exception("Must have a setting for '" + key
-                    + "' in the configuration file for OpenIDServlet");
+                    + "' in the email configuration file");
         }
         return val;
     }

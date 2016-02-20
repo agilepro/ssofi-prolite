@@ -36,6 +36,7 @@ import org.openid4java.message.ax.AxMessage;
 import org.openid4java.message.ax.FetchRequest;
 import org.openid4java.message.ax.FetchResponse;
 import org.openid4java.server.ServerManager;
+import org.workcast.json.JSONArray;
 import org.workcast.json.JSONObject;
 import org.workcast.json.JSONTokener;
 import org.workcast.streams.HTMLWriter;
@@ -82,6 +83,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     private static int sessionDurationSeconds = 2500000;   //30 days
     private static boolean isLDAPMode = false;
+    private static String configFilePath = "Unknown path";
     
     
     
@@ -143,10 +145,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
             String webInfPath = sc.getRealPath("/WEB-INF");
             File configFile = new File(webInfPath, "config.txt");
+            configFilePath = configFile.toString();
             if (!configFile.exists()) {
                 throw new Exception(
                         "Server needs to be configured.  No configuration file found: ("
-                                + configFile.toString() + ")");
+                                + configFilePath + ")");
             }
 
             FileInputStream fis = new FileInputStream(configFile);
@@ -161,21 +164,24 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             String blockedIpListFilePath = bipfile.getPath();
 
-            String sessionPath = configSettings.getProperty("sessionFolder");
-            System.out.println("sessionFolder is set to: "+sessionPath);
+            String sessionDurationStr = configSettings.getProperty("sessionDurationSeconds");
+            if (sessionDurationStr!=null) {
+                int durVal = Integer.parseInt(sessionDurationStr);
+                if (durVal>600) {
+                    //it is not realistic to have a session duration shorter than 10 minutes
+                    //so only set if we have a value greater than 600 seconds.
+                    sessionDurationSeconds = durVal;
+                }
+            }
 
+            String sessionPath = configSettings.getProperty("sessionFolder");
+            
             if (sessionPath == null) {
                 sHand = new SessionHandlerMemory();
             }
             else {
                 File sessionFolder = new File(sessionPath);
-                if (sessionFolder.exists()) {
-                    sHand = new SessionHandlerFile(sessionFolder, sessionDurationSeconds);
-                }
-                else {
-                    System.out.println("SSOSI: WARNING using the in-memory session manager");
-                    sHand = new SessionHandlerMemory();
-                }
+                sHand = new SessionHandlerFile(sessionFolder, sessionDurationSeconds);
             }
             isLDAPMode = "LDAP".equalsIgnoreCase(configSettings.getProperty("authStyle"));
 
@@ -183,8 +189,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 authStyle = new AuthStyleLDAP(configSettings);
             }
             else {
-                // NOTE: local mode must be the DEFAULT if no setting is
-                // supplied
+                // NOTE: local mode must be the DEFAULT if no setting is supplied
                 authStyle = new AuthStyleLocal(sc, configSettings);
             }
 
@@ -208,17 +213,22 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             File emailConfigFile = new File(webInfPath, "EmailNotification.properties");
             if (!emailConfigFile.exists()) {
                 throw new Exception(
-                        "Server needs to be configured.  No configuration file found: ("
+                        "Server needs to be configured.  No email configuration file found: ("
                                 + emailConfigFile.toString() + ")");
             }
 
-            FileInputStream fisEmail = new FileInputStream(emailConfigFile);
-            Properties propEmail = new Properties();
-            propEmail.load(fisEmail);
-            fisEmail.close();
-            Properties emailConfigSettings = propEmail;
-            emailHandler = new EmailHandler(sc, emailConfigSettings);
-
+            try {
+                FileInputStream fisEmail = new FileInputStream(emailConfigFile);
+                Properties propEmail = new Properties();
+                propEmail.load(fisEmail);
+                fisEmail.close();
+                Properties emailConfigSettings = propEmail;
+                emailHandler = new EmailHandler(sc, emailConfigSettings);
+            }
+            catch (Exception e) {
+                throw new Exception("Unable to initialize from email config file ("+emailConfigFile+")",e);
+            }
+            
             File emailTokenFile = new File(webInfPath, "EmailTokens.json");
             tokenManager = new EmailTokenManager(emailTokenFile);
 
@@ -226,26 +236,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
 
             // configure the OpenID Provider's endpoint URL
-            String pattern = getRequiredConfigProperty(configSettings, "pattern").toLowerCase();
+            String pattern = baseURL+"{id}";
             AddressParser.initialize(pattern);
-            int idPos = pattern.indexOf("{id}");
-            if (idPos < 0) {
-                throw new Exception(
-                        "The pattern setting value MUST have the token, {id}, within it "
-                                + "to indicate the location that the id will be in the URL");
-            }
+
             manager.setOPEndpointUrl(baseURL);
 
-
-            String sessionDurationStr = configSettings.getProperty("sessionDurationSeconds");
-            if (sessionDurationStr!=null) {
-                int durVal = Integer.parseInt(sessionDurationStr);
-                if (durVal>600) {
-                    //it is not realistic to have a session duration shorter than 10 minutes
-                    //so only set if we have a value greater than 600 seconds.
-                    sessionDurationSeconds = durVal;
-                }
-            }
 
             initialized = true;
         }
@@ -265,7 +260,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         String val = configSettings.getProperty(key);
         if (val == null) {
             throw new Exception("Must have a setting for '" + key
-                    + "' in the configuration file for OpenIDServlet");
+                    + "' in the configuration file ("+configFilePath+")");
         }
         return val;
     }
@@ -478,7 +473,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 }
                 else {
                     aSession.errMsg = new Exception("Unable to log you in to user id (" + enteredId
-                            + ") with that password.  Please try again.");
+                            + ") with that password.  Please try again or reset your password.");
                 }
                 redirectToIdentityPage(defParam("display-id", ""));
             }
@@ -668,7 +663,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else {
                 throw new Exception("Unable to log you in to user id (" + emailId
-                        + ") with that password.  Please try again.");
+                        + ") with that password.  Please try again or reset your password.");
             }
             if ((aSession.return_to == null) || (aSession.return_to.length() <= 0)) {
                 redirectToIdentityPage(defParam("display-id", ""));
@@ -866,7 +861,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         else {
             aSession.errMsg = new Exception("Unable to log you in to user id (" + enteredId
-                + ") with that password.  Please try again");
+                + ") with that password.  Please try again or reset your password.");
             response.sendRedirect("?openid.mode=loginView");
         }
     }
@@ -1204,7 +1199,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             out.flush();
 
             // clear out any recorded error now that it has been displayed
-            aSession.clearError();
+            if (aSession!=null) {
+                aSession.clearError();
+            }
         }
         catch (Exception e) {
             throw new Exception("Error streaming template file (" + templateFile.toString() + ").",
@@ -1238,15 +1235,28 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 jo.put("expectedUser", getBestGuessId());
                 
                 String errStr = "";
-                if (aSession.errMsg!=null) {
-                    errStr = aSession.errMsg.toString();
+                JSONArray errors = new JSONArray();
+                Throwable runner = aSession.errMsg;
+                while (runner!=null) {
+                    String msg = runner.toString();
                     //strip off the class name if there is one
-                    if (errStr.startsWith("java.lang.Exception")) {
-                        int pos = errStr.indexOf(":");
-                        errStr = errStr.substring(pos+2);
+                    if (msg.startsWith("java.lang.Exception")
+                            || msg.startsWith("java.lang.RuntimeException")) {
+                        int pos = msg.indexOf(":");
+                        msg = msg.substring(pos+2);
                     }
+                    int pos = msg.indexOf("nested exception");
+                    if (pos>3) {
+                        //some exceptions unnecessarily duplicate the cause exception,
+                        //since we don't need it, strip it out.
+                        msg = msg.substring(0, pos-3);
+                    }
+                    errors.put(msg);
+                    errStr = errStr + msg + "\n ";
+                    runner = runner.getCause();
                 }
                 jo.put("userError", errStr);
+                jo.put("errors", errors);
                 jo.put("baseUrl", baseURL);
                 jo.put("go", paramGo);
                 jo.write(out,2,12);

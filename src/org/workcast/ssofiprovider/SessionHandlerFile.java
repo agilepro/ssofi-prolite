@@ -25,23 +25,44 @@ public class SessionHandlerFile implements SessionHandler {
     long timeLimit;
 
     public SessionHandlerFile(File mainFolder, long _timeLimit) throws Exception {
-        timeLimit = _timeLimit;
-        if (!mainFolder.exists()) {
-            throw new Exception("SessionFolder does not exist (" + mainFolder.toString() + ")");
-        }
-        folder = mainFolder;
-
-        // clean out old files
-        long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
-        for (File child : folder.listFiles()) {
-            if (child.lastModified() < oldestTimeStampAllowed) {
-                if (child.getName().endsWith(".session")) {
-                    child.delete();
-                }
-                if (child.getName().endsWith(".$temp")) {
-                    child.delete();
+        try {
+            timeLimit = _timeLimit;
+            if (!mainFolder.exists()) {
+                throw new Exception("SessionFolder does not exist or the system user does not have access to it.");
+            }
+            folder = mainFolder;
+            if (!mainFolder.isDirectory()) {
+                throw new Exception("SessionFolder appears to be a file or something other than a folder/directory.");
+            }
+            if (!folder.canRead()) {
+                throw new Exception("SessionFolder is not readable by the server.");
+            }
+            if (!folder.canWrite()) {
+                throw new Exception("SessionFolder is not writeable by the server.");
+            }
+            
+            File[] children = folder.listFiles();
+            if (children==null) {
+                throw new Exception("Unknown problem.  OS returned null for children.  "
+                            +"Does the system user have access to the SessionFolder?");
+            }
+    
+            // clean out old files
+            long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
+            for (File child : children) {
+                if (child.lastModified() < oldestTimeStampAllowed) {
+                    if (child.getName().endsWith(".session")) {
+                        child.delete();
+                    }
+                    if (child.getName().endsWith(".$temp")) {
+                        child.delete();
+                    }
                 }
             }
+            
+        }
+        catch (Exception e) {
+            throw new Exception("Unable to initialize the SessionFolder ("+mainFolder+").", e);
         }
 
         System.out.println("SSOFI: Using the FILE session handler: "+mainFolder);

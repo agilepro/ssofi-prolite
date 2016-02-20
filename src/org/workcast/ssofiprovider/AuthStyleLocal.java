@@ -9,7 +9,7 @@ import javax.servlet.ServletContext;
 import org.workcast.mendocino.Mel;
 
 /**
- * Collect all the LDAP specific functionality into this class
+ * Collect all the local specific functionality into this class
  */
 public class AuthStyleLocal implements AuthStyle {
 
@@ -57,23 +57,28 @@ public class AuthStyleLocal implements AuthStyle {
 
     public void refreshUserInfo() throws Exception {
 
-        if (userFile.exists()) {
-            // if the file is no newer than last time we read it, then there
-            // is no reason to read it. We already have the current info.
-            if (timestampLastRead >= userFile.lastModified()) {
-                return;
+        try {
+            if (userFile.exists()) {
+                // if the file is no newer than last time we read it, then there
+                // is no reason to read it. We already have the current info.
+                if (timestampLastRead >= userFile.lastModified()) {
+                    return;
+                }
+                users = Mel.readFile(userFile, Mel.class);
             }
-            users = Mel.readFile(userFile, Mel.class);
+            else {
+                users = Mel.createEmpty("users", Mel.class);
+                users.writeToFile(userFile);
+            }
+    
+            timestampLastRead = userFile.lastModified();
+            userList = new Vector<User>();
+            for (User u : users.getChildren("user", User.class)) {
+                userList.add(u);
+            }
         }
-        else {
-            users = Mel.createEmpty("users", Mel.class);
-            users.writeToFile(userFile);
-        }
-
-        timestampLastRead = userFile.lastModified();
-        userList = new Vector<User>();
-        for (User u : users.getChildren("user", User.class)) {
-            userList.add(u);
+        catch (Exception e) {
+            throw new Exception("Unable to access user file ("+userFile+")",e);
         }
 
     }
