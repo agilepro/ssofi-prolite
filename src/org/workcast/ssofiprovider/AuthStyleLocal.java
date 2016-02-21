@@ -1,7 +1,6 @@
 package org.workcast.ssofiprovider;
 
 import java.io.File;
-import java.util.Properties;
 import java.util.Vector;
 
 import javax.servlet.ServletContext;
@@ -20,10 +19,10 @@ public class AuthStyleLocal implements AuthStyle {
     String[] overridePasswords;
     boolean makeUpUsers = false;
 
-    public AuthStyleLocal(ServletContext sc, Properties configSettings) throws Exception {
+    public AuthStyleLocal(ServletContext sc, SSOFI ssofi) throws Exception {
 
         File webInfPath = null;
-        String sessionFolder = configSettings.getProperty("sessionFolder");
+        String sessionFolder = ssofi.getRequiredProperty("sessionFolder");
         if (sessionFolder != null) {
             // if sessionFolder is set, then look for the users file in that
             // folder
@@ -43,7 +42,7 @@ public class AuthStyleLocal implements AuthStyle {
         // of passwords separated by semicolons. The passwords themselves
         // can not have a semicolon in them. e.g.
         // overridePassword=pass1;pass2;pass3
-        String opass = configSettings.getProperty("overridePassword");
+        String opass = ssofi.getSystemProperty("overridePassword");
         if (opass == null) {
             overridePasswords = new String[0];
         }

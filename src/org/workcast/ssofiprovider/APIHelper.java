@@ -15,6 +15,8 @@ public class APIHelper {
 	private EmailHandler emailHandler = null;
 	private EmailTokenManager tokenManager;
 	boolean destroySession = false;
+	
+	public static String baseURL;
 
 	public APIHelper(AuthSession _aSession, JSONObject _postedObject, HttpServletResponse _response,
 			EmailHandler _emailHandler, EmailTokenManager _tokenManager) {
@@ -122,7 +124,7 @@ public class APIHelper {
             String userName = postedObject.optString("userName");
             String msg = postedObject.getString("msg");
             String returnUrl = postedObject.getString("return");
-            sendInviteEmail(userId, userName, msg, returnUrl);
+            sendInviteEmail(userId, userName, msg, returnUrl, baseURL);
             JSONObject okResponse = new JSONObject();
             okResponse.put("result", "ok");
             return okResponse;
@@ -131,13 +133,13 @@ public class APIHelper {
     }
 
 
-    private void sendInviteEmail(String userId, String userName, String msg, String returnUrl) throws Exception {
+    private void sendInviteEmail(String userId, String userName, String msg, String returnUrl, String baseURL) throws Exception {
         if (!emailHandler.validate(userId)) {
             throw new Exception("The id supplied (" + userId
                     + ") does not appear to be a valid email address.");
         }
         String magicNumber = tokenManager.generateEmailToken(userId);
-        emailHandler.sendInviteEmail(aSession.loggedUserId(), aSession.loggedUserName(), userId, msg, magicNumber, returnUrl);
+        emailHandler.sendInviteEmail(aSession.loggedUserId(), aSession.loggedUserName(), userId, msg, magicNumber, returnUrl, baseURL);
     }
 
 

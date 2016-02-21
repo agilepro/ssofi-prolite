@@ -22,6 +22,8 @@ import org.workcast.json.JSONObject;
 public class AuthSession implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    
+    public static String baseURL;
 
     ParameterList paramlist = null;
 
@@ -30,7 +32,7 @@ public class AuthSession implements Serializable {
 
     // this is where the entire exchange will return to once done logging in
     // by default, return to the main page of the ID server
-    String return_to = OpenIDHandler.baseURL;
+    String return_to = baseURL;
 
     // this is the originally passed identity to VERIFY
     String presumedId;

@@ -10,6 +10,11 @@ import org.workcast.mendocino.Mel;
  * An XML element that represents a user
  */
 public class User extends Mel {
+    
+    //this is the last half of unique key for users, set every server start
+    //this arbitrary value is based on the server mac address,  must be 
+    //initialized by SSOFI init.
+    public static String guidTail;
 
     public User(Document doc, Element ele) {
         super(doc, ele);
@@ -138,7 +143,7 @@ public class User extends Mel {
             res.append(thirtySix[(int)ctime % 36]);
             ctime = ctime / 36;
         }
-        res.append(OpenIDHandler.guidTail);
+        res.append(guidTail);
         return res.toString();
     }
 }

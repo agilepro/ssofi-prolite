@@ -11,8 +11,6 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -35,12 +33,10 @@ import org.openid4java.message.MessageExtension;
 import org.openid4java.message.ax.AxMessage;
 import org.openid4java.message.ax.FetchRequest;
 import org.openid4java.message.ax.FetchResponse;
-import org.openid4java.server.ServerManager;
 import org.workcast.json.JSONArray;
 import org.workcast.json.JSONObject;
 import org.workcast.json.JSONTokener;
 import org.workcast.streams.HTMLWriter;
-import org.workcast.streams.SSLPatch;
 
 /**
  * Implements an OpenID provider
@@ -59,32 +55,7 @@ import org.workcast.streams.SSLPatch;
  */
 public class OpenIDHandler implements TemplateTokenRetriever {
 
-    public static ServerManager manager = null;
-    public static boolean initialized = false;
-    public static Exception initFailure = null;
-
-    // reconfigurable base address of the application (for proxy cases)
-    public static String baseURL;
-
-    //this is the last half of unique key for users, set every server start
-    //this arbitrary value is based on the server mac address
-    public static String guidTail;
-
-    // this is internal address of the root of application (on this server)
-    // use this for decomposing request URLs
-    public static String rootURL;
-    public static String knownAssetPath;
-
-    private static AuthStyle authStyle = null;
-    private static SessionHandler sHand = null;
-    private static EmailHandler emailHandler = null;
-    private static SecurityHandler securityHandler = null;
-    private static EmailTokenManager tokenManager = null;
-
-    private static int sessionDurationSeconds = 2500000;   //30 days
-    private static boolean isLDAPMode = false;
-    private static String configFilePath = "Unknown path";
-    
+    private static SSOFI ssofi;
     
     
     //MEMBER VARIABLES
@@ -135,134 +106,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         ServletContext sc = config.getServletContext();
 
-        try {
-            //get the server id from the MAC address of this machine
-            guidTail = generateServerId();
+        ssofi = SSOFI.getSSOFI(sc);
 
-            // disable Java certificate validation in the SSL level
-            // necessary so that bytes can be read reliably over SSL
-            SSLPatch.disableSSLCertValidation();
-
-            String webInfPath = sc.getRealPath("/WEB-INF");
-            File configFile = new File(webInfPath, "config.txt");
-            configFilePath = configFile.toString();
-            if (!configFile.exists()) {
-                throw new Exception(
-                        "Server needs to be configured.  No configuration file found: ("
-                                + configFilePath + ")");
-            }
-
-            FileInputStream fis = new FileInputStream(configFile);
-            Properties tprop = new Properties();
-            tprop.load(fis);
-            fis.close();
-            Properties configSettings = tprop;
-
-            File bipfile = new File(webInfPath, "blockedIp.txt");
-            if (!bipfile.exists()) {
-                bipfile.createNewFile();
-            }
-            String blockedIpListFilePath = bipfile.getPath();
-
-            String sessionDurationStr = configSettings.getProperty("sessionDurationSeconds");
-            if (sessionDurationStr!=null) {
-                int durVal = Integer.parseInt(sessionDurationStr);
-                if (durVal>600) {
-                    //it is not realistic to have a session duration shorter than 10 minutes
-                    //so only set if we have a value greater than 600 seconds.
-                    sessionDurationSeconds = durVal;
-                }
-            }
-
-            String sessionPath = configSettings.getProperty("sessionFolder");
-            
-            if (sessionPath == null) {
-                sHand = new SessionHandlerMemory();
-            }
-            else {
-                File sessionFolder = new File(sessionPath);
-                sHand = new SessionHandlerFile(sessionFolder, sessionDurationSeconds);
-            }
-            isLDAPMode = "LDAP".equalsIgnoreCase(configSettings.getProperty("authStyle"));
-
-            if (isLDAPMode) {
-                authStyle = new AuthStyleLDAP(configSettings);
-            }
-            else {
-                // NOTE: local mode must be the DEFAULT if no setting is supplied
-                authStyle = new AuthStyleLocal(sc, configSettings);
-            }
-
-            baseURL = getRequiredConfigProperty(configSettings, "baseURL").toLowerCase();
-
-            if (!baseURL.endsWith("/")) {
-                baseURL = baseURL + "/";
-            }
-            rootURL = getRequiredConfigProperty(configSettings, "rootURL").toLowerCase();
-
-            if (!rootURL.endsWith("/")) {
-                rootURL = rootURL + "/";
-            }
-            knownAssetPath = rootURL + "$/";
-
-            String captchaPrivateKey = configSettings.getProperty("captchaPrivateKey");
-            String captchaPublicKey = configSettings.getProperty("captchaPublicKey");
-            securityHandler = new SecurityHandler(captchaPrivateKey, captchaPublicKey,
-                    blockedIpListFilePath);
-
-            File emailConfigFile = new File(webInfPath, "EmailNotification.properties");
-            if (!emailConfigFile.exists()) {
-                throw new Exception(
-                        "Server needs to be configured.  No email configuration file found: ("
-                                + emailConfigFile.toString() + ")");
-            }
-
-            try {
-                FileInputStream fisEmail = new FileInputStream(emailConfigFile);
-                Properties propEmail = new Properties();
-                propEmail.load(fisEmail);
-                fisEmail.close();
-                Properties emailConfigSettings = propEmail;
-                emailHandler = new EmailHandler(sc, emailConfigSettings);
-            }
-            catch (Exception e) {
-                throw new Exception("Unable to initialize from email config file ("+emailConfigFile+")",e);
-            }
-            
-            File emailTokenFile = new File(webInfPath, "EmailTokens.json");
-            tokenManager = new EmailTokenManager(emailTokenFile);
-
-            manager = new ServerManager();
-
-
-            // configure the OpenID Provider's endpoint URL
-            String pattern = baseURL+"{id}";
-            AddressParser.initialize(pattern);
-
-            manager.setOPEndpointUrl(baseURL);
-
-
-            initialized = true;
-        }
-        catch (Exception e) {
-            initialized = false;
-            initFailure = e;
-            // get something into the log as well in case nobody accesses the
-            // server
-            System.out.println("\n##### ERROR DURING SSOFI PROVIDER INITIALIZATION #####");
-            e.printStackTrace(System.out);
-            System.out.println("##### ##### #####\n");
-        }
-    }
-
-    private static String getRequiredConfigProperty(Properties configSettings, String key)
-            throws Exception {
-        String val = configSettings.getProperty(key);
-        if (val == null) {
-            throw new Exception("Must have a setting for '" + key
-                    + "' in the configuration file ("+configFilePath+")");
-        }
-        return val;
     }
 
     /**
@@ -282,11 +127,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         try {
             String sessionId = getSSOFISessionId();
 
-            if (sHand==null) {
+            if (ssofi.sHand==null) {
                 streamTemplate("configErrScreen");
                 return;
             }
-            aSession = sHand.getAuthSession(sessionId);
+            aSession = ssofi.sHand.getAuthSession(sessionId);
             if (aSession.presumedId == null ||  aSession.presumedId.length()==0) {
                 //if the session does not have an assumed user id in it, then
                 //get the last good ID from the cookie.
@@ -299,10 +144,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             // thing because the session object holds the error message for the
             // next page
             if (destroySession) {
-                sHand.deleteAuthSession(sessionId);
+                ssofi.sHand.deleteAuthSession(sessionId);
             }
             else if (saveSession) {
-                sHand.saveAuthSession(sessionId, aSession);
+                ssofi.sHand.saveAuthSession(sessionId, aSession);
             }
         }
         catch (Exception e) {
@@ -356,36 +201,31 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         // initialize this object if there is not one already
         try {
 
-            if (!initialized) {
+            if (!ssofi.initialized) {
                 streamTemplate("configErrScreen");
                 return;
             }
 
             String requestURL = request.getRequestURL().toString();
 
-            if (baseURL == null) {
-                // if not set at initialization time, set it here on first request
-                baseURL = request.getRequestURL().toString();
-            }
-
-            if (!requestURL.startsWith(rootURL)) {
-                throw new Exception("sorry, request must start with (" + rootURL + "):  ("
+            if (!requestURL.startsWith(ssofi.rootURL)) {
+                throw new Exception("sorry, request must start with (" + ssofi.rootURL + "):  ("
                         + requestURL + ")");
             }
 
-            if (requestURL.startsWith(knownAssetPath)) {
-                serveUpAsset(requestURL.substring(knownAssetPath.length()));
+            if (requestURL.startsWith(ssofi.knownAssetPath)) {
+                serveUpAsset(requestURL.substring(ssofi.knownAssetPath.length()));
                 return;
             }
 
             // set up loggedUserId and loggedOpenId
             determineLoggedUser();
 
-            addressedUserId = requestURL.substring(rootURL.length());
+            addressedUserId = requestURL.substring(ssofi.rootURL.length());
             assoc_handle = request.getParameter("openid.assoc_handle");
 
             if (addressedUserId.length() > 0) {
-                displayInfo = authStyle.getOrCreateUser(addressedUserId);
+                displayInfo = ssofi.authStyle.getOrCreateUser(addressedUserId);
                 isDisplaying = true;
             }
 
@@ -411,7 +251,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 // new session is started every access, causing a flood of sessions, each potentially
                 // lasting for a long time (a month) so persisting these sessions would be a waste.
                 saveSession = false;
-                APIHelper theApi = new APIHelper(aSession, postedObject, response, emailHandler, tokenManager);
+                APIHelper theApi = new APIHelper(aSession, postedObject, response, ssofi.emailHandler, ssofi.tokenManager);
                 destroySession = theApi.handleAPICommand(mode);
                 if (destroySession) {
                     //clear out any existing session id
@@ -424,7 +264,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             saveSession = true;
 
             if ("lookup".equals(mode)) {
-                redirectToIdentityPage(authStyle.searchForID(reqParam("entered-id")));
+                redirectToIdentityPage(ssofi.authStyle.searchForID(reqParam("entered-id")));
             }
             else if ("loginView".equals(mode)) {
                 // this is the mode that displays a login prompt
@@ -466,7 +306,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 String enteredId = reqParam("entered-id");
                 aSession.presumedId = enteredId;
                 String password = reqParam("password");
-                boolean flag = authStyle.authenticateUser(enteredId, password);
+                boolean flag = ssofi.authStyle.authenticateUser(enteredId, password);
                 if (flag) {
                     setLogin(enteredId);
                     //session.setMaxInactiveInterval(86000);  //about 1 day
@@ -537,7 +377,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 OutputStreamWriter errOut = new OutputStreamWriter(System.out);
                 writeHtmlException(errOut, e);
                 System.out.println("SSOFI: --- ------------------  --- ");
-                response.sendRedirect(baseURL);
+                response.sendRedirect(ssofi.baseURL);
                 return;
 
             }
@@ -650,14 +490,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 throw new Exception("The new password values supplied do not match.  Try again");
             }
 
-            UserInformation userInfo = authStyle.getOrCreateUser(emailId);
+            UserInformation userInfo = ssofi.authStyle.getOrCreateUser(emailId);
             if (fullName != null && fullName.length()>0) {
                 userInfo.fullName = fullName;
             }
 
-            authStyle.updateUserInfo(userInfo, pwd);
+            ssofi.authStyle.updateUserInfo(userInfo, pwd);
 
-            boolean loginFlag = authStyle.authenticateUser(emailId, pwd);
+            boolean loginFlag = ssofi.authStyle.authenticateUser(emailId, pwd);
             if (loginFlag) {
                 setLogin(emailId);
             }
@@ -699,14 +539,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         if (aSession.paramlist == null) {
             aSession.errMsg = new Exception(
                     "If you started from an application, return to that application and start the login from there again.");
-            response.sendRedirect(baseURL);
+            response.sendRedirect(ssofi.baseURL);
             return;
         }
 
         AuthRequest authReq = AuthRequest.createAuthRequest(aSession.paramlist,
-                manager.getRealmVerifier());
+                ssofi.manager.getRealmVerifier());
 
-        Message oidResp = manager.authResponse(authReq, loggedOpenId, loggedOpenId, true, false);
+        Message oidResp = ssofi.manager.authResponse(authReq, loggedOpenId, loggedOpenId, true, false);
         if (oidResp instanceof DirectError) {
             ServletOutputStream os = response.getOutputStream();
             try {
@@ -726,7 +566,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         else {
             addAttributeValues(authReq, oidResp);
-            manager.sign((AuthSuccess) oidResp);
+            ssofi.manager.sign((AuthSuccess) oidResp);
             aSession.return_to = "";
 
             String destUrl = oidResp.getDestinationUrl(true);
@@ -757,7 +597,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
 
                 //always put first name, last name, and email address in the properties
-                UserInformation uinfo = authStyle.getOrCreateUser(aSession.loggedUserId());
+                UserInformation uinfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
                 String fullName = uinfo.fullName;
                 int spacePos = fullName.lastIndexOf(" ");
                 String firstName = "";
@@ -787,13 +627,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         String fullName = defParam("fullName", null);
         if (fullName!=null) {
-            authStyle.changeFullName(aSession.loggedUserId(), fullName);
+            ssofi.authStyle.changeFullName(aSession.loggedUserId(), fullName);
         }
         String oldPwd = defParam("oldPwd", null);
         if (oldPwd!=null) {
             String newPwd1 = reqParam("newPwd1");
             String newPwd2 = reqParam("newPwd2");
-            boolean flag = authStyle.authenticateUser(aSession.loggedUserId(), oldPwd);
+            boolean flag = ssofi.authStyle.authenticateUser(aSession.loggedUserId(), oldPwd);
             if (!flag) {
                 aSession.errMsg = new Exception(
                         "Doesn't look like you gave the correct old password.  Required in order to change passwords.");
@@ -812,7 +652,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            authStyle.changePassword(aSession.loggedUserId(), oldPwd, newPwd1);
+            ssofi.authStyle.changePassword(aSession.loggedUserId(), oldPwd, newPwd1);
         }
         response.sendRedirect("?openid.mode=display");
     }
@@ -832,7 +672,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             throw new Exception("New password must be 6 or more characters long.");
         }
 
-        authStyle.setPassword(userId, newPwd);
+        ssofi.authStyle.setPassword(userId, newPwd);
         response.sendRedirect("?openid.mode=display");
     }
 
@@ -849,7 +689,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         enteredId = reqParam("entered-id");
         password = reqParam("password");
-        if (authStyle.authenticateUser(enteredId, password)) {
+        if (ssofi.authStyle.authenticateUser(enteredId, password)) {
             setLogin(enteredId);
             if (aSession.quickLogin) {
                 //if you are not really doing the openid protocol, then you can get out quickly
@@ -868,7 +708,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     private void modeRegisterNewAction() throws Exception {
         String userId = reqParam("registerEmail");
-        if (!emailHandler.validate(userId)) {
+        if (!ssofi.emailHandler.validate(userId)) {
             aSession.errMsg = new Exception("The id supplied (" + userId
                     + ") does not appear to be a valid email address.");
             response.sendRedirect("?openid.mode=register");
@@ -886,7 +726,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 defParam(SecurityHandler.CAPTCHA_CHALLANGE_RESP, ""));
 
         try {
-            securityHandler.validate(secProp);
+            ssofi.securityHandler.validate(secProp);
         }
         catch (Exception e) {
             aSession.errMsg = e;
@@ -895,9 +735,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
 
         aSession.savedParams.clear();
-        String magicNumber = tokenManager.generateEmailToken(userId);
+        String magicNumber = ssofi.tokenManager.generateEmailToken(userId);
         aSession.startRegistration(userId);
-        emailHandler.sendVerifyEmail(userId, magicNumber, aSession.return_to);
+        ssofi.emailHandler.sendVerifyEmail(userId, magicNumber, aSession.return_to, ssofi.baseURL);
         response.sendRedirect("?openid.mode=confirmationKey");
     }
 
@@ -910,7 +750,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         // this is the mode that displays prompt to change id
         // which then posts to 'validateKeyAction'
-        displayInfo = authStyle.getOrCreateUser(aSession.regEmail);
+        displayInfo = ssofi.authStyle.getOrCreateUser(aSession.regEmail);
         streamTemplate("enterConfirmationKey");
     }
 
@@ -930,7 +770,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         String confirmKey = reqParam("registeredEmailKey");
         aSession.return_to = defParam("app", aSession.return_to);
 
-        UserInformation ui = authStyle.getOrCreateUser(registerEmail);
+        UserInformation ui = ssofi.authStyle.getOrCreateUser(registerEmail);
         
         if (aSession.loggedIn()) {
             if (aSession.loggedUserId().equals(registerEmail)) {
@@ -979,7 +819,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         //we know they are not logged in here.  So check the token.  Set up as if this
         //person is really trying to log in.
-        boolean valid = tokenManager.validateAndConsume(registerEmail, confirmKey);
+        boolean valid = ssofi.tokenManager.validateAndConsume(registerEmail, confirmKey);
         aSession.presumedId = registerEmail;
         requestedIdentity = null;
 
@@ -1045,12 +885,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         if ("associate".equals(mode)) {
             // --- process an association request ---
-            resMsg = manager.associationResponse(aSession.paramlist);
+            resMsg = ssofi.manager.associationResponse(aSession.paramlist);
             responseText = resMsg.keyValueFormEncoding();
         }
         else if ("check_authentication".equals(mode)) {
             // --- processing a verification request ---
-            resMsg = manager.verify(aSession.paramlist);
+            resMsg = ssofi.manager.verify(aSession.paramlist);
             responseText = resMsg.keyValueFormEncoding();
         }
         else {
@@ -1077,11 +917,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         if (aSession.paramlist == null) {
             aSession.errMsg = new Exception(
                     "Session time out... too much time to login in and no longer have information about where to return to.");
-            response.sendRedirect(baseURL);
+            response.sendRedirect(ssofi.baseURL);
             return;
         }
 
-        Message resMsg = manager.authResponse(aSession.paramlist, aSession.presumedId,
+        Message resMsg = ssofi.manager.authResponse(aSession.paramlist, aSession.presumedId,
                 aSession.presumedId, false);
 
         String urlTail = resMsg.wwwFormEncoding();
@@ -1101,7 +941,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         if (gotoId == null) {
             gotoId = "";
         }
-        String dest = baseURL + gotoId;
+        String dest = ssofi.baseURL + gotoId;
         response.sendRedirect(dest);
     }
 
@@ -1114,7 +954,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             loggedOpenId = "";
         }
         else {
-            UserInformation ui = authStyle.getOrCreateUser(loggedId);
+            UserInformation ui = ssofi.authStyle.getOrCreateUser(loggedId);
             aSession.login(loggedId, ui.fullName);
             loggedOpenId = AddressParser.composeOpenId(loggedId);
 
@@ -1169,8 +1009,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         File ctxPath = new File(sc2.getRealPath("/"));
 
         // fist check to see if a special auth style specific version exists
-        if (authStyle != null) {
-            String testName = fileName + "." + authStyle.getStyleIndicator() + ".htm";
+        if (ssofi.authStyle != null) {
+            String testName = fileName + "." + ssofi.authStyle.getStyleIndicator() + ".htm";
             File templateFile = new File(ctxPath, testName);
             if (templateFile.exists()) {
                 streamTemplateCore(templateFile);
@@ -1216,12 +1056,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         try {
             if ("userInfo".equals(tokenName)) {
                 JSONObject jo = new JSONObject();
-                jo.put("isLDAP", isLDAPMode);
-                jo.put("isLocal", !isLDAPMode);
+                jo.put("isLDAP", ssofi.isLDAPMode);
+                jo.put("isLocal", !ssofi.isLDAPMode);
                 if (aSession.loggedIn()) {
                     jo.put("userId", aSession.loggedUserId());
                     jo.put("userEmail", aSession.regEmail);
-                    UserInformation userInfo = authStyle.getOrCreateUser(aSession.loggedUserId());
+                    UserInformation userInfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
                     if (userInfo.exists) {
                         jo.put("userName", userInfo.fullName);
                     }
@@ -1257,12 +1097,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 }
                 jo.put("userError", errStr);
                 jo.put("errors", errors);
-                jo.put("baseUrl", baseURL);
+                jo.put("baseUrl", ssofi.baseURL);
                 jo.put("go", paramGo);
                 jo.write(out,2,12);
             }
             else if ("thisPage".equals(tokenName)) {
-                HTMLWriter.writeHtml(out, baseURL);
+                HTMLWriter.writeHtml(out, ssofi.baseURL);
             }
             else if ("fullName".equals(tokenName)) {
                 if (displayInfo != null && displayInfo.exists) {
@@ -1286,7 +1126,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else if ("loggedName".equals(tokenName)) {
                 if (aSession.loggedIn()) {
-                    UserInformation userInfo = authStyle.getOrCreateUser(aSession.loggedUserId());
+                    UserInformation userInfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
                     if (userInfo.exists) {
                         HTMLWriter.writeHtml(out, userInfo.fullName);
                     }
@@ -1294,7 +1134,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else if ("loggedKey".equals(tokenName)) {
                 if (aSession.loggedIn()) {
-                    UserInformation userInfo = authStyle.getOrCreateUser(aSession.loggedUserId());
+                    UserInformation userInfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
                     if (userInfo.exists) {
                         HTMLWriter.writeHtml(out, userInfo.key);
                     }
@@ -1333,11 +1173,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 }
             }
             else if ("root".equals(tokenName)) {
-                HTMLWriter.writeHtml(out, baseURL);
+                HTMLWriter.writeHtml(out, ssofi.baseURL);
             }
             else if ("Note".equals(tokenName)) {
                 String note = "";
-                if (isLDAPMode) {
+                if (ssofi.isLDAPMode) {
                     note = "The user name and password that you "
                             + "enter above will be checked against a "
                             + "directory server using LDAP protocol.";
@@ -1362,7 +1202,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 HTMLWriter.writeHtml(out, assoc_handle);
             }
             else if ("serverError".equals(tokenName)) {
-                writeHtmlException(out, initFailure);
+                writeHtmlException(out, ssofi.initFailure);
             }
             else if ("userError".equals(tokenName)) {
                 writeHtmlException(out, aSession.errMsg);
@@ -1372,7 +1212,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 if (aSession.errMsg != null) {
                     cerr = aSession.errMsg.getMessage();
                 }
-                out.write(securityHandler.getCaptchaHtML(cerr));
+                out.write(ssofi.securityHandler.getCaptchaHtML(cerr));
             }
             else {
                 //if we don't know what it means, write it back out, because
@@ -1441,7 +1281,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         //of this session in the cookie.  Perhaps this time should
         //be set only when the session is created
         Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(sessionDurationSeconds);
+        previousId.setMaxAge(ssofi.sessionDurationSeconds);
         previousId.setPath("/"); // everything on the server
         response.addCookie(previousId);
         return sessionId;
@@ -1458,7 +1298,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         System.out.println("SSOFI: NEW session id generated: "+sessionId);
 
         Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(sessionDurationSeconds);
+        previousId.setMaxAge(ssofi.sessionDurationSeconds);
         previousId.setPath("/"); // everything on the server
         response.addCookie(previousId);
         return sessionId;
@@ -1480,42 +1320,5 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         return null;
     }
 
-    static long lastKey = 0;
-    static char[] thirtySix = new char[] {'0','1','2','3','4','5','6','7','8','9',
-        'a','b','c','d','e','f','g','h','i','j', 'k','l','m','n','o','p','q','r',
-        's','t','u','v','w','x','y','z'};
-    /**
-    * Generates a value based on the current mac address of the
-    * current server.  This gives us a unique value for the server
-    * from which to build unique user ids.
-    */
-    public synchronized static String generateServerId() throws Exception {
-
-        InetAddress ip = InetAddress.getLocalHost();
-        NetworkInterface network = NetworkInterface.getByInetAddress(ip);
-        if (network==null) {
-            throw new Exception("Unable to identify a network interface with the address "+ip);
-        }
-        byte[] mac = network.getHardwareAddress();
-        if (mac==null) {
-            throw new Exception("The method 'getHArdwareAddress' was not able to return an actual mac address.  Something is wrong with network configuration");
-        }
-        long macValue = 0;
-        for (byte oneByte : mac) {
-            macValue = (macValue<<8) + (oneByte+256)%256;
-        }
-        if (macValue==0) {
-            //throw new Exception("Unable to get the MAC address");
-            //not sure this is a good idea, but make up a timestamp as a unique id for now
-            macValue = System.currentTimeMillis();
-        }
-        //now convert timestamp into cryptic alpha string
-        StringBuffer res = new StringBuffer(10);
-        while (macValue>0) {
-            res.append(thirtySix[(int)(macValue % 36)]);
-            macValue = macValue / 36;
-        }
-        return res.toString();
-    }
 
 }

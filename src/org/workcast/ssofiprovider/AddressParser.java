@@ -31,8 +31,8 @@ public class AddressParser {
     // root page is the page where there is no id, the root of the servlet
     private boolean isRootAddr = false;
 
-    public static void initialize(String pattern) throws Exception {
-        valueBeforeId = OpenIDHandler.baseURL.toLowerCase();
+    public static void initialize(String baseURL) throws Exception {
+        valueBeforeId = baseURL;
     }
 
     /**
@@ -68,7 +68,7 @@ public class AddressParser {
                     + "creating any instances of the class");
         }
 
-        // normalize to all loweracse, giving case insensitivity
+        // normalize to all lowercase, giving case insensitivity
         String addr = address.toLowerCase();
 
         if (!addr.startsWith(valueBeforeId)) {

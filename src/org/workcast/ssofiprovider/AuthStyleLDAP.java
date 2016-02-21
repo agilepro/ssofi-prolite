@@ -3,7 +3,6 @@ package org.workcast.ssofiprovider;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
-import java.util.Properties;
 
 import javax.naming.NamingEnumeration;
 import javax.naming.directory.Attribute;
@@ -45,19 +44,16 @@ public class AuthStyleLDAP implements AuthStyle {
      */
     private UserInformation lastUserLookedUp;
 
-    public AuthStyleLDAP(Properties configSettings) throws Exception {
+    public AuthStyleLDAP(SSOFI ssofi) throws Exception {
 
-        factoryInitial = getRequiredConfigProperty(configSettings, "java.naming.factory.initial");
-        providerUrl = getRequiredConfigProperty(configSettings, "java.naming.provider.url");
-        securityAuthentication = getRequiredConfigProperty(configSettings,
-                "java.naming.security.authentication");
-        securityPrincipal = getRequiredConfigProperty(configSettings,
-                "java.naming.security.principal");
-        securityCredentials = getRequiredConfigProperty(configSettings,
-                "java.naming.security.credentials");
-        adminGroup = getRequiredConfigProperty(configSettings, "adminGroup");
-        queryBase = getRequiredConfigProperty(configSettings, "queryBase");
-        String queryFilter = getRequiredConfigProperty(configSettings, "queryFilter");
+        factoryInitial = ssofi.getRequiredProperty("java.naming.factory.initial");
+        providerUrl = ssofi.getRequiredProperty("java.naming.provider.url");
+        securityAuthentication = ssofi.getRequiredProperty("java.naming.security.authentication");
+        securityPrincipal = ssofi.getRequiredProperty("java.naming.security.principal");
+        securityCredentials = ssofi.getRequiredProperty("java.naming.security.credentials");
+        adminGroup = ssofi.getRequiredProperty("adminGroup");
+        queryBase = ssofi.getRequiredProperty("queryBase");
+        String queryFilter = ssofi.getRequiredProperty("queryFilter");
 
         int idLoc = queryFilter.indexOf("{id}");
         if (idLoc < 0) {
@@ -125,16 +121,6 @@ public class AuthStyleLDAP implements AuthStyle {
                 throw new Exception("Unable to authenticate user '" + userNetId + "'", e);
             }
         }
-    }
-
-    private static String getRequiredConfigProperty(Properties configSettings, String key)
-            throws Exception {
-        String val = configSettings.getProperty(key);
-        if (val == null) {
-            throw new Exception("Must have a setting for '" + key
-                    + "' in the configuration file for OpenIDServlet");
-        }
-        return val;
     }
 
     public UserInformation getOrCreateUser(String userNetId) throws Exception {

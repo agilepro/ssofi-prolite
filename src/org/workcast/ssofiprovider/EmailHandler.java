@@ -82,7 +82,7 @@ public class EmailHandler {
         pattern = Pattern.compile(EMAIL_PATTERN);
     }
 
-    public void sendVerifyEmail(String emailId, String magicNumber, String app) throws Exception {
+    public void sendVerifyEmail(String emailId, String magicNumber, String app, String baseURL) throws Exception {
         Transport transport = null;
         try {
 
@@ -101,7 +101,7 @@ public class EmailHandler {
 
             message.setSubject(option);
 
-            String registerAddr = OpenIDHandler.baseURL
+            String registerAddr = baseURL
                     + "?openid.mode=validateKeyAction&registerEmail="
                     + URLEncoder.encode(emailId, "UTF-8")
                     + "&registeredEmailKey="
@@ -148,7 +148,8 @@ public class EmailHandler {
         }
     }
 
-    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String magicNumber, String app) throws Exception {
+    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String magicNumber, 
+            String app, String baseURL) throws Exception {
         Transport transport = null;
         try {
 
@@ -167,7 +168,7 @@ public class EmailHandler {
 
             message.setSubject(subject);
 
-            String registerAddr = OpenIDHandler.baseURL
+            String registerAddr = baseURL
                     + "?openid.mode=validateKeyAction&registerEmail="
                     + URLEncoder.encode(emailId, "UTF-8")
                     + "&registeredEmailKey="
