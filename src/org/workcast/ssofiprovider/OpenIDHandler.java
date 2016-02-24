@@ -56,8 +56,8 @@ import org.workcast.streams.HTMLWriter;
 public class OpenIDHandler implements TemplateTokenRetriever {
 
     private static SSOFI ssofi;
-    
-    
+
+
     //MEMBER VARIABLES
 
     HttpServletRequest request;
@@ -756,14 +756,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     /*
      * The email contains this link:
-     * 
+     *
      * {baseURL}?openid.mode=validateKeyAction
      *              &registerEmail={emailId}
      *              &registeredEmailKey={magicNumber}
      *              &app={application return URL}
-     *              
+     *
      * so if you get both of those, and they match, then you have validated
-     * a particular email address.  
+     * a particular email address.
      */
     private void modeValidateKeyAction() throws Exception {
         String registerEmail = reqParam("registerEmail");
@@ -771,35 +771,35 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         aSession.return_to = defParam("app", aSession.return_to);
 
         UserInformation ui = ssofi.authStyle.getOrCreateUser(registerEmail);
-        
+
         if (aSession.loggedIn()) {
             if (aSession.loggedUserId().equals(registerEmail)) {
-                //if user already logged in, as the correct person, 
+                //if user already logged in, as the correct person,
                 //check to see if the user password has been set
-                //correctly.  If so, go ahead and redirect to the 
+                //correctly.  If so, go ahead and redirect to the
                 //application as if it was a normal link.
                 if (ui.hasPassword) {
                     response.sendRedirect(aSession.return_to);
                     return;
                 }
-        
-                    
-                
+
+
+
                 //The only way they can get here, being logged in, but not having
-                //a password, is if they got the password setting prompt, and 
+                //a password, is if they got the password setting prompt, and
                 //then closed the window -- without losing their session.
                 //Can anyone steal their session?
                 //Can someone jump in an set their password before they had a chance?
                 //good questions.   On the assumption this is not a real danger,
-                //go ahead and prompt again to set the password, because they 
+                //go ahead and prompt again to set the password, because they
                 //probably clicked on the link again, to try again to set password.
                 aSession.presumedId = registerEmail;
                 requestedIdentity = null;
                 response.sendRedirect("?openid.mode=registrationForm");
                 return;
             }
-            
-            //if logged in as a different user: what to do?   
+
+            //if logged in as a different user: what to do?
             //Should this log-out and log-in again?  Invalidate the token?
             //Just redirect back to app would be convenient.
             //The problem with this is that if the user had been sent an invite
@@ -839,7 +839,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             //If they had been logged in as someone else, cancel that, and consider them logged in here
             aSession.regEmailConfirmed = true;
             aSession.regEmail = registerEmail;
-            
+
             setLogin(registerEmail);
 
             //always go to register because they might have chose this link in order to reset their password
@@ -969,7 +969,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
-    
+
     public String getBestGuessId() {
         if (aSession.loggedIn()) {
             return aSession.loggedUserId();
@@ -982,7 +982,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
-    
+
     /**
      * returns null if not logged in checks the session. If no session, it
      * checks the cookies. if no cookies, or cookies invalid, then not logged
@@ -1000,6 +1000,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void serveUpAsset(String resourceName) throws Exception {
         ServletContext sc = session.getServletContext();
         String path = sc.getRealPath("/$/" + resourceName);
+
+        if (resourceName.endsWith(".css")) {
+            response.setContentType("text/css");
+        }
 
         TemplateStreamer.streamRawFile(response.getOutputStream(), new File(path));
     }
@@ -1073,7 +1077,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     jo.put("dispEmail", displayInfo.emailAddress);
                 }
                 jo.put("expectedUser", getBestGuessId());
-                
+
                 String errStr = "";
                 JSONArray errors = new JSONArray();
                 Throwable runner = aSession.errMsg;

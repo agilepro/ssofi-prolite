@@ -22,7 +22,6 @@
  * -->
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
-        <meta http-equiv="X-UA-Compatible" content="IE=8" />
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         <title>Corporate LDAP - Open Id Provider</title>
         <link rel="openid.server" href="{{root}}" />
@@ -38,8 +37,6 @@
         app.controller('myCtrl', function($scope, $http) {
             $scope.info = {{userInfo}};
             $scope.userId = "{{reqUserId}}";
-            //$scope.info.isLocal = false;
-            //$scope.info.isLDAP = true;
             $scope.bodyStyle = "";
             if ($scope.info.isLDAP) {
                 $scope.bodyStyle = "background-color:skyblue";
@@ -65,7 +62,7 @@
                                 <button type="submit" class="btn btn-primary" name="openid.mode"
                                         value="logout">Log Out</button>
                                 &nbsp;
-                                <button ng-show="isLocal" type="submit" class="btn btn-primary" name="openid.mode"
+                                <button ng-show="info.isLocal" type="submit" class="btn btn-primary" name="openid.mode"
                                         value="passwordView">Edit Profile or Password</button>
                                 <br />
                             </div>
