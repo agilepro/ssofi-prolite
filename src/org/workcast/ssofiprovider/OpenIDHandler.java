@@ -166,8 +166,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     public void doPost() {
         try {
-            System.out.println("SSOFI POST: "+request.getRequestURI());
-
             String postType = request.getHeader("Content-Type");
             if (postType!=null && (postType.toLowerCase().startsWith("text/plain")
                     || postType.toLowerCase().startsWith("application/json"))) {
@@ -230,18 +228,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             String mode = defParam("openid.mode", "display");
-            System.out.println("SSOFI: " + request.getRequestURL().toString().trim()
-                    + " mode=" + mode
-                    + "  isDisplaying="+isDisplaying
-                    + "  loggedIn="+aSession.loggedIn());
+            //System.out.println("SSOFI: " + request.getRequestURL().toString().trim()
+            //        + " mode=" + mode
+            //        + "  isDisplaying="+isDisplaying
+            //        + "  loggedIn="+aSession.loggedIn());
 
-
-            if (requestedIdentity!=null) {
-                System.out.println("SSOFI: requestedIdentity: "+requestedIdentity.getOpenId());
-            }
-            else {
-                System.out.println("SSOFI: requestedIdentity is NULL");
-            }
 
             if (mode.startsWith("api")) {
                 // Want to avoid saving a session as a result of every API call.  The API call will never
@@ -309,7 +300,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 boolean flag = ssofi.authStyle.authenticateUser(enteredId, password);
                 if (flag) {
                     setLogin(enteredId);
-                    //session.setMaxInactiveInterval(86000);  //about 1 day
                 }
                 else {
                     aSession.errMsg = new Exception("Unable to log you in to user id (" + enteredId
@@ -909,6 +899,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     private void returnLoginFailure() throws Exception {
 
+        //official logging of failure to log in.
+        System.out.println("SSOFI: LOGIN ATTEMPT FAILURE " + new Date());
+
         // it could be that the user have been sitting there for a long time,
         // and the
         // session has completely timed out. If so, handle gracefully as
@@ -933,7 +926,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         else {
             dest = aSession.return_to + "&" + urlTail;
         }
-        System.out.println("SSOFI: FAILURE RETURN = " + dest);
         response.sendRedirect(dest);
     }
 
@@ -1149,7 +1141,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else if ("reqUserId".equals(tokenName)) {
                 if (requestedIdentity != null) {
-                    System.out.append("SSOFI: displaying requested id: "+requestedIdentity.getUserId());
                     HTMLWriter.writeHtml(out, requestedIdentity.getUserId());
                 }
                 else {
@@ -1278,9 +1269,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return createSSOFISessionId();
         }
 
-
-        System.out.println("SSOFI: found existing session cookie: "+sessionId);
-
         //TODO: determine if it is right to refresh the time period
         //of this session in the cookie.  Perhaps this time should
         //be set only when the session is created
@@ -1299,7 +1287,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     public String createSSOFISessionId() {
         String sessionId = "S" + IdGenerator.createMagicNumber();
-        System.out.println("SSOFI: NEW session id generated: "+sessionId);
 
         Cookie previousId = new Cookie("SSOFISession", sessionId);
         previousId.setMaxAge(ssofi.sessionDurationSeconds);

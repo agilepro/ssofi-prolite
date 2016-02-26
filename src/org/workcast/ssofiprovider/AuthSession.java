@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.Enumeration;
 import java.util.Properties;
 import java.util.Vector;
@@ -22,7 +23,7 @@ import org.workcast.json.JSONObject;
 public class AuthSession implements Serializable {
 
     private static final long serialVersionUID = 1L;
-    
+
     public static String baseURL;
 
     ParameterList paramlist = null;
@@ -83,13 +84,19 @@ public class AuthSession implements Serializable {
             throw new RuntimeException("Program Logic Error: numm NAME passed at login time.  Why?");
         }
         authName = name;
-        
+
+        //This is the official log saying that someone logged in to the system
+        System.out.println("SSOFI LOGIN: userId="+authIdentity+", name="+authName+", at "+new Date());
+
         //we also wipe out any record of a previously sought after id, now that
         //you are logged in we don't need to remember who we thought you might be.
         presumedId = id;
     }
 
     public void logout() {
+        //This is the official log saying that someone logged out of the system
+        System.out.println("SSOFI LOGOUT: userId="+authIdentity+", name="+authName+", at "+new Date());
+
         authIdentity = null;
         authName = null;
         quickLogin = false;
@@ -102,7 +109,7 @@ public class AuthSession implements Serializable {
     public String loggedUserName() {
         return authName;
     }
-    
+
     public void clearError() {
         errMsg = null;
         savedParams.clear();
