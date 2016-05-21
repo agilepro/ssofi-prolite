@@ -14,6 +14,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.workcast.streams.HTMLWriter;
+import org.workcast.streams.TemplateStreamer;
 
 /**
  * Implements an HTTPServlet for an OpenID provider
@@ -28,8 +29,8 @@ public class OpenIDServlet extends HttpServlet {
 		} catch (UnsupportedEncodingException e) {
 			//UTF-8 is always supported
 		}
-        
-        
+
+
         //this is an API to be read by others, for these really strange rules
         //set up by the browsers, you have to set the CORS to
         //allow scripts to read this data from a browser.

@@ -37,6 +37,8 @@ import org.workcast.json.JSONArray;
 import org.workcast.json.JSONObject;
 import org.workcast.json.JSONTokener;
 import org.workcast.streams.HTMLWriter;
+import org.workcast.streams.TemplateStreamer;
+import org.workcast.streams.TemplateTokenRetriever;
 
 /**
  * Implements an OpenID provider
@@ -1309,6 +1311,21 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
         }
         return null;
+    }
+
+    @Override
+    public void closeLoop(String arg0) throws Exception {
+        throw new Exception("SSOFI Template Streamer can not handle LOOPS");
+    }
+
+    @Override
+    public int initLoop(String arg0, String arg1) throws Exception {
+        throw new Exception("SSOFI Template Streamer can not handle LOOPS");
+    }
+
+    @Override
+    public void setIteration(String arg0, int arg1) throws Exception {
+        throw new Exception("SSOFI Template Streamer can not handle LOOPS");
     }
 
 
