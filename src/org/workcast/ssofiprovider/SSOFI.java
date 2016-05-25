@@ -10,19 +10,22 @@ import javax.servlet.ServletContext;
 
 import org.openid4java.server.ServerManager;
 import org.workcast.streams.SSLPatch;
+import org.workcast.streams.StreamHelper;
 
 /**
- * This is the core singleton class that represents the configuration 
+ * This is the core singleton class that represents the configuration
  * of the SSOFI server.  Everything in this object is common
  * to all users, all sessions, all requests.  Generally, this is where
  * all of the configuration settings should be, as well as any common
  * static utlity service.
  */
 public class SSOFI {
-    
+
+    private ServletContext sc;
     private Properties config;
     private File dataFolder;
-    
+    private File configFile;
+
     public ServerManager manager = null;
     public boolean initialized = false;
     public Exception initFailure = null;
@@ -43,7 +46,6 @@ public class SSOFI {
 
     public int sessionDurationSeconds = 2500000;   //30 days
     public boolean isLDAPMode = false;
-    private String configFilePath = "Unknown path";
 
 
     public static synchronized SSOFI getSSOFI(ServletContext sc) {
@@ -54,9 +56,13 @@ public class SSOFI {
         }
         return ssofi;
     }
-    
-    private SSOFI(ServletContext sc) {
+
+    private SSOFI(ServletContext _sc) {
         try {
+            sc = _sc;
+
+            findInitializeDataFolder();
+
             //get the server id from the MAC address of this machine
             User.guidTail = generateServerId();
 
@@ -64,25 +70,7 @@ public class SSOFI {
             // necessary so that bytes can be read reliably over SSL
             SSLPatch.disableSSLCertValidation();
 
-            String webInfPath = sc.getRealPath("/WEB-INF");
-            File configFile = new File(webInfPath, "config.txt");
-            configFilePath = configFile.toString();
-            if (!configFile.exists()) {
-                throw new Exception(
-                        "Server needs to be configured.  No configuration file found: ("
-                                + configFilePath + ")");
-            }
-
-            try {
-                FileInputStream fis = new FileInputStream(configFile);
-                Properties tprop = new Properties();
-                tprop.load(fis);
-                fis.close();
-                config = tprop;
-            }
-            catch(Exception e) {
-                throw new Exception("Unable to read config file ("+configFilePath+")", e);
-            }
+            readConfigFile();
 
             String sessionDurationStr = getSystemProperty("sessionDurationSeconds");
             if (sessionDurationStr!=null) {
@@ -94,10 +82,8 @@ public class SSOFI {
                 }
             }
 
-            String sessionPath = getRequiredProperty("sessionFolder");
-            dataFolder = new File(sessionPath);
             sHand = new SessionHandlerFile(dataFolder, sessionDurationSeconds);
-            
+
             isLDAPMode = "LDAP".equalsIgnoreCase(getSystemProperty("authStyle"));
 
             if (isLDAPMode) {
@@ -115,7 +101,7 @@ public class SSOFI {
             }
             AuthSession.baseURL = baseURL;
             APIHelper.baseURL = baseURL;
-            
+
             rootURL = getRequiredProperty("rootURL").toLowerCase();
 
             if (!rootURL.endsWith("/")) {
@@ -123,7 +109,10 @@ public class SSOFI {
             }
             knownAssetPath = rootURL + "$/";
 
-            File emailConfigFile = new File(webInfPath, "EmailNotification.properties");
+            File emailConfigFile = new File(dataFolder, "EmailNotification.properties");
+            if (!emailConfigFile.exists()) {
+                initFileFromWebInf(emailConfigFile);
+            }
             if (!emailConfigFile.exists()) {
                 throw new Exception(
                         "Server needs to be configured.  No email configuration file found: ("
@@ -135,14 +124,12 @@ public class SSOFI {
                 Properties propEmail = new Properties();
                 propEmail.load(fisEmail);
                 fisEmail.close();
-                Properties emailConfigSettings = propEmail;
-                emailHandler = new EmailHandler(sc, emailConfigSettings);
+                emailHandler = new EmailHandler(this, propEmail);
             }
             catch (Exception e) {
                 throw new Exception("Unable to initialize from email config file ("+emailConfigFile+")",e);
             }
-            
-            //TODO move this to the data folder
+
             File emailTokenFile = new File(dataFolder, "EmailTokens.json");
             tokenManager = new EmailTokenManager(emailTokenFile);
 
@@ -153,17 +140,14 @@ public class SSOFI {
 
             manager.setOPEndpointUrl(baseURL);
 
-            //TODO move this to the data folder
             File bipfile = new File(dataFolder, "blockedIp.txt");
             if (!bipfile.exists()) {
                 bipfile.createNewFile();
             }
-            String blockedIpListFilePath = bipfile.getPath();
             String captchaPrivateKey = getSystemProperty("captchaPrivateKey");
             String captchaPublicKey = getSystemProperty("captchaPublicKey");
             securityHandler = new SecurityHandler(captchaPrivateKey, captchaPublicKey,
-                    blockedIpListFilePath);
-
+                    bipfile);
 
             initialized = true;
         }
@@ -177,7 +161,61 @@ public class SSOFI {
             System.out.println("##### ##### #####\n");
         }
     }
-    
+
+    public void initFileFromWebInf(File expectedFile) throws Exception {
+        String webInfPath = sc.getRealPath("/WEB-INF");
+        File initFile = new File(webInfPath, expectedFile.getName());
+        if (initFile.exists()) {
+            StreamHelper.copyFileToFile(initFile, expectedFile);
+        }
+    }
+
+    private void findInitializeDataFolder() throws Exception {
+        //first we read the one config file that tells where everything else is
+        String webInfPath = sc.getRealPath("/WEB-INF");
+        File basicConfigFile = new File(webInfPath, "config.properties");
+        if (basicConfigFile.exists()) {
+            FileInputStream fis = new FileInputStream(basicConfigFile);
+            Properties tprop = new Properties();
+            tprop.load(fis);
+            fis.close();
+            String dpath = tprop.getProperty("dataFolder");
+            if (dpath!=null) {
+                dataFolder = new File(dpath);
+            }
+        }
+        if (dataFolder==null) {
+            dataFolder = new File("/opt/SSOFI_Sessions");
+        }
+
+        if (!dataFolder.exists()) {
+            dataFolder.mkdirs();
+        }
+    }
+
+    private void readConfigFile() throws Exception {
+        configFile = new File(dataFolder, "config.txt");
+        if (!configFile.exists()) {
+            initFileFromWebInf(configFile);
+        }
+
+        if (!configFile.exists()) {
+            throw new Exception(
+                    "Server needs to be configured.  No configuration file found: ("
+                            + configFile + ")");
+        }
+        try {
+            FileInputStream fis = new FileInputStream(configFile);
+            Properties tprop = new Properties();
+            tprop.load(fis);
+            fis.close();
+            config = tprop;
+        }
+        catch(Exception e) {
+            throw new Exception("Unable to read config file ("+configFile+")", e);
+        }
+    }
+
     public String getSystemProperty(String key) {
         return config.getProperty(key);
     }
@@ -185,12 +223,11 @@ public class SSOFI {
         String val = config.getProperty(key);
         if (val == null) {
             throw new Exception("Must have a setting for '" + key
-                    + "' in the configuration file ("+configFilePath+")");
+                    + "' in the configuration file ("+configFile+")");
         }
         return val;
     }
 
-    
     public File getDataFolder() {
         return dataFolder;
     }
@@ -232,5 +269,5 @@ public class SSOFI {
         }
         return res.toString();
     }
-    
+
 }

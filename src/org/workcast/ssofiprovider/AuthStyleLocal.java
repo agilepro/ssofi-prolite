@@ -12,31 +12,21 @@ import org.workcast.mendocino.Mel;
  */
 public class AuthStyleLocal implements AuthStyle {
 
-    Mel users = null;
-    File userFile;
-    Vector<User> userList;
-    long timestampLastRead = 0;
-    String[] overridePasswords;
-    boolean makeUpUsers = false;
+    private Mel users = null;
+    private File userFile;
+    private Vector<User> userList;
+    private long timestampLastRead = 0;
+    private String[] overridePasswords;
+    private boolean makeUpUsers = false;
 
     public AuthStyleLocal(ServletContext sc, SSOFI ssofi) throws Exception {
 
-        File webInfPath = null;
-        String sessionFolder = ssofi.getRequiredProperty("sessionFolder");
-        if (sessionFolder != null) {
-            // if sessionFolder is set, then look for the users file in that
-            // folder
-            webInfPath = new File(sessionFolder);
-            if (!webInfPath.exists()) {
-                // if it does not exist, ignore the setting
-                webInfPath = null;
-            }
-        }
-        if (webInfPath == null) {
-            webInfPath = new File(sc.getRealPath("/WEB-INF"));
-        }
+        File dataFolder = ssofi.getDataFolder();
 
-        userFile = new File(webInfPath, "users.xml");
+        userFile = new File(dataFolder, "users.xml");
+        if (!userFile.exists()) {
+            ssofi.initFileFromWebInf(userFile);
+        }
 
         // handle override passwords, if any. You can specify any number
         // of passwords separated by semicolons. The passwords themselves
@@ -69,7 +59,7 @@ public class AuthStyleLocal implements AuthStyle {
                 users = Mel.createEmpty("users", Mel.class);
                 users.writeToFile(userFile);
             }
-    
+
             timestampLastRead = userFile.lastModified();
             userList = new Vector<User>();
             for (User u : users.getChildren("user", User.class)) {

@@ -1,5 +1,6 @@
 package org.workcast.ssofiprovider;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.util.ArrayList;
@@ -25,11 +26,11 @@ public class SecurityHandler {
     public static final String REGIS_REQ_EMAILID = "emailId";
 
     public SecurityHandler(String captchaPrivateKey, String captchaPublicKey,
-            String blockedIpListFilePath) {
+            File blockedIpListFilePath) {
 
         SecurityHandler.captchaPrivateKey = captchaPrivateKey;
         SecurityHandler.captchaPublicKey = captchaPublicKey;
-        SecurityHandler.blockedIpListFilePath = blockedIpListFilePath;
+        SecurityHandler.blockedIpListFilePath = blockedIpListFilePath.getPath();
 
     }
 

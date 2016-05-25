@@ -52,7 +52,7 @@ public class EmailHandler {
     private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
             + "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
-    public EmailHandler(ServletContext sc, Properties props) throws Exception {
+    public EmailHandler(SSOFI ssofi, Properties props) throws Exception {
 
         smtpUser = requiredProp(props, "mail.smtp.user");
         smtpPwd = requiredProp(props, "mail.smtp.password");
@@ -65,8 +65,8 @@ public class EmailHandler {
         contentType = defProp(props, "mail.contenttype", "text/html");
         savedProps = props;
 
-        String webInfPath = sc.getRealPath("/WEB-INF");
-        profileRequestFile = new File(webInfPath, "profilerequest.xml");
+        File dataFolder = ssofi.getDataFolder();
+        profileRequestFile = new File(dataFolder, "profilerequest.xml");
 
         if (profileRequestFile.exists()) {
             profileRequest = Mel.readFile(profileRequestFile, Mel.class);
@@ -148,7 +148,7 @@ public class EmailHandler {
         }
     }
 
-    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String magicNumber, 
+    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String magicNumber,
             String app, String baseURL) throws Exception {
         Transport transport = null;
         try {
