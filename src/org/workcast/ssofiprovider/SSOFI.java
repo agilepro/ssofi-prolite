@@ -191,10 +191,12 @@ public class SSOFI {
         if (!dataFolder.exists()) {
             dataFolder.mkdirs();
         }
+        System.out.println("SSOFI: data folder: "+dataFolder);
     }
 
     private void readConfigFile() throws Exception {
         configFile = new File(dataFolder, "config.txt");
+        System.out.println("SSOFI: config file: "+configFile);
         if (!configFile.exists()) {
             initFileFromWebInf(configFile);
         }
@@ -214,6 +216,8 @@ public class SSOFI {
         catch(Exception e) {
             throw new Exception("Unable to read config file ("+configFile+")", e);
         }
+        System.out.println("SSOFI: baseURL: "+config.getProperty("baseURL"));
+        System.out.println("SSOFI: authStyle: "+config.getProperty("authStyle"));
     }
 
     public String getSystemProperty(String key) {

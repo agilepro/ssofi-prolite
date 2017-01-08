@@ -12,7 +12,7 @@
     <property name="src.java.src.dir"               value="${source.dir}/src"/>
     <property name="src.servletcontainer.home.dir"  value="${source.dir}/thirdparty"/>
     <property name="src.ibpm.home.dir"              value="${source.dir}/thirdparty"/>
-    <property name="tgt.package.file"               value="${env.TARGET_DIR}/ssofiProvider.war" />
+    <property name="tgt.package.file"               value="${env.TARGET_DIR}/ssofi.war" />
 
     <target name="clean">
         <mkdir dir="${tgt.warcontents.dir}"/>

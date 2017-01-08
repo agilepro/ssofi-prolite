@@ -30,7 +30,20 @@ public class PasswordEncrypter {
      * storing in a user profile.
      */
     public static String getSaltedHash(String password) throws Exception {
-        byte[] salt = SecureRandom.getInstance("SHA1PRNG").generateSeed(saltLen);
+    	//NOTE: this was taking 20 to 40 seconds on Linux
+    	//to get the salt value in this way.  This is not that important
+    	//For some reason Linux only provides about 1 byte per second.
+    	//
+        //byte[] salt = SecureRandom.getInstance("SHA1PRNG").generateSeed(saltLen);
+    	//
+        
+    	//re-implemented salt generation to run much faster in all environments.
+    	byte[] salt = new byte[saltLen];
+        Random rand = new Random(System.currentTimeMillis());
+        for (int i=0; i<saltLen; i++) {
+        	salt[i] = (byte) rand.nextInt();
+        }
+        
         // store the salt with the password
         return hexEncode(salt) + "$" + hash(password, salt);
     }
