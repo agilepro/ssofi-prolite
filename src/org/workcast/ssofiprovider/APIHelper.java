@@ -50,7 +50,6 @@ public class APIHelper {
 
 
     private JSONObject getResponse(String mode) throws Exception {
-        System.out.println("SSOFI LAuth request: "+mode);
         //do not need to be logged in to verify a token
         if ("apiVerify".equals(mode)) {
             if (postedObject==null) {
@@ -72,6 +71,7 @@ public class APIHelper {
                 responseObj.put("token", token);          //do we need this?
                 responseObj.put("verified", true);
                 responseObj.put("msg", "Token matches with the challenge");
+                System.out.println("SSOFI LAuth request: apiVerify success: "+identity);
                 return responseObj;
             }
             else {
@@ -79,12 +79,15 @@ public class APIHelper {
                 postedObject.remove("userId");
                 postedObject.remove("userName");
                 postedObject.put("verified", false);
+                System.out.println("SSOFI LAuth request: apiVerify FAILED to verify: "+identity);
                 return postedObject;
             }
         }
         if ("apiLogout".equals(mode)) {
             //whether you are logged in or not, you get the same response
             //from this command:  you are now logged out.
+            System.out.println("SSOFI LAuth request: apiLogout logged out: "+aSession.loggedUserId());
+            
             aSession.logout();
             destroySession = true;
             JSONObject jo = new JSONObject();
@@ -92,10 +95,12 @@ public class APIHelper {
             return jo;
         }
         if (!aSession.loggedIn()) {
+            System.out.println("SSOFI LAuth request: not logged in, not allowed: "+mode);
             JSONObject jo = new JSONObject();
             jo.put("msg", "User not found, must be logged in to perform "+mode);
             return jo;
         }
+        System.out.println("SSOFI LAuth request: "+mode+" - "+aSession.loggedUserId());
         if ("apiWho".equals(mode)) {
             JSONObject jo = new JSONObject();
             jo.put("msg", "User logged in");

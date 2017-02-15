@@ -351,7 +351,7 @@ public class EmailHandler {
 
     public boolean validate(final String emailId) {
 
-        matcher = pattern.matcher(emailId);
+        matcher = pattern.matcher(emailId.trim());
         return matcher.matches();
 
     }

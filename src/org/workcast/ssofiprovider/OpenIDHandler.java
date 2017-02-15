@@ -699,7 +699,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     private void modeRegisterNewAction() throws Exception {
-        String userId = reqParam("registerEmail");
+        String userId = reqParam("registerEmail").trim();
         if (!ssofi.emailHandler.validate(userId)) {
             aSession.errMsg = new Exception("The id supplied (" + userId
                     + ") does not appear to be a valid email address.");
@@ -726,6 +726,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return;
         }
 
+        aSession.presumedId = userId;
+        
         aSession.savedParams.clear();
         String magicNumber = ssofi.tokenManager.generateEmailToken(userId);
         aSession.startRegistration(userId);
@@ -734,12 +736,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     private void modeConfirmationKey() throws Exception {
-        //if (aSession.regEmail==null) {
-        //    aSession.errMsg = new Exception("Sorry, it has been too long and your session has been lost.");
-        //    redirectToIdentityPage(defParam("display-id", ""));
-        //    return;
-        //}
-
         // this is the mode that displays prompt to change id
         // which then posts to 'validateKeyAction'
         displayInfo = ssofi.authStyle.getOrCreateUser(aSession.regEmail);
@@ -1029,6 +1025,18 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private void streamTemplateCore(File templateFile) throws Exception {
         try {
             response.setContentType("text/html;charset=UTF-8");
+            
+            //Why are we tellilng IE how to behave?  Because IE can be set into a mode that causes it to 
+            //run emulation of IE7, even though it is a much more recent browser.  It ignores the fact that
+            //it is more recent, and emulates the old browser unnecessarily.  This appears to be an administration
+            //option that allow an organization to run all IE as if they were an older IE.
+            //This command says to act like IE 10.  Would be better if we could say IE10 and above.
+            //Not all versions of IE obey this command.  Microsoft say that the best practice is to put
+            //this in a header, and not a meta-tag because a metatag will slow down handling of the page becausei
+            //it has to start parsing all over again.  We don't really want 10, but there seems no setting for
+            //IE11 and I am worried that older browsers wont know what Edge is.
+            response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
+            
             Writer out = response.getWriter();
             InputStream is = new FileInputStream(templateFile);
             Reader isr = new InputStreamReader(is, "UTF-8");
