@@ -1,11 +1,7 @@
 package org.workcast.ssofiprovider;
 
-import java.util.ArrayList;
 import java.util.Hashtable;
-import java.util.List;
-
 import javax.naming.NamingEnumeration;
-import javax.naming.directory.Attribute;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.DirContext;
@@ -29,12 +25,12 @@ public class AuthStyleLDAP implements AuthStyle {
     String queryPrefix;
     String queryPostfix;
     Hashtable<String, String> htLDAP;
-    String adminGroup;
+    //String adminGroup;
 
     /**
      * this is the list of IDS that are administrators
      */
-    private List<String> adminList;
+    //private List<String> adminList;
 
     /**
      * OpenID is very "bursty" meaning that a single user tends to make multiple
@@ -51,7 +47,7 @@ public class AuthStyleLDAP implements AuthStyle {
         securityAuthentication = ssofi.getRequiredProperty("java.naming.security.authentication");
         securityPrincipal = ssofi.getRequiredProperty("java.naming.security.principal");
         securityCredentials = ssofi.getRequiredProperty("java.naming.security.credentials");
-        adminGroup = ssofi.getRequiredProperty("adminGroup");
+        //adminGroup = ssofi.getRequiredProperty("adminGroup");
         queryBase = ssofi.getRequiredProperty("queryBase");
         String queryFilter = ssofi.getRequiredProperty("queryFilter");
 
@@ -71,7 +67,7 @@ public class AuthStyleLDAP implements AuthStyle {
         htLDAP.put("java.naming.security.principal", securityPrincipal);
         htLDAP.put("java.naming.security.credentials", securityCredentials);
 
-        adminList = initAdminUserList();
+        //adminList = initAdminUserList();
     }
 
     public String getStyleIndicator() {
@@ -88,6 +84,10 @@ public class AuthStyleLDAP implements AuthStyle {
             envht.put("java.naming.security.authentication", securityAuthentication);
             envht.put("java.naming.security.principal", securityPrincipal);
             envht.put("java.naming.security.credentials", securityCredentials);
+            
+            //several web pages suggest that this setting is needed to avoid the
+            // Unprocessed Continuation Reference problem
+            envht.put("java.naming.referral","follow");
 
             String filter = queryPrefix + userNetId + queryPostfix;
             String base = queryBase;
@@ -199,9 +199,8 @@ public class AuthStyleLDAP implements AuthStyle {
     }
 
 
-
+/*
     public boolean isAdmin(String userId) {
-        // UserInformation userInfo = getUserInfo(userId);
         for (String adminId : adminList) {
             if (adminId.equals(userId)) {
                 return true;
@@ -235,7 +234,7 @@ public class AuthStyleLDAP implements AuthStyle {
         }
         return list;
     }
-
+*/
     public void updateUserInfo(UserInformation user, String password) throws Exception {
         throw new Exception("This is an LDAP based provider, and you can not update the LDAP server using this mechanism.  LDAP is read only");
     }

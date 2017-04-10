@@ -190,10 +190,12 @@ public class AuthStyleLocal implements AuthStyle {
         }
     }
 
+    /*
     public boolean isAdmin(String userId) {
         User foundUser = searchUsersByAny(userId);
         return foundUser.getAdmin();
     }
+    */
 
     public void updateUserInfo(UserInformation userInfo, String newPwd) throws Exception {
         User userRec = searchUsersByAny(userInfo.key);

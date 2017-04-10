@@ -1226,7 +1226,21 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
         }
         catch (Exception e) {
-            throw new Exception("Unable to supply value for token: "+tokenName, e);
+        	//NOTE: we are writing tokens into a template that appears in the browser.
+        	//throwing an exception is causing infinite redirect
+        	//instead output the exception into the page as a comment
+        	
+        	HTMLWriter.writeHtml(out, "EXCEPTION (" + tokenName + ")");
+        	out.write("\n<!--\n");
+        	HTMLWriter hw = new HTMLWriter(out);
+        	PrintWriter pw = new PrintWriter(hw);
+        	e.printStackTrace(pw);
+        	pw.flush();
+        	out.write("\n-->\n");
+        	
+        	//ALSO put it into the system log
+        	System.out.println("EXCEPTION while printing token "+tokenName);
+        	e.printStackTrace();
         }
     }
 

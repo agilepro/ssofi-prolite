@@ -48,7 +48,7 @@ public interface AuthStyle {
      * Specify whether the supplied user id is an administrator or not. Used for
      * displaying admin options that require special priviledge.
      */
-    public boolean isAdmin(String userId);
+    //public boolean isAdmin(String userId);
 
     /**
      * Get a small string that can uniquely identify resources for this auth
