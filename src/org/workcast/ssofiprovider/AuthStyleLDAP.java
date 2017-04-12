@@ -22,10 +22,11 @@ public class AuthStyleLDAP implements AuthStyle {
     String securityCredentials;
 
     String queryBase;
-    String queryPrefix;
-    String queryPostfix;
+    String uidAttrName;
+    String firstNameAttrName;
+    String lastNameAttrName;
+    String mailAttrName;
     Hashtable<String, String> htLDAP;
-    //String adminGroup;
 
     /**
      * this is the list of IDS that are administrators
@@ -47,18 +48,11 @@ public class AuthStyleLDAP implements AuthStyle {
         securityAuthentication = ssofi.getRequiredProperty("java.naming.security.authentication");
         securityPrincipal = ssofi.getRequiredProperty("java.naming.security.principal");
         securityCredentials = ssofi.getRequiredProperty("java.naming.security.credentials");
-        //adminGroup = ssofi.getRequiredProperty("adminGroup");
         queryBase = ssofi.getRequiredProperty("queryBase");
-        String queryFilter = ssofi.getRequiredProperty("queryFilter");
-
-        int idLoc = queryFilter.indexOf("{id}");
-        if (idLoc < 0) {
-            throw new Exception("The queryFilter parameter must have a token, {id}, to indicate "
-                    + "the position that the currently searched for id willbe substituted in.  "
-                    + "Value for queryPart received was (" + queryFilter + ")");
-        }
-        queryPrefix = queryFilter.substring(0, idLoc);
-        queryPostfix = queryFilter.substring(idLoc + 4);
+        uidAttrName = ssofi.getRequiredProperty("attr.name.uid");
+        firstNameAttrName = ssofi.getRequiredProperty("attr.name.firstName");
+        lastNameAttrName = ssofi.getRequiredProperty("attr.name.lastName");
+        mailAttrName = ssofi.getRequiredProperty("attr.name.mail");
 
         htLDAP = new Hashtable<String, String>();
         htLDAP.put("java.naming.factory.initial", factoryInitial);
@@ -76,40 +70,38 @@ public class AuthStyleLDAP implements AuthStyle {
 
     public boolean authenticateUser(String userNetId, String userPwd) throws Exception {
         try {
-
+            
             Hashtable<String, String> envht = new Hashtable<String, String>();
 
-            envht.put("java.naming.factory.initial", factoryInitial);
-            envht.put("java.naming.provider.url", providerUrl);
+            envht.put("java.naming.factory.initial",         factoryInitial);
+            envht.put("java.naming.provider.url",            providerUrl);
             envht.put("java.naming.security.authentication", securityAuthentication);
-            envht.put("java.naming.security.principal", securityPrincipal);
-            envht.put("java.naming.security.credentials", securityCredentials);
+            envht.put("java.naming.security.principal",      securityPrincipal);
+            envht.put("java.naming.security.credentials",    securityCredentials);
             
             //several web pages suggest that this setting is needed to avoid the
-            // Unprocessed Continuation Reference problem
+            //Unprocessed Continuation Reference problem
             envht.put("java.naming.referral","follow");
 
-            String filter = queryPrefix + userNetId + queryPostfix;
-            String base = queryBase;
-
-            InitialDirContext dirctx = new InitialDirContext(envht);
-            SearchControls sctrl = new SearchControls();
-            sctrl.setSearchScope(2);
-
-            NamingEnumeration<?> results = dirctx.search(base, filter, sctrl);
-
-            if (!results.hasMore()) {
+            UserInformation userInfo = getOrCreateUser(userNetId);
+            if (!userInfo.exists){
+                System.out.println("SSOFI: Login: user record for ("+userNetId+") does not exist in LDAP server");
                 return false;
             }
 
-            SearchResult searchResult = (SearchResult) results.next();
+            //because we are looking at active directory,
+            //check if there is a domain name and add one if missing
+            if (!userNetId.contains("\\")) {
+                userNetId = "g05\\" + userNetId;
+            }
 
-            String userDN = searchResult.getName() + "," + base;
-
-            envht.put("java.naming.security.principal", userDN);
+            envht.put("java.naming.security.principal", userNetId);
             envht.put("java.naming.security.credentials", userPwd);
+            
+            System.out.println("SSOFI: Login: trying for user ("+userNetId+")");
 
-            dirctx = new InitialDirContext(envht);
+            //apparently this throws an exception if login password not correct
+            InitialDirContext dirctx2 = new InitialDirContext(envht);
             return true;
         }
         catch (Exception e) {
@@ -131,8 +123,12 @@ public class AuthStyleLDAP implements AuthStyle {
 
         UserInformation uret = new UserInformation();
 
-        String filter = queryPrefix + userNetId + queryPostfix;
+        String filter = uidAttrName + "=" + userNetId;
         String base = queryBase;
+
+        //several web pages suggest that this setting is needed to avoid the
+        //Unprocessed Continuation Reference problem
+        htLDAP.put("java.naming.referral","follow");
 
         InitialDirContext dirctx = new InitialDirContext(htLDAP);
         SearchControls sctrl = new SearchControls();
@@ -141,6 +137,7 @@ public class AuthStyleLDAP implements AuthStyle {
         NamingEnumeration<SearchResult> results = dirctx.search(base, filter, sctrl);
 
         if (!results.hasMore()) {
+            System.out.println("No results from searching for: "+filter+" within "+base);            
             return uret;
         }
 
@@ -150,31 +147,46 @@ public class AuthStyleLDAP implements AuthStyle {
         }
 
         Attributes attrs = searchResult.getAttributes();
-        if (attrs.get("uid") != null) {
-            uret.key = (String) attrs.get("uid").get();
-        }
-        String firstName = "";
-        String lastName = "";
-
-        if (attrs.get("givenname") != null) {
-            firstName = (String) attrs.get("givenname").get();
-        }
-        if (attrs.get("sn") != null) {
-            lastName = (String) attrs.get("sn").get();
-        }
-        if (attrs.get("mail") != null) {
-            uret.emailAddress = (String) attrs.get("mail").get();
-        }
+                
+        uret.key =         checkAndGetAttr(attrs, uidAttrName, userNetId);
+        String firstName = checkAndGetAttr(attrs, firstNameAttrName, userNetId);
+        String lastName =  checkAndGetAttr(attrs, lastNameAttrName, userNetId);
         uret.fullName = firstName + " " + lastName;
+        uret.emailAddress = checkAndGetAttr(attrs, mailAttrName, userNetId);
+
+        System.out.println("SSOFI: uid: "+userNetId+", full name: "+uret.fullName+", emailAddress: "+uret.emailAddress);
 
         if (!userNetId.equals(uret.key)) {
             throw new Exception("Ooops, don't understand we were looking up user (" + userNetId
                     + ") but got user (" + uret.key + ")");
         }
         uret.exists = true;
-
         lastUserLookedUp = uret;
         return uret;
+    }
+    
+    /**
+     * Look up and get the value of an attribute.
+     * If no attribute, then make a report into the log listing all the available attributes
+     * since every LDAP server might be set up differently.
+     */
+    private String checkAndGetAttr(Attributes attrs, String key, String userId) throws Exception {
+        if (attrs.get(key) != null) {
+            return (String) attrs.get(key).get();
+        }
+        
+        System.out.println("SSOFI: LDAP directory did not return attribute for ("+key+") for user "+userId);
+        
+        StringBuilder sb = new StringBuilder();
+        NamingEnumeration<String> allIds = attrs.getIDs();
+        while (allIds.hasMore()) {
+            String possibleKey = allIds.next();
+            sb.append(possibleKey);
+            sb.append(", ");
+        }
+        
+        System.out.println("SSOFI: LDAP directory available attributes: "+sb.toString());
+        return "(Unknown "+key+")";
     }
 
     public void setPassword(String userId, String newPwd) throws Exception {
@@ -194,53 +206,16 @@ public class AuthStyleLDAP implements AuthStyle {
     }
 
     public void changeFullName(String userId, String newName) throws Exception {
-        //cant change name
+        //can't change name
         throw new Exception("LDAP version can not change the full name");
     }
 
 
-/*
-    public boolean isAdmin(String userId) {
-        for (String adminId : adminList) {
-            if (adminId.equals(userId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private List<String> initAdminUserList() throws Exception {
-
-        String filter = queryPrefix + adminGroup + queryPostfix;
-        String base = queryBase;
-
-        InitialDirContext dirctx = new InitialDirContext(htLDAP);
-        SearchControls sctrl = new SearchControls();
-        sctrl.setSearchScope(2);
-
-        NamingEnumeration<SearchResult> results = dirctx.search(base, filter, sctrl);
-
-        List<String> list = new ArrayList<String>();
-        if (!results.hasMore()) {
-            return list;
-        }
-
-        SearchResult sr = results.next();
-        Attributes att = sr.getAttributes();
-        Attribute uniqueMember = att.get("uniquemember");
-        int last = uniqueMember.size() - 1;
-        for (int i = 0; i <= last; i++) {
-            list.add((String) uniqueMember.get(i));
-        }
-        return list;
-    }
-*/
     public void updateUserInfo(UserInformation user, String password) throws Exception {
         throw new Exception("This is an LDAP based provider, and you can not update the LDAP server using this mechanism.  LDAP is read only");
     }
 
     public String searchForID(String searchTerm) throws Exception {
-
         // this is a very lame search ... it only does an EXACT match
         // must consider a better way to search for users in the future
         UserInformation ui = getOrCreateUser(searchTerm);

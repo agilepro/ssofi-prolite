@@ -11,6 +11,7 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -304,8 +305,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     setLogin(enteredId);
                 }
                 else {
-                    aSession.errMsg = new Exception("Unable to log you in to user id (" + enteredId
-                            + ") with that password.  Please try again or reset your password.");
+                    aSession.saveError(new Exception("Unable to log you in to user id (" + enteredId
+                            + ") with that password.  Please try again or reset your password."));
                 }
                 redirectToIdentityPage(defParam("display-id", ""));
             }
@@ -363,7 +364,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         catch (Exception e) {
             try {
-                aSession.errMsg = e;
+                aSession.saveError(e);
                 System.out.println("SSOFI: error --- " + (new Date()).toString());
                 e.printStackTrace(System.out);
                 OutputStreamWriter errOut = new OutputStreamWriter(System.out);
@@ -506,7 +507,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return;
         }
         catch (Exception e) {
-            aSession.errMsg = e;
+            aSession.saveError(e);
             response.sendRedirect("?openid.mode=registrationForm");
             return;
         }
@@ -529,8 +530,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         // It is also possible that this login was started by just accessing
         // the SSOFI, and there is no place to return to.
         if (aSession.paramlist == null) {
-            aSession.errMsg = new Exception(
-                    "If you started from an application, return to that application and start the login from there again.");
+            aSession.saveError(new Exception(
+                    "If you started from an application, return to that application and start the login from there again."));
             response.sendRedirect(ssofi.baseURL);
             return;
         }
@@ -627,19 +628,19 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             String newPwd2 = reqParam("newPwd2");
             boolean flag = ssofi.authStyle.authenticateUser(aSession.loggedUserId(), oldPwd);
             if (!flag) {
-                aSession.errMsg = new Exception(
-                        "Doesn't look like you gave the correct old password.  Required in order to change passwords.");
+                aSession.saveError(new Exception(
+                        "Doesn't look like you gave the correct old password.  Required in order to change passwords."));
                 response.sendRedirect("?openid.mode=passwordView");
                 return;
             }
             if (newPwd1.length() < 6) {
-                aSession.errMsg = new Exception("New password must be 6 or more characters long.");
+                aSession.saveError(new Exception("New password must be 6 or more characters long."));
                 response.sendRedirect("?openid.mode=passwordView");
                 return;
             }
             if (!newPwd1.equals(newPwd2)) {
-                aSession.errMsg = new Exception(
-                        "The new password values supplied do not match.  Try again");
+                aSession.saveError(new Exception(
+                        "The new password values supplied do not match.  Try again"));
                 response.sendRedirect("?openid.mode=passwordView");
                 return;
             }
@@ -692,8 +693,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
         }
         else {
-            aSession.errMsg = new Exception("Unable to log you in to user id (" + enteredId
-                + ") with that password.  Please try again or reset your password.");
+            aSession.saveError(new Exception("Unable to log you in to user id (" + enteredId
+                + ") with that password.  Please try again or reset your password."));
             response.sendRedirect("?openid.mode=loginView");
         }
     }
@@ -701,8 +702,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private void modeRegisterNewAction() throws Exception {
         String userId = reqParam("registerEmail").trim();
         if (!ssofi.emailHandler.validate(userId)) {
-            aSession.errMsg = new Exception("The id supplied (" + userId
-                    + ") does not appear to be a valid email address.");
+            aSession.saveError(new Exception("The id supplied (" + userId
+                    + ") does not appear to be a valid email address."));
             response.sendRedirect("?openid.mode=register");
             return;
         }
@@ -721,7 +722,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             ssofi.securityHandler.validate(secProp);
         }
         catch (Exception e) {
-            aSession.errMsg = e;
+            aSession.saveError(e);
             response.sendRedirect("?openid.mode=register");
             return;
         }
@@ -813,10 +814,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         if (!valid) {
             aSession.regEmail = registerEmail;
-            aSession.errMsg = new Exception(
+            aSession.saveError( new Exception(
                     "If you have set up a password, please log in.  "
                     +"If not, request a new email registration email message.  "
-                    +"The confirmation key supplied has expired. ");
+                    +"The confirmation key supplied has expired. "));
             response.sendRedirect("?openid.mode=loginView");
             return;
         }
@@ -906,8 +907,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         // possible
         // by just redirecting to the root of the application.
         if (aSession.paramlist == null) {
-            aSession.errMsg = new Exception(
-                    "Session time out... too much time to login in and no longer have information about where to return to.");
+            aSession.saveError(new Exception(
+                    "Session time out... too much time to login in and no longer have information about where to return to."));
             response.sendRedirect(ssofi.baseURL);
             return;
         }
@@ -1082,24 +1083,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
                 String errStr = "";
                 JSONArray errors = new JSONArray();
-                Throwable runner = aSession.errMsg;
-                while (runner!=null) {
-                    String msg = runner.toString();
-                    //strip off the class name if there is one
-                    if (msg.startsWith("java.lang.Exception")
-                            || msg.startsWith("java.lang.RuntimeException")) {
-                        int pos = msg.indexOf(":");
-                        msg = msg.substring(pos+2);
-                    }
-                    int pos = msg.indexOf("nested exception");
-                    if (pos>3) {
-                        //some exceptions unnecessarily duplicate the cause exception,
-                        //since we don't need it, strip it out.
-                        msg = msg.substring(0, pos-3);
-                    }
+                for (String msg : aSession.getErrorList()) {
                     errors.put(msg);
                     errStr = errStr + msg + "\n ";
-                    runner = runner.getCause();
                 }
                 jo.put("userError", errStr);
                 jo.put("errors", errors);
@@ -1210,12 +1196,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 writeHtmlException(out, ssofi.initFailure);
             }
             else if ("userError".equals(tokenName)) {
-                writeHtmlException(out, aSession.errMsg);
+                for (String eMsg : aSession.getErrorList()) {
+                    HTMLWriter.writeHtml(out, eMsg);
+                    out.write("\n");
+                }
             }
             else if ("captcha".equals(tokenName)) {
                 String cerr = null;
-                if (aSession.errMsg != null) {
-                    cerr = aSession.errMsg.getMessage();
+                ArrayList<String> eList = aSession.getErrorList();
+                if (eList.size()>0) {
+                    cerr = eList.get(0);
                 }
                 out.write(ssofi.securityHandler.getCaptchaHtML(cerr));
             }

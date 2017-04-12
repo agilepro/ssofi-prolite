@@ -45,14 +45,8 @@ public interface AuthStyle {
     public void setPassword(String userId, String newPwd) throws Exception;
 
     /**
-     * Specify whether the supplied user id is an administrator or not. Used for
-     * displaying admin options that require special priviledge.
-     */
-    //public boolean isAdmin(String userId);
-
-    /**
      * Get a small string that can uniquely identify resources for this auth
-     * style a resouce might have the name "InputScreen.htm" and
+     * style a resource might have the name "InputScreen.htm" and
      * "InputScreen.xxx.htm" for the version specialized for the 'xxx' auth
      * style. This method returns the 'xxx' in that case.
      */

@@ -1,6 +1,5 @@
 package org.workcast.ssofiprovider;
 
-import java.security.SecureRandom;
 import java.util.Random;
 
 import javax.crypto.SecretKey;

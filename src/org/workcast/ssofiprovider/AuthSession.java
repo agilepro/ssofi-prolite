@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
 import java.util.Properties;
@@ -29,7 +30,9 @@ public class AuthSession implements Serializable {
     ParameterList paramlist = null;
 
     // if something goes wrong, note it here for display next time
-    Exception errMsg = null;
+    // BUT not all exception object are serializable!!!!!   
+    // So put a JSONObject in here instead.
+    private ArrayList<String> errMsg = null;
 
     // this is where the entire exchange will return to once done logging in
     // by default, return to the main page of the ID server
@@ -81,7 +84,7 @@ public class AuthSession implements Serializable {
     public void login(String id, String name) {
         authIdentity = id;
         if (name==null) {
-            throw new RuntimeException("Program Logic Error: numm NAME passed at login time.  Why?");
+            throw new RuntimeException("Program Logic Error: null NAME passed at login time.  Why?");
         }
         authName = name;
 
@@ -110,9 +113,37 @@ public class AuthSession implements Serializable {
         return authName;
     }
 
+    public void saveError(Exception e) {
+        ArrayList<String> newErrs = new ArrayList<String>();
+        Throwable runner = e;
+        while (runner!=null) {
+            String msg = runner.toString();
+            //strip off the class name if there is one
+            if (msg.startsWith("java.lang.Exception")
+                    || msg.startsWith("java.lang.RuntimeException")) {
+                int pos = msg.indexOf(":");
+                msg = msg.substring(pos+2);
+            }
+            int pos = msg.indexOf("nested exception");
+            if (pos>3) {
+                //some exceptions unnecessarily duplicate the cause exception,
+                //since we don't need it, strip it out.
+                msg = msg.substring(0, pos-3);
+            }
+            newErrs.add(msg);
+            runner = runner.getCause();
+        }
+        errMsg = newErrs;
+    }
     public void clearError() {
         errMsg = null;
         savedParams.clear();
+    }
+    public ArrayList<String> getErrorList() {
+        if (errMsg!=null) {
+            return errMsg;
+        }
+        return new ArrayList<String>();
     }
 
     public void reinit(HttpServletRequest request) {

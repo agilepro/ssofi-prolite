@@ -58,7 +58,10 @@
                             <div class="loginSpacing">
                                 You are logged in as:<br /><br/>
                                 <span class="userNameClass">{{info.userName}}</span><br />
-                                <span><b><a href="{{info.userId}}">{{info.userId}}</a></b></span><br /><br />
+                                <span><b><a href="{{info.userId}}">{{info.userId}}</a></b> 
+                                / {{info.userEmail}}</span>
+                                
+                                <br /><br />
                                 <button type="submit" class="btn btn-primary" name="openid.mode"
                                         value="logout">Log Out</button>
                                 &nbsp;

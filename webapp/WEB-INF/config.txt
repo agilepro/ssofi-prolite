@@ -5,24 +5,24 @@
 #    this is for email based authentication where users specify a password
 # authStyle=ldap
 #    this is for authenticating against an LDAP server
-authStyle=local
+authStyle=ldap
 
 #The baseURL is the address of the server FROM THE USER perspective
 #If you are working through a firewall or reverse proxy which change the
 #address, then set here the EXTERNAL view of that address.
 #Include slash on end.
-baseURL=http://yourhostname:8080/id/
+baseURL=http://kswons02-t902.corp.fc.local:8080/id/
 
 #set rootURL to the URL base address of the application as seen on this 
 #actual server. This setting is necessary to recognize OpenID values 
 #when you have a proxy configured to rewrite URL addresses. 
 #If you don't have a proxy then this will be the same as baseURL.
 #Include slash on end.
-rootURL=http://yourhostname:8080/id/
+rootURL=http://kswons02-t902.corp.fc.local:8080/id/
 
 #if sessionFolder is set, then the session information will be stored
 #in files in that folder.  For cluster, set this folder to be a shared drive
-#sessionFolder=c:/ssofi_sessions
+#sessionFolder=/opt/SSOFI_Sessions
 
 #Set the logged in session duration.  This sets the duration of the cookie
 #sent to the browser in seconds.  2500000 is about 1 month.
@@ -33,12 +33,15 @@ captchaPublicKey=
 captchaPrivateKey=
 
 
-#the next 7 settings are for LDAP usage
+#the next 10 settings are for LDAP usage
 java.naming.factory.initial=com.sun.jndi.ldap.LdapCtxFactory
-java.naming.provider.url=ldap://infrassotest.fjcs.net:389
+java.naming.provider.url=ldap\://g05.fujitsu.local\:389
 java.naming.security.authentication=simple
-java.naming.security.principal=cn\=orcladmin
-java.naming.security.credentials=xxxxx
-queryBase=dc=fjcs,dc=net
-queryFilter=cn={id}
+java.naming.security.principal=g05\\crfuser
+java.naming.security.credentials=Tuesday2017!
+queryBase=DC\=g05,DC\=fujitsu,DC\=local
+attr.name.uid=sAMAccountName
+attr.name.firstName=givenName
+attr.name.lastName=sn
+attr.name.mail=mail
 
