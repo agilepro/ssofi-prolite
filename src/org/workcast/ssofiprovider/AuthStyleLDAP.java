@@ -156,7 +156,9 @@ public class AuthStyleLDAP implements AuthStyle {
 
         System.out.println("SSOFI: uid: "+userNetId+", full name: "+uret.fullName+", emailAddress: "+uret.emailAddress);
 
-        if (!userNetId.equals(uret.key)) {
+        //must compare case insensitive because user ids are case insensitive
+        //and directory will return in a different way, sometimes upper sometimes lower
+        if (!userNetId.equalsIgnoreCase(uret.key)) {
             throw new Exception("Ooops, don't understand we were looking up user (" + userNetId
                     + ") but got user (" + uret.key + ")");
         }
