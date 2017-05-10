@@ -58,7 +58,15 @@
             includes="**/*">
             <classpath refid="build.classpath" />
         </javac>
-
+        
+        <tstamp>
+            <format property="time" pattern="yyyy-MMdd-HHmm"
+              timezone="UTC" unit="hour"/>
+        </tstamp>
+        <echo>BuildNumber=${time}</echo>
+        <echo file="${tgt.warcontents.dir}/WEB-INF/BuildInfo.properties" append="false">BuildNumber=${time}
+        </echo>
+        
     </target>
 
     <target name="package" depends="clean, init, compile">
