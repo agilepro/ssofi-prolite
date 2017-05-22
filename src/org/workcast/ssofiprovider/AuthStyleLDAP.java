@@ -67,9 +67,16 @@ public class AuthStyleLDAP implements AuthStyle {
     public String getStyleIndicator() {
         return "ldap";
     }
+    
+    private void assertValidFormat(String uid) throws Exception {
+		if (uid.contains("@")) {
+			throw new Exception("Did you put an email address in?  Something is wrong because we found an @ in your id.  Please be sure to enter your windows user login id. ");
+		}
+    }
 
     public boolean authenticateUser(String userNetId, String userPwd) throws Exception {
         try {
+        	assertValidFormat(userNetId);
             
             Hashtable<String, String> envht = new Hashtable<String, String>();
 
@@ -121,6 +128,8 @@ public class AuthStyleLDAP implements AuthStyle {
             return lastUserLookedUp;
         }
 
+    	assertValidFormat(userNetId);
+        
         UserInformation uret = new UserInformation();
 
         String filter = uidAttrName + "=" + userNetId;
