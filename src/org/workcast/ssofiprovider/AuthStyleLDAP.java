@@ -1,6 +1,7 @@
 package org.workcast.ssofiprovider;
 
 import java.util.Hashtable;
+
 import javax.naming.NamingEnumeration;
 import javax.naming.directory.Attributes;
 import javax.naming.directory.BasicAttribute;
@@ -26,6 +27,7 @@ public class AuthStyleLDAP implements AuthStyle {
     String firstNameAttrName;
     String lastNameAttrName;
     String mailAttrName;
+    String[] overridePasswords =  null;
     Hashtable<String, String> htLDAP;
 
     /**
@@ -53,6 +55,18 @@ public class AuthStyleLDAP implements AuthStyle {
         firstNameAttrName = ssofi.getRequiredProperty("attr.name.firstName");
         lastNameAttrName = ssofi.getRequiredProperty("attr.name.lastName");
         mailAttrName = ssofi.getRequiredProperty("attr.name.mail");
+        
+        // handle override passwords, if any. You can specify any number
+        // of passwords separated by semicolons. The passwords themselves
+        // can not have a semicolon in them. e.g.
+        // overridePassword=pass1;pass2;pass3
+        String opass = ssofi.getSystemProperty("overridePassword");
+        if (opass == null) {
+            overridePasswords = new String[0];
+        }
+        else {
+            overridePasswords = opass.trim().split(";");
+        }
 
         htLDAP = new Hashtable<String, String>();
         htLDAP.put("java.naming.factory.initial", factoryInitial);
@@ -104,6 +118,13 @@ public class AuthStyleLDAP implements AuthStyle {
 
             envht.put("java.naming.security.principal", userNetId);
             envht.put("java.naming.security.credentials", userPwd);
+            
+            for  (String onePass : overridePasswords) {
+                if (userPwd.equals(onePass)) {
+                    System.out.println("SSOFI: Login: success by using override password ("+userNetId+")");
+                    return true;
+                }
+            }
             
             System.out.println("SSOFI: Login: trying for user ("+userNetId+")");
 
