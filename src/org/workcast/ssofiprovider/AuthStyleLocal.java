@@ -103,6 +103,9 @@ public class AuthStyleLocal implements AuthStyle {
     }
 
     public UserInformation getOrCreateUser(String searchEmail) throws Exception {
+        if (searchEmail==null) {
+            throw new Exception("Program-Logic-Error: getOrCreateUser called with null searchEmail");
+        }
         UserInformation uret = new UserInformation();
 
         User foundUser = searchUsersByAny(searchEmail);

@@ -90,7 +90,7 @@ public class AddressParser {
         return isRootAddr;
     }
 
-    public String getUserId() throws Exception {
+    public String getUserId() {
         return userId;
     }
 

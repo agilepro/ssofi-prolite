@@ -11,29 +11,18 @@ import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Properties;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.openid4java.message.AuthFailure;
-import org.openid4java.message.AuthRequest;
-import org.openid4java.message.AuthSuccess;
-import org.openid4java.message.DirectError;
-import org.openid4java.message.Message;
-import org.openid4java.message.MessageExtension;
-import org.openid4java.message.ax.AxMessage;
-import org.openid4java.message.ax.FetchRequest;
-import org.openid4java.message.ax.FetchResponse;
 import org.workcast.json.JSONArray;
 import org.workcast.json.JSONObject;
 import org.workcast.json.JSONTokener;
@@ -66,6 +55,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     HttpServletRequest request;
     HttpServletResponse response;
     HttpSession session;
+    private boolean isPost = false;
 
     AuthSession aSession;
     boolean saveSession = false;
@@ -75,8 +65,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     private String loggedOpenId;
 
-    private boolean isDisplaying = false;
-
     // addressedUserId is the id of the user you are DISPLAYING
     // which may have nothing to do with the user who is logged in
     // Any logged in user, can display any other user.
@@ -85,11 +73,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     // If the UI is DISPLAYING user info, then this
     // member will hold the information to display
     private UserInformation displayInfo = null;
-
-    // OpenID has a parameter called the assoc_handle and it
-    // must be passed as part of the protocol, but I don't
-    // know what it represents.  (you can probably guess.)
-    private String assoc_handle;
 
     // This is the user that is attempting to log in, which
     // might have been passed as part of the protocol to
@@ -169,6 +152,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     public void doPost() {
         try {
+            isPost = true;
             String postType = request.getHeader("Content-Type");
             if (postType!=null && (postType.toLowerCase().startsWith("text/plain")
                     || postType.toLowerCase().startsWith("application/json"))) {
@@ -191,6 +175,27 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             e.printStackTrace(System.out);
         }
     }
+    
+    private void assertPost(String mode) throws Exception {
+        if (!isPost) {
+            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be a POST request.");
+        }
+    }
+    private void assertGet(String mode) throws Exception {
+        if (isPost) {
+            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be a GET request.");
+        }
+    }
+    private void assertLoggedIn(String mode) throws Exception {
+        if (!aSession.loggedIn()) {
+            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be a accessed only when logged in.  Did you logout in a different browser tab?");
+        }
+    }
+    private void assertAnonymous(String mode) throws Exception {
+        if (aSession.loggedIn()) {
+            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be accessed when NOT logged in.  Did you log in recently in another browser tab?");
+        }
+    }
 
     /**
      * Handles the request with the assumption that the session object has been
@@ -208,6 +213,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             String requestURL = request.getRequestURL().toString();
+            
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
                 throw new Exception("sorry, request must start with (" + ssofi.rootURL + "):  ("
@@ -219,22 +225,20 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
+            System.out.println("SSOFI REQUEST: "+requestURL);
+            
             // set up loggedUserId and loggedOpenId
             determineLoggedUser();
+            System.out.println("     LOGGEDIN: "+aSession.loggedIn());
 
             addressedUserId = requestURL.substring(ssofi.rootURL.length());
-            assoc_handle = request.getParameter("openid.assoc_handle");
 
             if (addressedUserId.length() > 0) {
                 displayInfo = ssofi.authStyle.getOrCreateUser(addressedUserId);
-                isDisplaying = true;
             }
 
-            String mode = defParam("openid.mode", "display");
-            //System.out.println("SSOFI: " + request.getRequestURL().toString().trim()
-            //        + " mode=" + mode
-            //        + "  isDisplaying="+isDisplaying
-            //        + "  loggedIn="+aSession.loggedIn());
+            String mode = defParam("openid.mode", "displayForm");
+            System.out.println("         MODE: "+mode);
 
 
             if (mode.startsWith("api")) {
@@ -256,42 +260,82 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
             // anything below here is LIKELY to change the session
             saveSession = true;
-
-            if ("lookup".equals(mode)) {
-                redirectToIdentityPage(ssofi.authStyle.searchForID(reqParam("entered-id")));
+            
+            if ("quick".equals(mode)) {
+                if (aSession.loggedIn()) {
+                    //user is logged in, so just jump back
+                    //we don't care if logged in as a different user.
+                    //preserve the current logged in user session
+                    response.sendRedirect(reqParam("go"));
+                }
+                else {
+                    aSession.return_to = reqParam("go");
+                    aSession.quickLogin = true;
+                    response.sendRedirect("?openid.mode=displayForm");
+                }
             }
-            else if ("loginView".equals(mode)) {
-                // this is the mode that displays a login prompt
-                modeLoginView();
+            else if ("logout".equals(mode)) {
+                aSession.return_to = reqParam("go");
+                aSession.quickLogin = true;
+                destroySession = true;
+                //set the cookie, but otherwise ignore the new sessionid
+                createSSOFISessionId();
+                setLogin(null);
+                response.sendRedirect(aSession.return_to);
             }
-            else if ("changeIdView".equals(mode)) {
-                // this is the mode that displays prompt to change id
-                modeChangeIdView();
+            else if ("loginAction".equals(mode)) {
+                assertPost(mode);
+                //if already logged in, then this is a NOOP
+                modeLoginAction();
             }
-            else if ("passwordView".equals(mode)) {
+            else if ("passwordForm".equals(mode)) {
+                assertGet(mode);
+                assertLoggedIn(mode);
                 // this is the mode that displays prompt to change password
-                streamTemplate("changePassword");
+                streamTemplate("passwordForm");
             }
-            else if ("register".equals(mode)) {
+            else if ("passwordAction".equals(mode)) {
+                assertPost(mode);
+                assertLoggedIn(mode);
+                modePasswordAction();
+            }
+            else if ("requestForm".equals(mode)) {
+                assertGet(mode);
+                assertAnonymous(mode);
                 // this is the mode that displays prompt to register new user
                 // which then posts to 'registerNewAction'
-                streamTemplate("userRegistration");
+                setRequestedId();
+                streamTemplate("requestForm");
             }
             else if ("registerNewAction".equals(mode)) {
+                assertPost(mode);
+                assertAnonymous(mode);
                 modeRegisterNewAction();
             }
-            else if ("confirmationKey".equals(mode)) {
-                modeConfirmationKey();
+            else if ("confirmForm".equals(mode)) {
+                assertGet(mode);
+                assertAnonymous(mode);
+                // displays prompt to enter verification key
+                // which then posts to 'validateKeyAction'
+                setRequestedId();
+                displayInfo = ssofi.authStyle.getOrCreateUser(aSession.regEmail);
+                streamTemplate("confirmForm");
             }
             else if ("validateKeyAction".equals(mode)) {
+                //this can be GET or POST, and can be done while logged in or not
+                //this will log you in if all is proper
                 modeValidateKeyAction();
             }
-            else if ("registrationForm".equals(mode)) {
-                // this is the mode that displays prompt for user details
+            else if ("registerForm".equals(mode)) {
+                assertGet(mode);
+                assertLoggedIn(mode);
+               // this is the mode that displays prompt for user details
                 // which then posts to 'createNewUserAction'
-                streamTemplate("registrationForm");
+                streamTemplate("registerForm");
             }
             else if ("createNewUserAction".equals(mode)) {
+                assertPost(mode);
+                assertLoggedIn(mode);
                 modeCreateNewUserAction();
             }
             else if ("login".equals(mode)) {
@@ -308,59 +352,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     aSession.saveError(new Exception("Unable to log you in to user id (" + enteredId
                             + ") with that password.  Please try again or reset your password."));
                 }
-                redirectToIdentityPage(defParam("display-id", ""));
-            }
-            else if ("loginAction".equals(mode)) {
-                modeLoginAction();
-            }
-            else if ("cancelAction".equals(mode)) {
-                returnLoginFailure();
-            }
-            else if ("passwordAction".equals(mode)) {
-                modePasswordAction();
-            }
-            else if ("resetPasswordAction".equals(mode)) {
-                modeResetPasswordAction();
-            }
-            else if ("acceptPreviousLogin".equals(mode)) {
-                returnLoginSuccess();
-            }
-            else if ("relogin".equals(mode)) {
-                setLogin(null);
-                response.sendRedirect("?openid.mode=loginView");
-            }
-            else if ("quick".equals(mode)) {
-                aSession.return_to = reqParam("go");
-                aSession.quickLogin = true;
-                if (aSession.loggedIn()) {
-                    response.sendRedirect(aSession.return_to);
-                }
-                else {
-                    response.sendRedirect("?openid.mode=loginView");
-                }
-            }
-            else if ("logout".equals(mode)) {
-                aSession.return_to = reqParam("go");
-                aSession.quickLogin = true;
-                destroySession = true;
-                //set the cookie, but otherwise ignore the new sessionid
-                createSSOFISessionId();
-                setLogin(null);
-                response.sendRedirect(aSession.return_to);
-            }
-            else if ("display".equals(mode)) {
-                // just need to display the user information
-                if (isDisplaying) {
-                    displayUserPage();
-                }
-                else {
-                    displayRootPage();
-                }
+                response.sendRedirect(ssofi.baseURL);
             }
             else {
-                aSession.quickLogin = false;
-                modeOfficialOpenIDRequest(mode);
-            }
+                if (!"loginView".equals(mode) && !"displayForm".equals(mode)) {
+                    throw new Exception("Don't understand the mode ("+mode+")");
+                }
+                assertGet(mode);
+                // login or display or display any kind of error
+                displayRootPage();
+            }            
         }
         catch (Exception e) {
             try {
@@ -370,14 +371,21 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 OutputStreamWriter errOut = new OutputStreamWriter(System.out);
                 writeHtmlException(errOut, e);
                 System.out.println("SSOFI: --- ------------------  --- ");
-                response.sendRedirect(ssofi.baseURL);
+                displayRootPage();
                 return;
-
             }
             catch (Exception eeeee) {
                 eeeee.printStackTrace();
             }
         }
+    }
+    
+    
+    private void setRequestedId() throws Exception  {
+        String email = request.getParameter("email");
+        if (email!=null) {
+            requestedIdentity = new AddressParser(ssofi.baseURL + email);
+        }        
     }
 
     /**
@@ -404,20 +412,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         return val;
     }
 
-    /**
-     * get the value from the original OpenID request
-     */
-    String getRequiredOpenIDParameter(String name) throws Exception {
-        if (aSession.paramlist == null) {
-            throw new Exception(
-                    "Requesting a parameter when the paramter list has not be constructed yet.");
-        }
-        String ret = aSession.paramlist.getParameterValue(name);
-        if (ret == null || ret.length() == 0) {
-            throw new Exception("Got a request without a required '" + name + "' parameter");
-        }
-        return ret;
-    }
 
 
 
@@ -435,25 +429,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     }
 
-    private void displayUserPage() throws Exception {
-        if (!aSession.loggedIn()) {
-            streamTemplate("displayAnonymous");
-        }
-        else {
-            streamTemplate("displayLoggedIn");
-        }
-
-    }
-
-    private void modeLoginView() throws Exception {
-        streamTemplate("promptedLogin");
-        aSession.clearError();
-    }
-
-    private void modeChangeIdView() throws Exception {
-        requestedIdentity = new AddressParser(aSession.presumedId);
-        streamTemplate("promptedChangeId");
-    }
 
     /**
      * this receives a post from a form with user profile detail infor it it
@@ -464,7 +439,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         try {
             String option = reqParam("option");
             if (option.equals("Cancel")) {
-                response.sendRedirect("?openid.mode=display");
+                response.sendRedirect("?openid.mode=displayForm");
                 return;
             }
             if (!aSession.regEmailConfirmed) {
@@ -498,124 +473,29 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 throw new Exception("Unable to log you in to user id (" + emailId
                         + ") with that password.  Please try again or reset your password.");
             }
-            if ((aSession.return_to == null) || (aSession.return_to.length() <= 0)) {
-                redirectToIdentityPage(defParam("display-id", ""));
+            if ((aSession.return_to != null) && (aSession.return_to.length() > 0)) {
+                response.sendRedirect(aSession.return_to);
             }
             else {
-                returnLoginSuccess();
+                response.sendRedirect(ssofi.baseURL);
             }
             return;
         }
         catch (Exception e) {
             aSession.saveError(e);
-            response.sendRedirect("?openid.mode=registrationForm");
+            response.sendRedirect("?openid.mode=registerForm");
             return;
         }
     }
 
-    /**
-     * create the authentication response message with true == all authenticated
-     * and OK
-     */
-    private void returnLoginSuccess() throws Exception {
 
-        if (aSession.return_to != null) {
-            response.sendRedirect(aSession.return_to);
-            return;
-        }
-
-        // it could be that the user have been sitting there for a long time,
-        // and the session has completely timed out. If so, handle gracefully as
-        // possible by just redirecting to the root of the application.
-        // It is also possible that this login was started by just accessing
-        // the SSOFI, and there is no place to return to.
-        if (aSession.paramlist == null) {
-            aSession.saveError(new Exception(
-                    "If you started from an application, return to that application and start the login from there again."));
-            response.sendRedirect(ssofi.baseURL);
-            return;
-        }
-
-        AuthRequest authReq = AuthRequest.createAuthRequest(aSession.paramlist,
-                ssofi.manager.getRealmVerifier());
-
-        Message oidResp = ssofi.manager.authResponse(authReq, loggedOpenId, loggedOpenId, true, false);
-        if (oidResp instanceof DirectError) {
-            ServletOutputStream os = response.getOutputStream();
-            try {
-                String respString = oidResp.keyValueFormEncoding();
-                System.out.println("SSOFI: DirectError = " + respString);
-                if (respString != null) {
-                    os.write(respString.getBytes());
-                }
-            }
-            finally {
-                os.close();
-            }
-        }
-        else if (oidResp instanceof AuthFailure) {
-            System.out.println("SSOFI: AuthFailure = " + oidResp.keyValueFormEncoding());
-            response.sendRedirect(oidResp.getDestinationUrl(true));
-        }
-        else {
-            addAttributeValues(authReq, oidResp);
-            ssofi.manager.sign((AuthSuccess) oidResp);
-            aSession.return_to = "";
-
-            String destUrl = oidResp.getDestinationUrl(true);
-            System.out.println("SSOFI: SUCCESS RETURN = " + destUrl);
-            response.sendRedirect(destUrl);
-
-        }
-
-    }
-
-    /**
-     * Add extension to the response message if there is a request for
-     * Attribute.
-     */
-    private void addAttributeValues(final AuthRequest authRequest, final Message oidResp)
-            throws Exception {
-        if (authRequest.hasExtension(AxMessage.OPENID_NS_AX)) {
-            MessageExtension ext = authRequest.getExtension(AxMessage.OPENID_NS_AX);
-            if (ext instanceof FetchRequest) {
-                FetchRequest fetchReq = (FetchRequest) ext;
-                @SuppressWarnings({ "unchecked", "unused" })
-                Map<String, ?> required = fetchReq.getAttributes(true);
-                @SuppressWarnings({ "unchecked", "unused" })
-                Map<String, ?> optional = fetchReq.getAttributes(false);
-                //the above can be used to determine what was asked for
-                //but ignore it.  This server only returns email, first, last
-                //and it always returns email, first, last
-
-
-                //always put first name, last name, and email address in the properties
-                UserInformation uinfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
-                String fullName = uinfo.fullName;
-                int spacePos = fullName.lastIndexOf(" ");
-                String firstName = "";
-                String lastName = fullName;
-                if (spacePos>0) {
-                    firstName = fullName.substring(0, spacePos);
-                    lastName = fullName.substring(spacePos+1);
-                }
-                Map<String, String> userDataExt = new HashMap<String, String>();
-                FetchResponse fetchResp = FetchResponse.createFetchResponse(fetchReq, userDataExt);
-                fetchResp.addAttribute("Email", "http://schema.openid.net/contact/email", uinfo.emailAddress);
-                fetchResp.addAttribute("FirstName", "http://schema.openid.net/namePerson/first", firstName);
-                fetchResp.addAttribute("LastName", "http://schema.openid.net/namePerson/last", lastName);
-                fetchResp.addAttribute("Guid", "http://schema.openid.net/person/guid", uinfo.key);
-                oidResp.addExtension(fetchResp);
-            }
-        }
-    }
-
+    
     private void modePasswordAction() throws Exception {
         // this takes the action of logging the user in, and returning if all OK
         // first see if they pressed the Cancel key
         String op = reqParam("op");
         if (op.equals("Cancel")) {
-            response.sendRedirect("?openid.mode=display");
+            response.sendRedirect("?openid.mode=displayForm");
             return;
         }
         String fullName = defParam("fullName", null);
@@ -630,44 +510,27 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             if (!flag) {
                 aSession.saveError(new Exception(
                         "Doesn't look like you gave the correct old password.  Required in order to change passwords."));
-                response.sendRedirect("?openid.mode=passwordView");
+                response.sendRedirect("?openid.mode=passwordForm");
                 return;
             }
             if (newPwd1.length() < 6) {
                 aSession.saveError(new Exception("New password must be 6 or more characters long."));
-                response.sendRedirect("?openid.mode=passwordView");
+                response.sendRedirect("?openid.mode=passwordForm");
                 return;
             }
             if (!newPwd1.equals(newPwd2)) {
                 aSession.saveError(new Exception(
                         "The new password values supplied do not match.  Try again"));
-                response.sendRedirect("?openid.mode=passwordView");
+                response.sendRedirect("?openid.mode=passwordForm");
                 return;
             }
 
             ssofi.authStyle.changePassword(aSession.loggedUserId(), oldPwd, newPwd1);
         }
-        response.sendRedirect("?openid.mode=display");
+        response.sendRedirect("?openid.mode=displayForm");
     }
 
-    private void modeResetPasswordAction() throws Exception {
-        // this takes the action of logging the user in, and returning if all OK
-        // first see if they pressed the Cancel key
-        String op = reqParam("op");
-        if (op.equals("Cancel")) {
-            response.sendRedirect("?openid.mode=display");
-            return;
-        }
-        String userId = reqParam("userId");
-        String newPwd = reqParam("newPwd");
 
-        if (newPwd.length() < 6) {
-            throw new Exception("New password must be 6 or more characters long.");
-        }
-
-        ssofi.authStyle.setPassword(userId, newPwd);
-        response.sendRedirect("?openid.mode=display");
-    }
 
     private void modeLoginAction() throws Exception {
         // this takes the action of logging the user in, and returning if all OK
@@ -675,11 +538,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         String enteredId = "";
         String password = "";
 
-        String op = reqParam("op");
-        if (op.equals("Cancel")) {
-            returnLoginFailure();
-            return;
-        }
         enteredId = reqParam("entered-id");
         password = reqParam("password");
         if (ssofi.authStyle.authenticateUser(enteredId, password)) {
@@ -689,13 +547,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 response.sendRedirect(aSession.return_to);
             }
             else {
-                returnLoginSuccess();
+                response.sendRedirect("?openid.mode=displayForm");
             }
         }
         else {
-            aSession.saveError(new Exception("Unable to log you in to user id (" + enteredId
-                + ") with that password.  Please try again or reset your password."));
-            response.sendRedirect("?openid.mode=loginView");
+            throw new Exception("Unable to log you in to user id (" + enteredId
+                + ") with that password.  Please try again or reset your password.");
         }
     }
 
@@ -704,7 +561,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         if (!ssofi.emailHandler.validate(userId)) {
             aSession.saveError(new Exception("The id supplied (" + userId
                     + ") does not appear to be a valid email address."));
-            response.sendRedirect("?openid.mode=register");
+            response.sendRedirect("?openid.mode=requestForm&email="+URLEncoder.encode(userId, "UTF-8"));
             return;
         }
 
@@ -723,7 +580,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         catch (Exception e) {
             aSession.saveError(e);
-            response.sendRedirect("?openid.mode=register");
+            response.sendRedirect("?openid.mode=requestForm&email="+URLEncoder.encode(userId, "UTF-8"));
             return;
         }
 
@@ -733,30 +590,28 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         String magicNumber = ssofi.tokenManager.generateEmailToken(userId);
         aSession.startRegistration(userId);
         ssofi.emailHandler.sendVerifyEmail(userId, magicNumber, aSession.return_to, ssofi.baseURL);
-        response.sendRedirect("?openid.mode=confirmationKey");
+        response.sendRedirect("?openid.mode=confirmForm&email="+URLEncoder.encode(userId, "UTF-8"));
     }
 
-    private void modeConfirmationKey() throws Exception {
-        // this is the mode that displays prompt to change id
-        // which then posts to 'validateKeyAction'
-        displayInfo = ssofi.authStyle.getOrCreateUser(aSession.regEmail);
-        streamTemplate("enterConfirmationKey");
-    }
 
     /*
      * The email contains this link:
      *
      * {baseURL}?openid.mode=validateKeyAction
-     *              &registerEmail={emailId}
-     *              &registeredEmailKey={magicNumber}
-     *              &app={application return URL}
+     *          &registerEmail={emailId}
+     *          &registeredEmailKey={magicNumber}
+     *          &app={application return URL}
      *
      * so if you get both of those, and they match, then you have validated
      * a particular email address.
+     * 
+     * Generally this method is called only when you are NOT
+     * logged in.  If you are already logged it just redirects
+     * immediately to the remote destination.
      */
     private void modeValidateKeyAction() throws Exception {
         String registerEmail = reqParam("registerEmail");
-        String confirmKey = reqParam("registeredEmailKey");
+        String confirmKey = reqParam("registeredEmailKey").trim();
         aSession.return_to = defParam("app", aSession.return_to);
 
         UserInformation ui = ssofi.authStyle.getOrCreateUser(registerEmail);
@@ -784,7 +639,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //probably clicked on the link again, to try again to set password.
                 aSession.presumedId = registerEmail;
                 requestedIdentity = null;
-                response.sendRedirect("?openid.mode=registrationForm");
+                response.sendRedirect("?openid.mode=registerForm");
                 return;
             }
 
@@ -832,109 +687,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             setLogin(registerEmail);
 
             //always go to register because they might have chose this link in order to reset their password
-            response.sendRedirect("?openid.mode=registrationForm");
+            response.sendRedirect("?openid.mode=registerForm");
         }
     }
 
-    private void modeOfficialOpenIDRequest(String mode) throws Exception {
-        // here start the 'official OpenID' start requests, and so this
-        // signifies the starting of a new request ... even if there is a
-        // request in progress, this will override it.
-        aSession.reinit(request);
 
-        if ("checkid_setup".equals(mode)) {
-            if (!aSession.loggedIn()) {
-                response.sendRedirect("?openid.mode=loginView");
-                return;
-            }
-
-            requestedIdentity = new AddressParser(aSession.presumedId);
-
-            if (!aSession.presumedId.equals(loggedOpenId) && !requestedIdentity.isRoot()) {
-                response.sendRedirect("?openid.mode=changeIdView");
-                return;
-            }
-
-            returnLoginSuccess();
-            return;
-        }
-
-        if ("checkid_immediate".equals(mode)) {
-            if (!aSession.loggedIn()) {
-                returnLoginFailure();
-            }
-            else {
-                returnLoginSuccess();
-            }
-            return;
-        }
-
-        Message resMsg;
-        String responseText;
-
-        if ("associate".equals(mode)) {
-            // --- process an association request ---
-            resMsg = ssofi.manager.associationResponse(aSession.paramlist);
-            responseText = resMsg.keyValueFormEncoding();
-        }
-        else if ("check_authentication".equals(mode)) {
-            // --- processing a verification request ---
-            resMsg = ssofi.manager.verify(aSession.paramlist);
-            responseText = resMsg.keyValueFormEncoding();
-        }
-        else {
-            throw new Exception("Unable to handle request for mode: " + mode);
-        }
-
-        // return the result to the user
-        Writer out = response.getWriter();
-        out.write(responseText);
-        out.flush();
-    }
-
-    /**
-     * create the authentication response message with false == not
-     * authenticated
-     */
-    private void returnLoginFailure() throws Exception {
-
-        //official logging of failure to log in.
-        System.out.println("SSOFI: LOGIN ATTEMPT FAILURE " + new Date());
-
-        // it could be that the user have been sitting there for a long time,
-        // and the
-        // session has completely timed out. If so, handle gracefully as
-        // possible
-        // by just redirecting to the root of the application.
-        if (aSession.paramlist == null) {
-            aSession.saveError(new Exception(
-                    "Session time out... too much time to login in and no longer have information about where to return to."));
-            response.sendRedirect(ssofi.baseURL);
-            return;
-        }
-
-        Message resMsg = ssofi.manager.authResponse(aSession.paramlist, aSession.presumedId,
-                aSession.presumedId, false);
-
-        String urlTail = resMsg.wwwFormEncoding();
-        int questionPos = aSession.return_to.indexOf("?");
-        String dest;
-        if (questionPos < 0) {
-            dest = aSession.return_to + "?" + urlTail;
-        }
-        else {
-            dest = aSession.return_to + "&" + urlTail;
-        }
-        response.sendRedirect(dest);
-    }
-
-    private void redirectToIdentityPage(String gotoId) throws Exception {
-        if (gotoId == null) {
-            gotoId = "";
-        }
-        String dest = ssofi.baseURL + gotoId;
-        response.sendRedirect(dest);
-    }
 
     /**
      * Set to null to clear the login
@@ -964,6 +721,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public String getBestGuessId() {
         if (aSession.loggedIn()) {
             return aSession.loggedUserId();
+        }
+        else if (requestedIdentity!=null) {
+            return requestedIdentity.getUserId();
         }
         else if (aSession.presumedId!=null && aSession.presumedId.length()>0){
             return aSession.presumedId;
@@ -1070,6 +830,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     jo.put("userEmail", aSession.regEmail);
                     UserInformation userInfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
                     if (userInfo.exists) {
+                        jo.put("userKey", userInfo.key);
                         jo.put("userName", userInfo.fullName);
                     }
                     jo.put("openId", loggedOpenId);
@@ -1096,101 +857,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             else if ("thisPage".equals(tokenName)) {
                 HTMLWriter.writeHtml(out, ssofi.baseURL);
             }
-            else if ("fullName".equals(tokenName)) {
-                if (displayInfo != null && displayInfo.exists) {
-                    HTMLWriter.writeHtml(out, displayInfo.fullName);
-                }
-            }
-            else if ("emailAddress".equals(tokenName)) {
-                if (displayInfo != null && displayInfo.exists) {
-                    HTMLWriter.writeHtml(out, displayInfo.emailAddress);
-                }
-            }
-            else if ("id".equals(tokenName)) {
-                if (displayInfo != null && displayInfo.exists) {
-                    HTMLWriter.writeHtml(out, displayInfo.key);
-                }
-            }
-            else if ("loggedUserId".equals(tokenName)) {
-                if (aSession.loggedIn()) {
-                    HTMLWriter.writeHtml(out, aSession.loggedUserId());
-                }
-            }
-            else if ("loggedName".equals(tokenName)) {
-                if (aSession.loggedIn()) {
-                    UserInformation userInfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
-                    if (userInfo.exists) {
-                        HTMLWriter.writeHtml(out, userInfo.fullName);
-                    }
-                }
-            }
-            else if ("loggedKey".equals(tokenName)) {
-                if (aSession.loggedIn()) {
-                    UserInformation userInfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
-                    if (userInfo.exists) {
-                        HTMLWriter.writeHtml(out, userInfo.key);
-                    }
-                }
-            }
-            else if ("loggedOpenId".equals(tokenName)) {
-                HTMLWriter.writeHtml(out, loggedOpenId);
-            }
-            else if ("reqUserId".equals(tokenName)) {
-                if (requestedIdentity != null) {
-                    HTMLWriter.writeHtml(out, requestedIdentity.getUserId());
-                }
-                else {
-                    HTMLWriter.writeHtml(out, aSession.presumedId);
-                }
-            }
-            else if ("reqOpenId".equals(tokenName)) {
-                if (requestedIdentity != null) {
-                    HTMLWriter.writeHtml(out, requestedIdentity.getOpenId());
-                }
-            }
-            else if ("addrOpenId".equals(tokenName)) {
-                if (addressedUserId != null) {
-                    HTMLWriter.writeHtml(out, addressedUserId);
-                }
-            }
-            else if ("addrId".equals(tokenName)) {
-                if (addressedUserId != null) {
-                    HTMLWriter.writeHtml(out, addressedUserId);
-                }
-            }
-            else if ("registeredEmailId".equals(tokenName)) {
-                if (aSession != null) {
-                    HTMLWriter.writeHtml(out, aSession.regEmail);
-                }
-            }
             else if ("root".equals(tokenName)) {
                 HTMLWriter.writeHtml(out, ssofi.baseURL);
-            }
-            else if ("Note".equals(tokenName)) {
-                String note = "";
-                if (ssofi.isLDAPMode) {
-                    note = "The user name and password that you "
-                            + "enter above will be checked against a "
-                            + "directory server using LDAP protocol.";
-                }
-                else {
-                    note = "Enter your email address and password. "
-                            + "If you have never set up a password for your email address then use \"Register Here\" link for a new value "
-                            + ", or if you have forgotten your password, you should use the \"Forgot Your Password\" link "
-                            + "to reset your password.";
-                }
-                HTMLWriter.writeHtml(out, note);
-            }
-            else if ("go".equals(tokenName)) {
-                HTMLWriter.writeHtml(out, paramGo);
-            }
-            else if ("return_to".equals(tokenName)) {
-
-                HTMLWriter.writeHtml(out, aSession.return_to);
-            }
-            else if ("assoc_handle".equals(tokenName)) {
-
-                HTMLWriter.writeHtml(out, assoc_handle);
             }
             else if ("serverError".equals(tokenName)) {
                 writeHtmlException(out, ssofi.initFailure);

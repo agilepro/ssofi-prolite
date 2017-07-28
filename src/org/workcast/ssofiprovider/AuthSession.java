@@ -15,7 +15,6 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.openid4java.message.ParameterList;
 import org.workcast.json.JSONObject;
 
 /**
@@ -27,7 +26,6 @@ public class AuthSession implements Serializable {
 
     public static String baseURL;
 
-    ParameterList paramlist = null;
 
     // if something goes wrong, note it here for display next time
     // BUT not all exception object are serializable!!!!!   
@@ -147,7 +145,6 @@ public class AuthSession implements Serializable {
     }
 
     public void reinit(HttpServletRequest request) {
-        paramlist = new ParameterList(request.getParameterMap());
         return_to = request.getParameter("openid.return_to");
         presumedId = request.getParameter("openid.identity");
         if (presumedId==null) {
@@ -185,7 +182,6 @@ public class AuthSession implements Serializable {
         myCopy.authIdentity = this.authIdentity;
         myCopy.authName = this.authName;
         myCopy.presumedId = this.presumedId;
-        myCopy.paramlist = this.paramlist;
         myCopy.regEmail = this.regEmail;
         myCopy.regEmailConfirmed = this.regEmailConfirmed;
         myCopy.return_to = this.return_to;

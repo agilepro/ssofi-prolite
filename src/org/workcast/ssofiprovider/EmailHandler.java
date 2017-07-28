@@ -88,7 +88,7 @@ public class EmailHandler {
 
             Authenticator authenticator = new MyAuthenticator(savedProps);
             Session session = Session.getInstance(savedProps, authenticator);
-            session.setDebug(true);
+            //session.setDebug(true);
             transport = session.getTransport();
             transport.connect();
 
@@ -133,6 +133,7 @@ public class EmailHandler {
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
 
+            System.out.println("SSOFI: Email verification request sent to: "+emailId);
         }
         catch (Exception e) {
             throw new RuntimeException("Unable to send an email message for (" + emailId + ")", e);
@@ -155,7 +156,7 @@ public class EmailHandler {
 
             Authenticator authenticator = new MyAuthenticator(savedProps);
             Session session = Session.getInstance(savedProps, authenticator);
-            session.setDebug(true);
+            //session.setDebug(true);
             transport = session.getTransport();
             transport.connect();
 
@@ -199,6 +200,8 @@ public class EmailHandler {
             mp.addBodyPart(textPart);
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
+            
+            System.out.println("SSOFI: Invitation sent to: "+emailId);
 
         }
         catch (Exception e) {

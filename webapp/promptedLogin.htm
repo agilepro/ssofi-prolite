@@ -23,7 +23,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>Corporate LDAP - Open Id Provider</title>
+        <title>SSOFI - Prompted</title>
         <link rel="openid.server" href="{{root}}" />
         <link rel="openid.delegate" href="{{root}}" />
         <link rel="openid2.provider" href="{{root}}" />
@@ -50,8 +50,6 @@
         <div id="loginWrapper">
             <form method="post" action="{{info.baseUrl}}">
                 <input type="hidden" name="openid.mode" value="loginAction"/>
-                <!--input type="hidden" name="go" value="{{info.go}}"/-->
-                <!--input type="hidden" name="display-id" value="{{id}}"/-->
                 <table cellpadding="0" cellspacing="0" width="100%">
                     <tr>
                         <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
@@ -63,7 +61,7 @@
                                 <strong ng-show="info.isLocal">Email Address:</strong>
                                 <strong ng-show="info.isLDAP">User ID from LDAP Directory Server:</strong>
                                 <input type="text" id="entered-id" name="entered-id" class="form-control" 
-                                       ng-model="userId"/>
+                                       ng-model="userId" placeholder="Enter your email address"/>
                             </div>
                             <div class="loginSpacing">
                                 <strong>Password:</strong>

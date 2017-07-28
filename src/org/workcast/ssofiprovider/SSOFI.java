@@ -8,7 +8,6 @@ import java.util.Properties;
 
 import javax.servlet.ServletContext;
 
-import org.openid4java.server.ServerManager;
 import org.workcast.streams.SSLPatch;
 import org.workcast.streams.StreamHelper;
 
@@ -26,7 +25,6 @@ public class SSOFI {
     private File dataFolder;
     private File configFile;
 
-    public ServerManager manager = null;
     public boolean initialized = false;
     public Exception initFailure = null;
 
@@ -133,12 +131,7 @@ public class SSOFI {
             File emailTokenFile = new File(dataFolder, "EmailTokens.json");
             tokenManager = new EmailTokenManager(emailTokenFile);
 
-            manager = new ServerManager();
-
-
             AddressParser.initialize(baseURL);
-
-            manager.setOPEndpointUrl(baseURL);
 
             File bipfile = new File(dataFolder, "blockedIp.txt");
             if (!bipfile.exists()) {

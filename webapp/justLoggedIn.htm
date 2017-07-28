@@ -21,63 +21,95 @@
  * justLoggedIn.htm
  * -->
 <html xmlns="http://www.w3.org/1999/xhtml">
-    <head>
-        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-        <title>Corporate LDAP - Open Id Provider</title>
-        <link rel="openid.server" href="{{root}}" />
-        <link rel="openid.delegate" href="{{root}}" />
-        <link rel="openid2.provider" href="{{root}}" />
-        <link rel="stylesheet" href="$/bootstrap.min.css">
-        <script src="$/jquery.min.js"></script>
-        <script src="$/angular.min.js"></script>
-        <link rel="stylesheet" href="$/fujitsu.css">
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>SSOFI - Display Logged In</title>
+    <link rel="openid.server" href="{{root}}" />
+    <link rel="openid.delegate" href="{{root}}" />
+    <link rel="openid2.provider" href="{{root}}" />
+    <link rel="stylesheet" href="$/bootstrap.min.css">
+    <script src="$/jquery.min.js"></script>
+    <script src="$/angular.min.js"></script>
+    <link rel="stylesheet" href="$/fujitsu.css">
 
-        <script>
-        var app = angular.module('myApp', []);
-        app.controller('myCtrl', function($scope, $http) {
-            $scope.info = {{userInfo}};
-            $scope.userId = "{{reqUserId}}";
-            $scope.bodyStyle = "";
-            if ($scope.info.isLDAP) {
-                $scope.bodyStyle = "background-color:skyblue";
-            }
-        });
-        </script>
+    <script>
+    var app = angular.module('myApp', []);
+    app.controller('myCtrl', function($scope, $http) {
+        $scope.info = {{userInfo}};
+        $scope.bodyStyle = "";
+        if ($scope.info.isLDAP) {
+            $scope.bodyStyle = "background-color:skyblue";
+        }
+    });
+    </script>
 
-    </head>
-    <body ng-app="myApp" ng-controller="myCtrl" style="{{bodyStyle}}">
-        <div id="loginWrapper">
-            <form method="get" action="{{info.baseUrl}}">
-                <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                        <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
-                    </tr>
-                    <tr>
-                        <td class="loginWrapperContentArea">
-                            <span class="errorArea"><strong>{{info.userError}}</strong></span>
-                            <div class="loginSpacing">
-                                You are logged in as:<br /><br/>
-                                <span class="userNameClass">{{info.userName}}</span><br />
-                                <span><b><a href="{{info.userId}}">{{info.userId}}</a></b> 
-                                / {{info.userEmail}}</span>
-                                
-                                <br /><br />
-                                <button type="submit" class="btn btn-primary" name="openid.mode"
-                                        value="logout">Log Out</button>
-                                &nbsp;
-                                <button ng-show="info.isLocal" type="submit" class="btn btn-primary" name="openid.mode"
-                                        value="passwordView">Edit Profile or Password</button>
-                                <br />
-                            </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <input type="hidden" name="go" value="{{thisPage}}"/>
-                        </td>
-                    </tr>
-                </table>
-            </form>
-        </div>
-    </body>
+</head>
+<body ng-app="myApp" ng-controller="myCtrl" style="{{bodyStyle}}">
+    
+    <div id="userDisplayWrapper" ng-show="info.dispEmail && info.dispId">
+        <table cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td><img src="$/headerUserInfo.gif" width="546" alt="" /></td>
+            </tr>
+            <tr>
+                <td class="loginWrapperContentArea">
+                    <div>
+                        <table class="spaceyTable">
+                            <tr>
+                                <td>Full Name:</td>
+                                <td><span class="userNameClass">{{info.dispName}}</span></td>
+                            </tr>
+
+                            <tr>
+                                <td>Email Address:</td>
+                                <td>{{info.dispEmail}}</td>
+                            </tr>
+                            <tr>
+                                <td>Key:</td>
+                                <td>{{info.dispId}}</td>
+                            </tr>
+                        </table>
+                     </div>
+                </td>
+            </tr>
+        </table>
+    </div>
+    
+    
+
+    <div id="loginWrapper">
+        <form method="GET" action="{{info.baseUrl}}">
+             <input type="hidden" name="go" value="{{thisPage}}"/>
+             <input type="hidden" name="go" value="{{thisPage}}"/>
+             <table cellpadding="0" cellspacing="0" width="100%">
+                <tr>
+                    <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
+                </tr>
+                <tr>
+                    <td class="loginWrapperContentArea">
+                        <span class="errorArea"><strong>{{info.userError}}</strong></span>
+                        <div class="loginSpacing">
+                            You are logged in as:<br /><br/>
+                            <span class="userNameClass">{{info.userName}}</span><br />
+                            <span><b><a href="{{info.userId}}">{{info.userId}}</a></b> 
+                            / {{info.userEmail}}</span>
+                            
+                            <br /><br />
+                            <button type="submit" class="btn btn-primary" name="openid.mode"
+                                    value="logout">Log Out</button>
+                            &nbsp;
+                            <button ng-show="info.isLocal" type="submit" class="btn btn-primary" name="openid.mode"
+                                    value="passwordForm">Edit Profile or Password</button>
+                            <br />
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                    </td>
+                </tr>
+            </table>
+        </form>
+    </div>
+</body>
 </html>
