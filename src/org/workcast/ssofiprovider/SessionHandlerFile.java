@@ -109,17 +109,17 @@ public class SessionHandlerFile implements SessionHandler {
             sessionFile.delete();
         }
         if (sessionFile.exists()) {
-            System.out.println("Failed 1st time to delete " + sessionFile);
+            System.out.println("SSOFI: Failed 1st time to delete " + sessionFile);
             sessionFile.delete();
         }
         if (!tempFile.renameTo(sessionFile)) {
-            System.out.println("Failed 1st time to rename " + tempFile);
+            System.out.println("SSOFI: Failed 1st time to rename " + tempFile);
             if (!tempFile.renameTo(sessionFile)) {
-                System.out.println("Failed 2nd time to rename " + tempFile);
+                System.out.println("SSOFI: Failed 2nd time to rename " + tempFile);
             }
         }
         if (tempFile.exists()) {
-            System.out.println("Temp file remains " + tempFile);
+            System.out.println("SSOFI: Temp file remains " + tempFile);
         }
     }
 

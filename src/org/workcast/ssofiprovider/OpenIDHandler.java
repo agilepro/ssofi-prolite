@@ -225,11 +225,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            System.out.println("SSOFI REQUEST: "+requestURL);
             
             // set up loggedUserId and loggedOpenId
             determineLoggedUser();
-            System.out.println("     LOGGEDIN: "+aSession.loggedIn());
 
             addressedUserId = requestURL.substring(ssofi.rootURL.length());
 
@@ -238,8 +236,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             String mode = defParam("openid.mode", "displayForm");
-            System.out.println("         MODE: "+mode);
-
+            String loginIndicator = " (anonymous) ";
+            if (aSession.loggedIn()) {
+                loginIndicator =    " (logged in) ";
+            }
+            System.out.println("SSOFI REQUEST: "+mode+loginIndicator+requestURL);
 
             if (mode.startsWith("api")) {
                 // Want to avoid saving a session as a result of every API call.  The API call will never
