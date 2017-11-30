@@ -246,12 +246,15 @@ public class SSOFI {
             throw new Exception("Unable to identify a network interface with the address "+ip);
         }
         byte[] mac = network.getHardwareAddress();
-        if (mac==null) {
-            throw new Exception("The method 'getHArdwareAddress' was not able to return an actual mac address.  Something is wrong with network configuration");
-        }
         long macValue = 0;
-        for (byte oneByte : mac) {
-            macValue = (macValue<<8) + (oneByte+256)%256;
+        if (mac==null) {
+            macValue = System.currentTimeMillis();
+            //throw new Exception("The method 'getHardwareAddress' was not able to return an actual mac address.  Something is wrong with network configuration");
+        }
+        else {
+            for (byte oneByte : mac) {
+                macValue = (macValue<<8) + (oneByte+256)%256;
+            }
         }
         if (macValue==0) {
             //throw new Exception("Unable to get the MAC address");

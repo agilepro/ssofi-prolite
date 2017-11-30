@@ -1,0 +1,115 @@
+
+This is an attempt to unravel all the states.
+
+Overall main state of your session:
+
+logged in == true
+   name == known
+   name == unknown
+logged in == false
+
+Cookie state
+
+previous user == unknown
+previous user == known
+
+
+User State
+
+userId == unknown
+userID == known, name==unknown
+userId == known, name==known
+
+
+Path state -- must be every form and every redirect URL?
+appURL == known
+appUrl == unknown
+
+
+
+A new path is started:
+login request from an application
+clicking on a link in an email validation request
+clicking on an invitation link in email
+
+
+
+
+
+
+Path:
+
+1
+Your session is not logged in.
+You have no previous user
+login request (including appURL)
+login screen displayed
+user enters correct username, password
+session is marked as logged in
+browser returns to the appURL
+
+2. 
+Session not logged in
+No previous user
+login request (including appURL)
+login screen displayed
+user enters incorrect user/password
+login failure message appears in same login screen
+Is there a cancel to go back to the app?
+ultimately correct login goes back to app
+
+3. 
+Session not logged in
+No previous user
+login request (including appURL)
+login screen displayed
+user request to register as a new user
+email sent
+screen to enter token
+correct token entered
+screen to get name and password
+reasonable values entered
+user created, return to app
+
+4. 
+Session not logged in
+No previous user
+login request (including appURL)
+login screen displayed
+user request to register as a new user
+email sent
+screen to enter token, and closed by user
+
+in new browser session, user click on link in email
+screen to get name and password
+reasonable values entered
+user created, return to app
+
+
+5.
+Session logged in, known user
+login request
+immediately return to app
+
+6. 
+
+
+
+PATHOLOGICAL CASES
+
+
+You are logged in as A
+You click a link confirming email for user B
+* should this be an error?
+* ignore, leaving you as A, consume token, go to app?
+* ignore, leaving as A, do not consume tokem, go to app?
+* log out of A, login B, go to app?
+
+You are logged in as A
+You click an invalid link for B (already used)
+* should this be an error?
+* ignore and just go on to the application?
+* log out of A, and prompt for B password/token resend?
+
+
+
