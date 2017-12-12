@@ -1,9 +1,9 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 
-import org.workcast.json.JSONArray;
-import org.workcast.json.JSONObject;
+import com.purplehillsbooks.json.JSONArray;
+import com.purplehillsbooks.json.JSONObject;
 
 /**
  * When sending a message to verify an email address, along with the message

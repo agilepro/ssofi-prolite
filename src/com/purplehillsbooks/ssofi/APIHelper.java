@@ -1,11 +1,11 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.Writer;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.workcast.json.JSONArray;
-import org.workcast.json.JSONObject;
+import com.purplehillsbooks.json.JSONArray;
+import com.purplehillsbooks.json.JSONObject;
 
 public class APIHelper {
 

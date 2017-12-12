@@ -1,4 +1,4 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 import java.io.FileInputStream;

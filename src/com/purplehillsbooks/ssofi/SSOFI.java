@@ -1,4 +1,4 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -8,8 +8,8 @@ import java.util.Properties;
 
 import javax.servlet.ServletContext;
 
-import org.workcast.streams.SSLPatch;
-import org.workcast.streams.StreamHelper;
+import com.purplehillsbooks.streams.SSLPatch;
+import com.purplehillsbooks.streams.StreamHelper;
 
 /**
  * This is the core singleton class that represents the configuration

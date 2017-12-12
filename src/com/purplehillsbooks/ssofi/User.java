@@ -1,10 +1,11 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.util.Vector;
 
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.workcast.mendocino.Mel;
+
+import com.purplehillsbooks.xml.Mel;
 
 /**
  * An XML element that represents a user

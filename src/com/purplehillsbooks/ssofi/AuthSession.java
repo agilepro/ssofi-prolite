@@ -1,4 +1,4 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -15,7 +15,7 @@ import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.workcast.json.JSONObject;
+import com.purplehillsbooks.json.JSONObject;
 
 /**
  * Holds all the information that we need for a session

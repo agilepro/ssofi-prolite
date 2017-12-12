@@ -1,4 +1,4 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 import java.io.StringWriter;
@@ -20,8 +20,9 @@ import javax.mail.internet.InternetAddress;
 import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
-import org.workcast.mendocino.Mel;
-import org.workcast.streams.HTMLWriter;
+
+import com.purplehillsbooks.streams.HTMLWriter;
+import com.purplehillsbooks.xml.Mel;
 
 public class EmailHandler {
 

@@ -1,4 +1,4 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 /**
  * This is the interface that a session handler must implement

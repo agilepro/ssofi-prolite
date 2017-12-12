@@ -1,4 +1,4 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 /**
  * Parses the address to determine the OpenId and/or the resource

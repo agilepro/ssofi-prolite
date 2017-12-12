@@ -1,6 +1,6 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
-import org.workcast.json.JSONObject;
+import com.purplehillsbooks.json.JSONObject;
 
 /**
  * This is just a package for all the information about a user we might need.

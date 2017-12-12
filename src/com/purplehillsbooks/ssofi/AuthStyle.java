@@ -1,4 +1,4 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 /**
  * An interface to represent the various possible authentication options: LDAP,

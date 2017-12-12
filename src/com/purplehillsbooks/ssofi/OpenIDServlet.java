@@ -1,7 +1,7 @@
 /*
  * OpenIDServlet.java
  */
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
@@ -13,8 +13,8 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.workcast.streams.HTMLWriter;
-import org.workcast.streams.TemplateStreamer;
+import com.purplehillsbooks.streams.HTMLWriter;
+import com.purplehillsbooks.temps.TemplateStreamer;
 
 /**
  * Implements an HTTPServlet for an OpenID provider

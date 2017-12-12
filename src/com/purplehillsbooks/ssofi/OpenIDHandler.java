@@ -1,7 +1,7 @@
 /*
  * OpenIDHandler.java
  */
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -23,12 +23,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.workcast.json.JSONArray;
-import org.workcast.json.JSONObject;
-import org.workcast.json.JSONTokener;
-import org.workcast.streams.HTMLWriter;
-import org.workcast.streams.TemplateStreamer;
-import org.workcast.streams.TemplateTokenRetriever;
+import com.purplehillsbooks.json.JSONArray;
+import com.purplehillsbooks.json.JSONObject;
+import com.purplehillsbooks.json.JSONTokener;
+import com.purplehillsbooks.streams.HTMLWriter;
+import com.purplehillsbooks.temps.TemplateStreamer;
+import com.purplehillsbooks.temps.TemplateTokenRetriever;
 
 /**
  * Implements an OpenID provider
@@ -1007,6 +1007,35 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     @Override
     public void setIteration(String arg0, int arg1) throws Exception {
         throw new Exception("SSOFI Template Streamer can not handle LOOPS");
+    }
+
+    @Override
+    public void debugDump(Writer arg0) throws Exception {
+        // TODO Auto-generated method stub
+        // NOTE: should switch to using ChunkTemplates ....
+        throw new Exception("debugDump not implemented");
+    }
+
+    @Override
+    public boolean ifValue(String arg0) throws Exception {
+        // TODO Auto-generated method stub
+        // NOTE: should switch to using ChunkTemplates ....
+        throw new Exception("ifValue not implemented");
+    }
+
+    @Override
+    public void writeTokenDate(Writer arg0, String arg1, String arg2)
+            throws Exception {
+        // TODO Auto-generated method stub
+        // NOTE: should switch to using ChunkTemplates ....
+        throw new Exception("writeTokenDate not implemented");
+    }
+
+    @Override
+    public void writeTokenValueRaw(Writer arg0, String arg1) throws Exception {
+        // TODO Auto-generated method stub
+        // NOTE: should switch to using ChunkTemplates ....
+        throw new Exception("writeTokenValueRaw not implemented");
     }
 
 

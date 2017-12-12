@@ -1,11 +1,11 @@
-package org.workcast.ssofiprovider;
+package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 import java.util.Vector;
 
 import javax.servlet.ServletContext;
 
-import org.workcast.mendocino.Mel;
+import com.purplehillsbooks.xml.Mel;
 
 /**
  * Collect all the local specific functionality into this class
