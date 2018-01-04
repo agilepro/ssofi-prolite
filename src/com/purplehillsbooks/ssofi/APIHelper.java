@@ -5,6 +5,7 @@ import java.io.Writer;
 import javax.servlet.http.HttpServletResponse;
 
 import com.purplehillsbooks.json.JSONArray;
+import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
 
 public class APIHelper {
@@ -34,7 +35,7 @@ public class APIHelper {
         }
         catch(Exception e) {
             System.out.println("SSOFI LAuth EXCEPTION: "+e.toString());
-            e.printStackTrace(System.out);
+            JSONException.traceException(e, "handleAPICommand: mode="+mode);
             JSONObject jo = new JSONObject();
             JSONArray msgs = new JSONArray();
             Throwable t = e;

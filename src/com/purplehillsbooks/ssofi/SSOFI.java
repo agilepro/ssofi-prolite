@@ -8,6 +8,7 @@ import java.util.Properties;
 
 import javax.servlet.ServletContext;
 
+import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.streams.SSLPatch;
 import com.purplehillsbooks.streams.StreamHelper;
 
@@ -150,7 +151,7 @@ public class SSOFI {
             // get something into the log as well in case nobody accesses the
             // server
             System.out.println("\n##### ERROR DURING SSOFI PROVIDER INITIALIZATION #####");
-            e.printStackTrace(System.out);
+            JSONException.traceException(e, "SSOFI PROVIDER INITIALIZATION");
             System.out.println("##### ##### #####\n");
         }
     }

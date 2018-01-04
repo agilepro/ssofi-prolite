@@ -51,7 +51,7 @@ public class SessionHandlerFile implements SessionHandler {
             long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
             for (File child : children) {
                 if (child.lastModified() < oldestTimeStampAllowed) {
-                    if (child.getName().endsWith(".session")) {
+                    if (child.getName().endsWith(".sess")) {
                         child.delete();
                     }
                     if (child.getName().endsWith(".$temp")) {
@@ -73,31 +73,36 @@ public class SessionHandlerFile implements SessionHandler {
      */
     public synchronized AuthSession getAuthSession(String sessionId) throws Exception {
         long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
-        File sessionFile = new File(folder, sessionId + ".session");
-        AuthSession as = null;
-        if (sessionFile.exists()) {
-            if (sessionFile.lastModified() < oldestTimeStampAllowed) {
-                // timestamp is too old, so remove the file
-                sessionFile.delete();
+        File sessionFile = new File(folder, sessionId + ".sess");
+        try {
+            AuthSession as = null;
+            if (sessionFile.exists()) {
+                if (sessionFile.lastModified() < oldestTimeStampAllowed) {
+                    // timestamp is too old, so remove the file
+                    sessionFile.delete();
+                }
+                else {
+                    FileInputStream fileIn = new FileInputStream(sessionFile);
+                    ObjectInputStream in = new ObjectInputStream(fileIn);
+                    as = (AuthSession) in.readObject();
+                    in.close();
+                    fileIn.close();
+                }
             }
-            else {
-                FileInputStream fileIn = new FileInputStream(sessionFile);
-                ObjectInputStream in = new ObjectInputStream(fileIn);
-                as = (AuthSession) in.readObject();
-                in.close();
-                fileIn.close();
+            if (as == null) {
+                as = new AuthSession();
             }
+            return as;
         }
-        if (as == null) {
-            as = new AuthSession();
+        catch (Exception e) {
+            throw new Exception("Failure trying to read the session file: "+sessionFile, e);
         }
-        return as;
     }
 
     public synchronized void saveAuthSession(String sessionId, AuthSession thisSession)
             throws Exception {
 
-        File sessionFile = new File(folder, sessionId + ".session");
+        File sessionFile = new File(folder, sessionId + ".sess");
         File tempFile = new File(folder, sessionId + System.currentTimeMillis() + ".$temp");
         FileOutputStream fileOut = new FileOutputStream(tempFile);
         ObjectOutputStream out = new ObjectOutputStream(fileOut);
@@ -124,23 +129,11 @@ public class SessionHandlerFile implements SessionHandler {
     }
 
     public synchronized void deleteAuthSession(String sessionId) throws Exception {
-        File sessionFile = new File(folder, sessionId + ".session");
+        File sessionFile = new File(folder, sessionId + ".sess");
         if (sessionFile.exists()) {
             sessionFile.delete();
         }
     }
 
-    /**
-     * call this to indicate that the session has been accessed, and to set the
-     * timestamp to the current time.
-     */
-    public synchronized void markSessionTime(String sessionId) throws Exception {
-        //don't do this for file based manager
-        //timeout is from LOGIN not simply last access.
-        //for a long logout time (like a month) you might NEVER have to log in again
-        //
-        //File sessionFile = new File(folder, sessionId + ".session");
-        //sessionFile.setLastModified(System.currentTimeMillis());
-    }
 
 }

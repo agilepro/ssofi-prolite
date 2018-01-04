@@ -22,10 +22,5 @@ public interface SessionHandler {
      */
     public void deleteAuthSession(String sessionId) throws Exception;
 
-    /**
-     * call this to indicate that the session has been accessed, and to set the
-     * timestamp to the current time.
-     */
-    public void markSessionTime(String sessionId) throws Exception;
 
 }

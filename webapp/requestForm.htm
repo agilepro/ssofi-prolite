@@ -54,7 +54,7 @@
                     <div class="mainLoginArea">
                         <center>
                             <img src="$/step1.gif" width="442" height="46" alt="" />
-                            <h4>Send registration request to your email address {{openidMode}}</h4>
+                            <h4>Send password reset request to your email address</h4>
                         </center>
                         <div ng-show="info.userError" class="errorArea">
                             <strong>{{info.userError}}</strong></div>
@@ -68,7 +68,8 @@
                                 <td><td>{{captcha}}</td>
                              </tr>
                         </table>
-                        <span class="noteSection"><b>Note:</b> You will receive an email notification to the email address you enter for confirmation. After entering the key in that email message you would be able to set or reset your password.</span>
+                        <span class="noteSection"><b>Note:</b> You will receive an email with a link that 
+                        will allow you to reset your password.</span>
                     </div>
                     <div class="buttonArea">
                         <input type="submit" class="btn btn-primary" title="Send Email" value="Send Email Now" />
