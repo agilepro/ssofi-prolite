@@ -5,7 +5,7 @@
     version="2.4">
     <servlet>
         <servlet-name>OpenIDServlet</servlet-name>
-        <servlet-class>org.workcast.ssofiprovider.OpenIDServlet</servlet-class>
+        <servlet-class>com.purplehillsbooks.ssofi.OpenIDServlet</servlet-class>
         <load-on-startup>6</load-on-startup>
     </servlet>
     <servlet-mapping>

@@ -85,7 +85,7 @@
                 <div class="mainLoginArea">
                     <center>
                         <img src="$/step2.gif" width="442" height="46" alt="" />
-                        <h4>Validate your corporate email address</h4>
+                        <h4>Check your email inbox</h4>
                     </center>
                     <span class="errorArea"><strong>{{userError}}</strong></span>
                     <table class="spaceyTable">
@@ -97,19 +97,24 @@
                                 <input type="hidden" name="registerEmail" value="{{userId}}"/>
                             </td>
                         </tr>
-                        <tr>
-                            <td><strong>Enter Key:</strong></td>
-                            <td width="10px"></td>
-                            <td><input type="text" name="registeredEmailKey" ng-model="keyValue"
-                                class="form-control" style="width:400px"/></td>
-                        </tr>
                     </table>
-                    <div class="noteSection"><b>Check your email:</b> You should receive an email message with a secret key in it. Copy that key value, and paste it into the space above.</div>
+                    <div class="noteSection">
+                        <p>You should receive an email message with a link in it. 
+                        Follow the instructions in that email to set your password.</p>
+                        
+                        <p>Note that the link will be usable only once, and only within 
+                        two days of receiving the email.</p>
+                        
+                        <p>If your email client software does not support clicking on an 
+                        HTML link, you may need to manually copy the link to the browser
+                        address bar.</p>
+                        
+                        
+                    </div>
                 </div>
                 </form>
                 <div class="buttonArea">
                     <div ng-click="submitValid(false)" class="btn btn-primary">Resend Email</div>
-                    <div ng-click="submitValid(true)"  class="btn btn-primary">Confirm Email Address</div>
                 </div>
             </div>
          </div>

@@ -43,11 +43,4 @@ public class SessionHandlerMemory implements SessionHandler {
         allTimes.remove(sessionId);
     }
 
-    /**
-     * In this implementation, all we need to do is to save the new timestamp
-     */
-    public void markSessionTime(String sessionId) throws Exception {
-        allTimes.put(sessionId, new Long(System.currentTimeMillis()));
-    }
-
 }

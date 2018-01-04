@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
@@ -24,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import com.purplehillsbooks.json.JSONArray;
+import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
 import com.purplehillsbooks.json.JSONTokener;
 import com.purplehillsbooks.streams.HTMLWriter;
@@ -110,8 +110,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * an instance of this is created and called on a single thread
      */
     public void doGet() {
+        String sessionId = "?";
         try {
-            String sessionId = getSSOFISessionId();
+            sessionId = getSSOFISessionId();
 
             if (ssofi.sHand==null) {
                 streamTemplate("configErrScreen");
@@ -139,7 +140,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         catch (Exception e) {
             try {
                 System.out.println("SSOFI: !!! Error getting or saving session information !!!");
-                e.printStackTrace(System.out);
+                JSONException.traceException(e, "GET: session: "+sessionId);
             }
             catch (Exception eeeee) {
                 //really nothing we can do with this.
@@ -172,7 +173,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         catch (Exception e) {
             System.out.println("SSOFI: !!! Unable to handle post: "+e);
-            e.printStackTrace(System.out);
+            JSONException.traceException(e, "POST");
         }
     }
     
@@ -202,7 +203,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * fetched, and will be saved afterwards.
      */
     public void doGetWithSession() {
+        System.out.println("doGetWithSession");
 
+        String requestURL = "";
+        
         // check and see if this is the very first access in an attempt stream
         // initialize this object if there is not one already
         try {
@@ -212,7 +216,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            String requestURL = request.getRequestURL().toString();
+            requestURL = request.getRequestURL().toString();
             
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
@@ -364,13 +368,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 displayRootPage();
             }            
         }
-        catch (Exception e) {
+        catch (Exception eorig) {
             try {
+                Exception e = new Exception("Unable to handle request: "+requestURL, eorig);
                 aSession.saveError(e);
                 System.out.println("SSOFI: error --- " + (new Date()).toString());
-                e.printStackTrace(System.out);
-                OutputStreamWriter errOut = new OutputStreamWriter(System.out);
-                writeHtmlException(errOut, e);
+                JSONException.traceException(e, "OpenIDHandler");
                 System.out.println("SSOFI: --- ------------------  --- ");
                 displayRootPage();
                 return;
