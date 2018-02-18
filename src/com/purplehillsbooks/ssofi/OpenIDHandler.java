@@ -203,8 +203,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * fetched, and will be saved afterwards.
      */
     public void doGetWithSession() {
-        System.out.println("doGetWithSession");
-
         String requestURL = "";
         
         // check and see if this is the very first access in an attempt stream
