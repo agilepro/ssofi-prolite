@@ -619,7 +619,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         UserInformation ui = ssofi.authStyle.getOrCreateUser(registerEmail);
 
         if (aSession.loggedIn()) {
-            if (aSession.loggedUserId().equals(registerEmail)) {
+            if (aSession.loggedUserId().equalsIgnoreCase(registerEmail)) {
                 //if user already logged in, as the correct person,
                 //check to see if the user password has been set
                 //correctly.  If so, go ahead and redirect to the

@@ -80,7 +80,7 @@ public class EmailTokenManager {
 	}
 	
 	public synchronized boolean validateAndConsume(String email, String token) throws Exception {
-		long yesterday = System.currentTimeMillis() - 24*60*60*1000;
+		long yesterday = System.currentTimeMillis() - 24L*60*60*1000;
 		JSONArray list = tokenFile.getJSONArray("list");
 		JSONArray filteredList = new JSONArray();
 		boolean foundIt = false;
