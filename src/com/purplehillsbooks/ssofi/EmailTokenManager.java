@@ -52,13 +52,13 @@ public class EmailTokenManager {
 	}
 	
 	private JSONArray getCurrentItems() throws Exception {
-		long threeDaysAgo = System.currentTimeMillis() - 72*60*60*1000;
+		long eightDaysAgo = System.currentTimeMillis() - 8L*24*60*60*1000;
 		JSONArray list = tokenFile.getJSONArray("list");
 		JSONArray filteredList = new JSONArray();
 		for (int i=0; i<list.length(); i++) {
 			JSONObject listItem = list.getJSONObject(i);
 			long timestamp = listItem.getLong("timestamp");
-			if (timestamp<threeDaysAgo)  {
+			if (timestamp<eightDaysAgo)  {
 				continue;
 			}
 			filteredList.put(listItem);

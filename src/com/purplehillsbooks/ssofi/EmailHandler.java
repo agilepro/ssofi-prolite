@@ -116,7 +116,7 @@ public class EmailHandler {
             HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("\"><b>SET YOUR PASSWORD</b></a>.</p>");
             clone.write("<p></p>");
-            clone.write("<p>(Note: You must use the link within two days of ");
+            clone.write("<p>(Note: You must use the link within 7 days of ");
             clone.write("receiving the email, and you can only use the link once.  ");
             clone.write("If you don't know who this message is from, and you are not ");
             clone.write("aware of the project you can safely ignore this message. ");
@@ -181,7 +181,7 @@ public class EmailHandler {
             HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("\"><b>SET YOUR PASSWORD</b></a>.</p>");
             clone.write("<p></p>");
-            clone.write("<p>(Note: You must use the link within two days of ");
+            clone.write("<p>(Note: You must use the link within 7 days of ");
             clone.write("receiving the email, and you can only use the link once.  ");
             clone.write("If you don't know who this message is from, and you are not ");
             clone.write("aware of the project you can safely ignore this message. ");
