@@ -145,12 +145,10 @@ public class EmailHandler {
         }
     }
 
-    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String magicNumber,
+    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String subject, String magicNumber,
             String app, String baseURL) throws Exception {
         Transport transport = null;
         try {
-
-            String subject = "Invitation to Collaborate";
 
             Authenticator authenticator = new MyAuthenticator(savedProps);
             Session session = Session.getInstance(savedProps, authenticator);

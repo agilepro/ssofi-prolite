@@ -95,6 +95,22 @@ public class APIHelper {
             jo.put("msg", "User logged out");
             return jo;
         }
+        if ("apiSendInvite".equals(mode)) {
+            if (postedObject==null) {
+                throw new Exception("Received a request for sending email without any posted JSON information");
+            }
+            //remember, this user ID is NOT the logged in user who is requesting the invitation
+            //but instead the user who is being sent the invitation.
+            String userId = postedObject.getString("userId");
+            String userName = postedObject.optString("userName");
+            String msg = postedObject.getString("msg");
+            String returnUrl = postedObject.getString("return");
+            String subject = postedObject.optString("subject", "Invitation to Collaborate");
+            sendInviteEmail(userId, userName, msg, returnUrl, subject, baseURL);
+            JSONObject okResponse = new JSONObject();
+            okResponse.put("result", "ok");
+            return okResponse;
+        }
         if (!aSession.loggedIn()) {
             System.out.println("SSOFI LAuth request: not logged in, not allowed: "+mode);
             JSONObject jo = new JSONObject();
@@ -120,32 +136,30 @@ public class APIHelper {
             postedObject.put("token",    token);
             return postedObject;
         }
-        if ("apiSendInvite".equals(mode)) {
-            if (postedObject==null) {
-                throw new Exception("Received a request for sending email without any posted JSON information");
-            }
-            //remember, this user ID is NOT the logged in user who is requesting the invitation
-            //but instead the user who is being sent the invitation.
-            String userId = postedObject.getString("userId");
-            String userName = postedObject.optString("userName");
-            String msg = postedObject.getString("msg");
-            String returnUrl = postedObject.getString("return");
-            sendInviteEmail(userId, userName, msg, returnUrl, baseURL);
-            JSONObject okResponse = new JSONObject();
-            okResponse.put("result", "ok");
-            return okResponse;
-        }
         throw new Exception("Authentication API can not understand mode "+mode);
     }
 
 
-    private void sendInviteEmail(String userId, String userName, String msg, String returnUrl, String baseURL) throws Exception {
+    private void sendInviteEmail(String userId, String userName, String msg, String returnUrl, String subject, String baseURL) throws Exception {
         if (!emailHandler.validate(userId)) {
             throw new Exception("The id supplied (" + userId
                     + ") does not appear to be a valid email address.");
         }
+        //The idea here is to slow down any attempt to send email.
+        //one user to wait 3 seconds is not a problem, but this will
+        //significantly slow down a hacker
+        Thread.sleep(3000); 
         String magicNumber = tokenManager.generateEmailToken(userId);
-        emailHandler.sendInviteEmail(aSession.loggedUserId(), aSession.loggedUserName(), userId, msg, magicNumber, returnUrl, baseURL);
+        String fromAddress = "weaver@circleweaver.com";
+        String fromName = "Weaver";
+        if (aSession.loggedIn()) {
+            fromAddress = aSession.loggedUserId();
+            fromName = aSession.loggedUserName();
+        }
+        if (userName==null || userName.length()<1) {
+            userName = aSession.loggedUserName();
+        }
+        emailHandler.sendInviteEmail(fromAddress, fromName, userId, msg, subject, magicNumber, returnUrl, baseURL);
     }
 
 
