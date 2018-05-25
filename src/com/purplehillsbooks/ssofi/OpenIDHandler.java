@@ -7,7 +7,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.Writer;
 import java.net.URLEncoder;
@@ -377,7 +376,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
             catch (Exception eeeee) {
-                eeeee.printStackTrace();
+                JSONException.traceException(eeeee, "EXCEPTION during EXCEPTION - doGetWithSession");
             }
         }
     }
@@ -892,15 +891,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         	
         	HTMLWriter.writeHtml(out, "EXCEPTION (" + tokenName + ")");
         	out.write("\n<!--\n");
-        	HTMLWriter hw = new HTMLWriter(out);
-        	PrintWriter pw = new PrintWriter(hw);
-        	e.printStackTrace(pw);
-        	pw.flush();
+        	JSONException.convertToJSON(e, "EXCEPTION (" + tokenName + ")")
+        	        .write(out, 2, 2);
         	out.write("\n-->\n");
         	
         	//ALSO put it into the system log
-        	System.out.println("EXCEPTION while printing token "+tokenName);
-        	e.printStackTrace();
+        	JSONException.traceException(e, "EXCEPTION while printing token "+tokenName);
         }
     }
 
@@ -924,7 +920,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
 
         out.write("\n<!--");
-        anException.printStackTrace(new PrintWriter(out));
+        JSONException.convertToJSON(anException, "").write(out,2,2);
         out.write("\n-->");
     }
 

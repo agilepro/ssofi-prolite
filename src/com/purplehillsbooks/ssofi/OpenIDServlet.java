@@ -3,7 +3,6 @@
  */
 package com.purplehillsbooks.ssofi;
 
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
@@ -13,6 +12,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.streams.HTMLWriter;
 import com.purplehillsbooks.temps.TemplateStreamer;
 
@@ -99,8 +99,7 @@ public class OpenIDServlet extends HttpServlet {
             out.write("<hr/>\n");
             out.write("<a href=\"../main.jsp\" title=\"Access the main page\">Main</a>\n");
             out.write("<hr/>\n<pre>");
-            e.printStackTrace(new PrintWriter(new HTMLWriter(out)));
-            e.printStackTrace(new PrintWriter(System.out));
+            JSONException.convertToJSON(e, "").write(new HTMLWriter(out),2,2);
             out.write("</pre></body></html>\n");
             out.flush();
         }
