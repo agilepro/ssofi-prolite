@@ -10,6 +10,8 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+import com.purplehillsbooks.json.JSONException;
+
 
 /**
  * Collect all the LDAP specific functionality into this class
@@ -136,6 +138,11 @@ public class AuthStyleLDAP implements AuthStyle {
             String msg = e.toString();
             if (msg.contains("Invalid Credentials")) {
                 return false;
+            }
+            if (JSONException.containsMessage(e, "AcceptSecurityContext")) {
+				System.out.println("Stupid Fujitsu LDAP accept security context error, continuing as logged in");
+				JSONException.traceException(e, "AcceptSecurityContext error for: "+userNetId);
+                return true;
             }
             else {
                 throw new Exception("Unable to authenticate user '" + userNetId + "'", e);
