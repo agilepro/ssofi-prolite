@@ -16,19 +16,19 @@ import javax.naming.directory.SearchResult;
  */
 public class AuthStyleLDAP implements AuthStyle {
 
-    String factoryInitial;
-    String providerUrl;
-    String securityAuthentication;
-    String securityPrincipal;
-    String securityCredentials;
+    private String factoryInitial;
+    private String providerUrl;
+    private String securityAuthentication;
+    private String securityPrincipal;
+    private String securityCredentials;
 
-    String queryBase;
-    String uidAttrName;
-    String firstNameAttrName;
-    String lastNameAttrName;
-    String mailAttrName;
-    String[] overridePasswords =  null;
-    Hashtable<String, String> htLDAP;
+    private String queryBase;
+    private String uidAttrName;
+    private String firstNameAttrName;
+    private String lastNameAttrName;
+    private String mailAttrName;
+    private boolean ignorePasswordMode;
+    private Hashtable<String, String> htLDAP;
 
     /**
      * this is the list of IDS that are administrators
@@ -56,16 +56,12 @@ public class AuthStyleLDAP implements AuthStyle {
         lastNameAttrName = ssofi.getRequiredProperty("attr.name.lastName");
         mailAttrName = ssofi.getRequiredProperty("attr.name.mail");
         
-        // handle override passwords, if any. You can specify any number
-        // of passwords separated by semicolons. The passwords themselves
-        // can not have a semicolon in them. e.g.
-        // overridePassword=pass1;pass2;pass3
-        String opass = ssofi.getSystemProperty("overridePassword");
-        if (opass == null) {
-            overridePasswords = new String[0];
-        }
-        else {
-            overridePasswords = opass.trim().split(";");
+        // ignore passwords mode allows for testing sitautions
+        // where people login and out of multiple users frequently
+        // passwords are accepted without testing them.
+        ignorePasswordMode = "yes".equalsIgnoreCase(ssofi.getSystemProperty("ignorePassword"));
+        if (ignorePasswordMode) {
+            System.out.println("SSOFI:  ignore password mode -- all passwords will be accepted without testing");
         }
 
         htLDAP = new Hashtable<String, String>();
@@ -75,7 +71,6 @@ public class AuthStyleLDAP implements AuthStyle {
         htLDAP.put("java.naming.security.principal", securityPrincipal);
         htLDAP.put("java.naming.security.credentials", securityCredentials);
 
-        //adminList = initAdminUserList();
     }
 
     public String getStyleIndicator() {
@@ -90,6 +85,10 @@ public class AuthStyleLDAP implements AuthStyle {
 
     public boolean authenticateUser(String userNetId, String userPwd) throws Exception {
         try {
+            if (ignorePasswordMode) {
+                return true;
+            }
+
         	assertValidFormat(userNetId);
             
             Hashtable<String, String> envht = new Hashtable<String, String>();
@@ -118,13 +117,6 @@ public class AuthStyleLDAP implements AuthStyle {
 
             envht.put("java.naming.security.principal", userNetId);
             envht.put("java.naming.security.credentials", userPwd);
-            
-            for  (String onePass : overridePasswords) {
-                if (userPwd.equals(onePass)) {
-                    System.out.println("SSOFI: Login: success by using override password ("+userNetId+")");
-                    return true;
-                }
-            }
             
             System.out.println("SSOFI: Login: trying for user ("+userNetId+")");
 

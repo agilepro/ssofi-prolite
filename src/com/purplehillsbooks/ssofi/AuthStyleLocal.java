@@ -16,7 +16,7 @@ public class AuthStyleLocal implements AuthStyle {
     private File userFile;
     private Vector<User> userList;
     private long timestampLastRead = 0;
-    private String[] overridePasswords;
+    private boolean ignorePasswordMode;
     private boolean makeUpUsers = false;
 
     public AuthStyleLocal(ServletContext sc, SSOFI ssofi) throws Exception {
@@ -28,19 +28,15 @@ public class AuthStyleLocal implements AuthStyle {
             ssofi.initFileFromWebInf(userFile);
         }
 
-        // handle override passwords, if any. You can specify any number
-        // of passwords separated by semicolons. The passwords themselves
-        // can not have a semicolon in them. e.g.
-        // overridePassword=pass1;pass2;pass3
-        String opass = ssofi.getSystemProperty("overridePassword");
-        if (opass == null) {
-            overridePasswords = new String[0];
+        // ignore passwords mode allows for testing sitautions
+        // where people login and out of multiple users frequently
+        // passwords are accepted without testing them.
+        ignorePasswordMode = "yes".equalsIgnoreCase(ssofi.getSystemProperty("ignorePassword"));
+        makeUpUsers = ignorePasswordMode;
+        if (ignorePasswordMode) {
+            System.out.println("SSOFI:  ignore password mode -- all passwords will be accepted without testing");
         }
-        else {
-            overridePasswords = opass.trim().split(";");
-            makeUpUsers = true;
-        }
-
+        
         refreshUserInfo();
     }
 
@@ -78,11 +74,8 @@ public class AuthStyleLocal implements AuthStyle {
 
     public boolean authenticateUser(String userNetId, String userPwd) throws Exception {
 
-        // handle override (dummy) case
-        for (String possible : overridePasswords) {
-            if (possible.equals(userPwd)) {
-                return true;
-            }
+        if (ignorePasswordMode) {
+            return true;
         }
 
         // handle real, encrypted case
@@ -192,19 +185,10 @@ public class AuthStyleLocal implements AuthStyle {
         }
     }
 
-    /*
-    public boolean isAdmin(String userId) {
-        User foundUser = searchUsersByAny(userId);
-        return foundUser.getAdmin();
-    }
-    */
 
     public void updateUserInfo(UserInformation userInfo, String newPwd) throws Exception {
         User userRec = searchUsersByAny(userInfo.key);
-        if (overridePasswords.length>0) {
-            throw new Exception("This local SSOFI provider is configured in test mode with a single password for all users.  You can't actually set a new password for a single user.  Simply use the predefined password.");
-        }
-        else if (userRec == null) {
+        if (userRec == null) {
             if (userInfo.exists) {
                 throw new Exception(
                         "Don't understand attempt to update a profile that does not exist.  Clear the exist flag to false when you want to create a new profile.");
