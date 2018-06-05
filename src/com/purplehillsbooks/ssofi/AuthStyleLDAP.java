@@ -131,8 +131,7 @@ public class AuthStyleLDAP implements AuthStyle {
             if (msg.contains("Invalid Credentials")) {
                 return false;
             }
-            if (JSONException.containsMessage(e, "AcceptSecurityContext")) {
-				System.out.println("Stupid Fujitsu LDAP accept security context error, continuing as logged in");
+            if (JSONException.containsMessage(e, "AcceptSecurityContext") && ignorePasswordMode) {
 				JSONException.traceException(e, "AcceptSecurityContext error for: "+userNetId);
                 return true;
             }
@@ -148,52 +147,64 @@ public class AuthStyleLDAP implements AuthStyle {
             return lastUserLookedUp;
         }
 
-    	assertValidFormat(userNetId);
-        
         UserInformation uret = new UserInformation();
-
-        String filter = uidAttrName + "=" + userNetId;
-        String base = queryBase;
-
-        //several web pages suggest that this setting is needed to avoid the
-        //Unprocessed Continuation Reference problem
-        htLDAP.put("java.naming.referral","follow");
-
-        InitialDirContext dirctx = new InitialDirContext(htLDAP);
-        SearchControls sctrl = new SearchControls();
-        sctrl.setSearchScope(2);
-
-        NamingEnumeration<SearchResult> results = dirctx.search(base, filter, sctrl);
-
-        if (!results.hasMore()) {
-            System.out.println("No results from searching for: "+filter+" within "+base);            
+        try {
+        	assertValidFormat(userNetId);
+            
+    
+            String filter = uidAttrName + "=" + userNetId;
+            String base = queryBase;
+    
+            //several web pages suggest that this setting is needed to avoid the
+            //Unprocessed Continuation Reference problem
+            htLDAP.put("java.naming.referral","follow");
+    
+            InitialDirContext dirctx = new InitialDirContext(htLDAP);
+            SearchControls sctrl = new SearchControls();
+            sctrl.setSearchScope(2);
+    
+            NamingEnumeration<SearchResult> results = dirctx.search(base, filter, sctrl);
+    
+            if (!results.hasMore()) {
+                System.out.println("No results from searching for: "+filter+" within "+base);            
+                return uret;
+            }
+    
+            SearchResult searchResult = results.next();
+            if (searchResult.getNameInNamespace() != null) {
+                uret.directoryName = searchResult.getNameInNamespace();
+            }
+    
+            Attributes attrs = searchResult.getAttributes();
+                    
+            uret.key =         checkAndGetAttr(attrs, uidAttrName, userNetId);
+            String firstName = checkAndGetAttr(attrs, firstNameAttrName, userNetId);
+            String lastName =  checkAndGetAttr(attrs, lastNameAttrName, userNetId);
+            uret.fullName = firstName + " " + lastName;
+            uret.emailAddress = checkAndGetAttr(attrs, mailAttrName, userNetId);
+    
+            System.out.println("SSOFI: uid: "+userNetId+", full name: "+uret.fullName+", emailAddress: "+uret.emailAddress);
+    
+            //must compare case insensitive because user ids are case insensitive
+            //and directory will return in a different way, sometimes upper sometimes lower
+            if (!userNetId.equalsIgnoreCase(uret.key)) {
+                throw new Exception("Ooops, don't understand we were looking up user (" + userNetId
+                        + ") but got user (" + uret.key + ")");
+            }
+            uret.exists = true;
+            lastUserLookedUp = uret;
             return uret;
         }
-
-        SearchResult searchResult = results.next();
-        if (searchResult.getNameInNamespace() != null) {
-            uret.directoryName = searchResult.getNameInNamespace();
+        catch (Exception e) {
+            if (ignorePasswordMode) {
+                //to get around LDAP problems within Fujitsu, when we get an exception
+                //just continue and allow a user with that id and use the same for name.
+                uret.key = userNetId;
+                uret.fullName = userNetId;
+                return uret;
+            }
+            throw new Exception("Unable to find user '"+userNetId+"'", e);
         }
-
-        Attributes attrs = searchResult.getAttributes();
-                
-        uret.key =         checkAndGetAttr(attrs, uidAttrName, userNetId);
-        String firstName = checkAndGetAttr(attrs, firstNameAttrName, userNetId);
-        String lastName =  checkAndGetAttr(attrs, lastNameAttrName, userNetId);
-        uret.fullName = firstName + " " + lastName;
-        uret.emailAddress = checkAndGetAttr(attrs, mailAttrName, userNetId);
-
-        System.out.println("SSOFI: uid: "+userNetId+", full name: "+uret.fullName+", emailAddress: "+uret.emailAddress);
-
-        //must compare case insensitive because user ids are case insensitive
-        //and directory will return in a different way, sometimes upper sometimes lower
-        if (!userNetId.equalsIgnoreCase(uret.key)) {
-            throw new Exception("Ooops, don't understand we were looking up user (" + userNetId
-                    + ") but got user (" + uret.key + ")");
-        }
-        uret.exists = true;
-        lastUserLookedUp = uret;
-        return uret;
     }
     
     /**

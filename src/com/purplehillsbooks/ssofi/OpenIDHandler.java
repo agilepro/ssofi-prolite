@@ -703,13 +703,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             loggedOpenId = "";
         }
         else {
-			try {
-				UserInformation ui = ssofi.authStyle.getOrCreateUser(loggedId);
-				aSession.login(loggedId, ui.fullName);
-			}
-			catch (Exception e) {
-				aSession.login(loggedId, loggedId);
-			}
+			UserInformation ui = ssofi.authStyle.getOrCreateUser(loggedId);
+			aSession.login(loggedId, ui.fullName);
             loggedOpenId = AddressParser.composeOpenId(loggedId);
 
             // This is a 'low security' cookie.  It keeps the Id of the usr
