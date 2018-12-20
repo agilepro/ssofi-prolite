@@ -4,7 +4,6 @@ import java.io.Writer;
 
 import javax.servlet.http.HttpServletResponse;
 
-import com.purplehillsbooks.json.JSONArray;
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
 
@@ -34,16 +33,8 @@ public class APIHelper {
         	sendJSON(200, responseObj);
         }
         catch(Exception e) {
-            System.out.println("SSOFI LAuth EXCEPTION: "+e.toString());
             JSONException.traceException(e, "handleAPICommand: mode="+mode);
-            JSONObject jo = new JSONObject();
-            JSONArray msgs = new JSONArray();
-            Throwable t = e;
-            while (t!=null) {
-                msgs.put(t.toString());
-                t = t.getCause();
-            }
-            jo.put("exception", msgs);
+            JSONObject jo = JSONException.convertToJSON(e, "SSOFI LAuth EXCEPTION mode="+mode);
             sendJSON(200, jo);
         }
         return destroySession;

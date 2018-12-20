@@ -137,13 +137,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
         }
         catch (Exception e) {
-            try {
-                System.out.println("SSOFI: !!! Error getting or saving session information !!!");
-                JSONException.traceException(e, "GET: session: "+sessionId);
-            }
-            catch (Exception eeeee) {
-                //really nothing we can do with this.
-            }
+            //this exception is not from the operational logic, but the preparation
+            //logic or finalization logic which does not deserve sending results
+            System.out.println("SSOFI: !!! Error getting or saving session information !!!");
+            JSONException.traceException(e, "GET: session: "+sessionId);
         }
     }
 
