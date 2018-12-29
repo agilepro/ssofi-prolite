@@ -127,14 +127,13 @@ public class APIHelper {
             postedObject.put("token",    token);
             return postedObject;
         }
-        throw new Exception("Authentication API can not understand mode "+mode);
+        throw new JSONException("Authentication API can not understand mode {0}", mode);
     }
 
 
     private void sendInviteEmail(String userId, String userName, String msg, String returnUrl, String subject, String baseURL) throws Exception {
         if (!emailHandler.validate(userId)) {
-            throw new Exception("The id supplied (" + userId
-                    + ") does not appear to be a valid email address.");
+            throw new JSONException("The id supplied ({0}) does not appear to be a valid email address.", userId);
         }
         //The idea here is to slow down any attempt to send email.
         //one user to wait 3 seconds is not a problem, but this will

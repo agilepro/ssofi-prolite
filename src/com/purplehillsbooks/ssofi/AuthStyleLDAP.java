@@ -10,6 +10,7 @@ import javax.naming.directory.InitialDirContext;
 import javax.naming.directory.ModificationItem;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
+
 import com.purplehillsbooks.json.JSONException;
 
 
@@ -81,7 +82,7 @@ public class AuthStyleLDAP implements AuthStyle {
     
     private void assertValidFormat(String uid) throws Exception {
 		if (uid.contains("@")) {
-			throw new Exception("Did you put an email address in?  Something is wrong because we found an @ in your id.  Please be sure to enter your windows user login id. ");
+			throw new JSONException("Did you put an email address in?  Something is wrong because we found an @ in your id ({0}).  Please be sure to enter your windows user login id. ", uid);
 		}
     }
 
@@ -136,7 +137,7 @@ public class AuthStyleLDAP implements AuthStyle {
                 return true;
             }
             else {
-                throw new Exception("Unable to authenticate user '" + userNetId + "'", e);
+                throw new JSONException("Unable to authenticate user '{0}'", e, userNetId);
             }
         }
     }
@@ -188,8 +189,8 @@ public class AuthStyleLDAP implements AuthStyle {
             //must compare case insensitive because user ids are case insensitive
             //and directory will return in a different way, sometimes upper sometimes lower
             if (!userNetId.equalsIgnoreCase(uret.key)) {
-                throw new Exception("Ooops, don't understand we were looking up user (" + userNetId
-                        + ") but got user (" + uret.key + ")");
+                throw new JSONException("Ooops, don't understand we were looking up user ({0}) but got user ({1})", 
+                        userNetId, uret.key);
             }
             uret.exists = true;
             lastUserLookedUp = uret;
@@ -203,7 +204,7 @@ public class AuthStyleLDAP implements AuthStyle {
                 uret.fullName = userNetId;
                 return uret;
             }
-            throw new Exception("Unable to find user '"+userNetId+"'", e);
+            throw new JSONException("Unable to find user '{0}'", e, userNetId);
         }
     }
     

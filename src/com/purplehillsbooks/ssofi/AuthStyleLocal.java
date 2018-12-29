@@ -5,6 +5,7 @@ import java.util.Vector;
 
 import javax.servlet.ServletContext;
 
+import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.xml.Mel;
 
 /**
@@ -63,7 +64,7 @@ public class AuthStyleLocal implements AuthStyle {
             }
         }
         catch (Exception e) {
-            throw new Exception("Unable to access user file ("+userFile+")",e);
+            throw new JSONException("Unable to access user file ({0})", e, userFile);
         }
 
     }
@@ -132,8 +133,7 @@ public class AuthStyleLocal implements AuthStyle {
     public void setPassword(String userId, String newPwd) throws Exception {
         User foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
-            throw new Exception("Internal consistency error: unable to find user record for: "
-                    + userId);
+            throw new JSONException("Internal consistency error: unable to find user record for: {0}", userId);
         }
         foundUser.setPassword(PasswordEncrypter.getSaltedHash(newPwd));
         saveUserFile();
@@ -149,8 +149,7 @@ public class AuthStyleLocal implements AuthStyle {
     public void changePassword(String userId, String oldPwd, String newPwd) throws Exception {
         User foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
-            throw new Exception("Internal consistency error: unable to find user record for: "
-                    + userId);
+            throw new JSONException("Internal consistency error: unable to find user record for: {0}", userId);
         }
         String storedHash = foundUser.getPassword();
         // transition hack ... the encrypted versions are long, but use it as a
@@ -175,8 +174,7 @@ public class AuthStyleLocal implements AuthStyle {
     public void changeFullName(String userId, String newName) throws Exception {
         User foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
-            throw new Exception("Internal consistency error: unable to find user record for: "
-                    + userId);
+            throw new JSONException("Internal consistency error: unable to find user record for: {0}", userId);
         }
         String oldName = foundUser.getFullName();
         if (!oldName.equals(newName)) {
@@ -197,8 +195,8 @@ public class AuthStyleLocal implements AuthStyle {
             userRec.setKey(userInfo.key);
         }
         else if (!userInfo.exists) {
-            throw new Exception(
-                    "Don't understand attempt to create a new profile when one with id="+userInfo.key+" already exists.  Set the exist flag to update existing profile.");
+            throw new JSONException(
+                    "Don't understand attempt to create a new profile when one with id={0} already exists.  Set the exist flag to update existing profile.", userInfo.key);
         }
         userRec.setFullName(userInfo.fullName);
         if (userInfo.emailAddress!=null) {

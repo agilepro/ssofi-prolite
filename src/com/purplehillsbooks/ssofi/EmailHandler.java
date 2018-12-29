@@ -21,6 +21,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
+import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.streams.HTMLWriter;
 import com.purplehillsbooks.xml.Mel;
 
@@ -220,8 +221,7 @@ public class EmailHandler {
     private static String requiredProp(Properties props, String key) throws Exception {
         String val = props.getProperty(key);
         if (val == null) {
-            throw new Exception("Must have a setting for '" + key
-                    + "' in the email configuration file");
+            throw new JSONException("Must have a setting for '{0}' in the email configuration file", key);
         }
         return val;
     }

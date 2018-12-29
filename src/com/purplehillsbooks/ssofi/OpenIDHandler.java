@@ -175,22 +175,22 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     
     private void assertPost(String mode) throws Exception {
         if (!isPost) {
-            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be a POST request.");
+            throw new JSONException("Program-Logic-Error: The request for mode ({0}) must be a POST request.", mode);
         }
     }
     private void assertGet(String mode) throws Exception {
         if (isPost) {
-            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be a GET request.");
+            throw new JSONException("Program-Logic-Error: The request for mode ({0}) must be a GET request.", mode);
         }
     }
     private void assertLoggedIn(String mode) throws Exception {
         if (!aSession.loggedIn()) {
-            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be a accessed only when logged in.  Did you logout in a different browser tab?");
+            throw new JSONException("Program-Logic-Error: The request for mode ({0}) must be a accessed only when logged in.  Did you logout in a different browser tab?", mode);
         }
     }
     private void assertAnonymous(String mode) throws Exception {
         if (aSession.loggedIn()) {
-            throw new Exception("Program-Logic-Error: The request for mode ("+mode+") must be accessed when NOT logged in.  Did you log in recently in another browser tab?");
+            throw new JSONException("Program-Logic-Error: The request for mode ({0}) must be accessed when NOT logged in.  Did you log in recently in another browser tab?", mode);
         }
     }
 
@@ -214,8 +214,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
-                throw new Exception("sorry, request must start with (" + ssofi.rootURL + "):  ("
-                        + requestURL + ")");
+                throw new JSONException("sorry, request must start with ({0}):  ({1})", ssofi.rootURL, requestURL);
             }
 
             if (requestURL.startsWith(ssofi.knownAssetPath)) {
@@ -348,14 +347,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     setLogin(enteredId);
                 }
                 else {
-                    aSession.saveError(new Exception("Unable to log you in to user id (" + enteredId
-                            + ") with that password.  Please try again or reset your password."));
+                    aSession.saveError(new JSONException("Unable to log you in to user id ({0}) with that password.  Please try again or reset your password.", enteredId));
                 }
                 response.sendRedirect(ssofi.baseURL);
             }
             else {
                 if (!"loginView".equals(mode) && !"displayForm".equals(mode)) {
-                    throw new Exception("Don't understand the mode ("+mode+")");
+                    throw new JSONException("Don't understand the mode ({0})", mode);
                 }
                 assertGet(mode);
                 // login or display or display any kind of error
@@ -393,7 +391,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         String val = request.getParameter(name);
         if (val == null || val.length() == 0) {
-            throw new Exception("Got a request without a required '" + name + "' parameter");
+            throw new JSONException("Got a request without a required '{0}' parameter", name);
         }
         return val;
     }
@@ -468,8 +466,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 setLogin(emailId);
             }
             else {
-                throw new Exception("Unable to log you in to user id (" + emailId
-                        + ") with that password.  Please try again or reset your password.");
+                throw new JSONException("Unable to log you in to user id ({0}) with that password.  Please try again or reset your password.", emailId);
             }
             if ((aSession.return_to != null) && (aSession.return_to.length() > 0)) {
                 response.sendRedirect(aSession.return_to);
