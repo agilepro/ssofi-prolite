@@ -198,7 +198,7 @@ public class AuthStyleLDAP implements AuthStyle {
         }
         catch (Exception e) {
             if (ignorePasswordMode) {
-                //to get around LDAP problems within Fujitsu, when we get an exception
+                //to get around LDAP problems within a multinational Japanese company, when we get an exception
                 //just continue and allow a user with that id and use the same for name.
                 uret.key = userNetId;
                 uret.fullName = userNetId;

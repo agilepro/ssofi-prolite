@@ -35,13 +35,13 @@ captchaPrivateKey=
 
 #the next 10 settings are for LDAP usage
 java.naming.factory.initial=com.sun.jndi.ldap.LdapCtxFactory
-java.naming.provider.url=ldap\://g05.fujitsu.local\:389
+java.naming.provider.url=ldap\://domain.example.com\:389
 java.naming.security.authentication=simple
-java.naming.security.principal=g05\\crfuser
-java.naming.security.credentials=Tuesday2017!
-queryBase=DC\=g05,DC\=fujitsu,DC\=local
-attr.name.uid=sAMAccountName
+java.naming.security.principal=domain\\user
+java.naming.security.credentials=********
+queryBase=DC\=domain,DC\=example,DC\=com
+attr.name.uid=username
 attr.name.firstName=givenName
-attr.name.lastName=sn
+attr.name.lastName=lastName
 attr.name.mail=mail
 
