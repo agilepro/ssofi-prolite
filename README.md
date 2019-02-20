@@ -39,11 +39,11 @@ On public facing hosts use a Captcha to avoid a lot of robot manipulation. captc
 These 10 settings are for LDAP usage
 
 * java.naming.factory.initial=com.sun.jndi.ldap.LdapCtxFactory
-* java.naming.provider.url=ldap\://g05.fujitsu.local\:389
+* java.naming.provider.url=ldap\://example.com\:389
 * java.naming.security.authentication=simple
-* java.naming.security.principal=g05\\crfuser
+* java.naming.security.principal=domain\\user
 * java.naming.security.credentials=******
-* queryBase=DC\=g05,DC\=fujitsu,DC\=local
+* queryBase=DC\=domain,DC\=example,DC\=com
 * attr.name.uid=sAMAccountName
 * attr.name.firstName=givenName
 * attr.name.lastName=sn
