@@ -58,7 +58,7 @@ public class AuthStyleLDAP implements AuthStyle {
         firstNameAttrName = ssofi.getRequiredProperty("attr.name.firstName");
         lastNameAttrName = ssofi.getRequiredProperty("attr.name.lastName");
         mailAttrName = ssofi.getRequiredProperty("attr.name.mail");
-        
+
         // ignore passwords mode allows for testing sitautions
         // where people login and out of multiple users frequently
         // passwords are accepted without testing them.
@@ -79,7 +79,7 @@ public class AuthStyleLDAP implements AuthStyle {
     public String getStyleIndicator() {
         return "ldap";
     }
-    
+
     private void assertValidFormat(String uid) throws Exception {
 		if (uid.contains("@")) {
 			throw new JSONException("Did you put an email address in?  Something is wrong because we found an @ in your id ({0}).  Please be sure to enter your windows user login id. ", uid);
@@ -93,7 +93,7 @@ public class AuthStyleLDAP implements AuthStyle {
             }
 
         	assertValidFormat(userNetId);
-            
+
             Hashtable<String, String> envht = new Hashtable<String, String>();
 
             envht.put("java.naming.factory.initial",         factoryInitial);
@@ -101,7 +101,7 @@ public class AuthStyleLDAP implements AuthStyle {
             envht.put("java.naming.security.authentication", securityAuthentication);
             envht.put("java.naming.security.principal",      securityPrincipal);
             envht.put("java.naming.security.credentials",    securityCredentials);
-            
+
             //several web pages suggest that this setting is needed to avoid the
             //Unprocessed Continuation Reference problem
             envht.put("java.naming.referral","follow");
@@ -120,11 +120,11 @@ public class AuthStyleLDAP implements AuthStyle {
 
             envht.put("java.naming.security.principal", userNetId);
             envht.put("java.naming.security.credentials", userPwd);
-            
+
             System.out.println("SSOFI: Login: trying for user ("+userNetId+")");
 
             //apparently this throws an exception if login password not correct
-            InitialDirContext dirctx2 = new InitialDirContext(envht);
+            new InitialDirContext(envht);
             return true;
         }
         catch (Exception e) {
@@ -151,45 +151,45 @@ public class AuthStyleLDAP implements AuthStyle {
         UserInformation uret = new UserInformation();
         try {
         	assertValidFormat(userNetId);
-            
-    
+
+
             String filter = uidAttrName + "=" + userNetId;
             String base = queryBase;
-    
+
             //several web pages suggest that this setting is needed to avoid the
             //Unprocessed Continuation Reference problem
             htLDAP.put("java.naming.referral","follow");
-    
+
             InitialDirContext dirctx = new InitialDirContext(htLDAP);
             SearchControls sctrl = new SearchControls();
             sctrl.setSearchScope(2);
-    
+
             NamingEnumeration<SearchResult> results = dirctx.search(base, filter, sctrl);
-    
+
             if (!results.hasMore()) {
-                System.out.println("No results from searching for: "+filter+" within "+base);            
+                System.out.println("No results from searching for: "+filter+" within "+base);
                 return uret;
             }
-    
+
             SearchResult searchResult = results.next();
             if (searchResult.getNameInNamespace() != null) {
                 uret.directoryName = searchResult.getNameInNamespace();
             }
-    
+
             Attributes attrs = searchResult.getAttributes();
-                    
+
             uret.key =         checkAndGetAttr(attrs, uidAttrName, userNetId);
             String firstName = checkAndGetAttr(attrs, firstNameAttrName, userNetId);
             String lastName =  checkAndGetAttr(attrs, lastNameAttrName, userNetId);
             uret.fullName = firstName + " " + lastName;
             uret.emailAddress = checkAndGetAttr(attrs, mailAttrName, userNetId);
-    
+
             System.out.println("SSOFI: uid: "+userNetId+", full name: "+uret.fullName+", emailAddress: "+uret.emailAddress);
-    
+
             //must compare case insensitive because user ids are case insensitive
             //and directory will return in a different way, sometimes upper sometimes lower
             if (!userNetId.equalsIgnoreCase(uret.key)) {
-                throw new JSONException("Ooops, don't understand we were looking up user ({0}) but got user ({1})", 
+                throw new JSONException("Ooops, don't understand we were looking up user ({0}) but got user ({1})",
                         userNetId, uret.key);
             }
             uret.exists = true;
@@ -207,7 +207,7 @@ public class AuthStyleLDAP implements AuthStyle {
             throw new JSONException("Unable to find user '{0}'", e, userNetId);
         }
     }
-    
+
     /**
      * Look up and get the value of an attribute.
      * If no attribute, then make a report into the log listing all the available attributes
@@ -217,9 +217,9 @@ public class AuthStyleLDAP implements AuthStyle {
         if (attrs.get(key) != null) {
             return (String) attrs.get(key).get();
         }
-        
+
         System.out.println("SSOFI: LDAP directory did not return attribute for ("+key+") for user "+userId);
-        
+
         StringBuilder sb = new StringBuilder();
         NamingEnumeration<String> allIds = attrs.getIDs();
         while (allIds.hasMore()) {
@@ -227,7 +227,7 @@ public class AuthStyleLDAP implements AuthStyle {
             sb.append(possibleKey);
             sb.append(", ");
         }
-        
+
         System.out.println("SSOFI: LDAP directory available attributes: "+sb.toString());
         return "(Unknown "+key+")";
     }

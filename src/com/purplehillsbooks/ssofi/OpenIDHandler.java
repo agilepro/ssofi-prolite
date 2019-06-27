@@ -11,7 +11,6 @@ import java.io.Reader;
 import java.io.Writer;
 import java.net.URLEncoder;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Properties;
 
 import javax.servlet.ServletConfig;
@@ -172,7 +171,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             JSONException.traceException(e, "POST");
         }
     }
-    
+
     private void assertPost(String mode) throws Exception {
         if (!isPost) {
             throw new JSONException("Program-Logic-Error: The request for mode ({0}) must be a POST request.", mode);
@@ -200,7 +199,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     public void doGetWithSession() {
         String requestURL = "";
-        
+
         // check and see if this is the very first access in an attempt stream
         // initialize this object if there is not one already
         try {
@@ -211,7 +210,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             requestURL = request.getRequestURL().toString();
-            
+
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
                 throw new JSONException("sorry, request must start with ({0}):  ({1})", ssofi.rootURL, requestURL);
@@ -222,7 +221,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            
+
             // set up loggedUserId and loggedOpenId
             determineLoggedUser();
 
@@ -258,7 +257,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
             // anything below here is LIKELY to change the session
             saveSession = true;
-            
+
             if ("quick".equals(mode)) {
                 if (aSession.loggedIn()) {
                     //user is logged in, so just jump back
@@ -358,13 +357,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 assertGet(mode);
                 // login or display or display any kind of error
                 displayRootPage();
-            }            
+            }
         }
         catch (Exception eorig) {
             try {
                 Exception e = new Exception("Unable to handle request: "+requestURL, eorig);
                 aSession.saveError(e);
-                System.out.println("SSOFI: error --- " + (new Date()).toString());
+                System.out.println("SSOFI: error --- " + AuthSession.currentTimeString());
                 JSONException.traceException(e, "OpenIDHandler");
                 System.out.println("SSOFI: --- ------------------  --- ");
                 displayRootPage();
@@ -375,13 +374,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
         }
     }
-    
-    
+
+
     private void setRequestedId() throws Exception  {
         String email = request.getParameter("email");
         if (email!=null) {
             requestedIdentity = new AddressParser(ssofi.baseURL + email);
-        }        
+        }
     }
 
     /**
@@ -484,7 +483,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
 
-    
+
     private void modePasswordAction() throws Exception {
         // this takes the action of logging the user in, and returning if all OK
         // first see if they pressed the Cancel key
@@ -580,7 +579,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
 
         aSession.presumedId = userId;
-        
+
         aSession.savedParams.clear();
         String magicNumber = ssofi.tokenManager.generateEmailToken(userId);
         aSession.startRegistration(userId);
@@ -599,7 +598,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      *
      * so if you get both of those, and they match, then you have validated
      * a particular email address.
-     * 
+     *
      * Generally this method is called only when you are NOT
      * logged in.  If you are already logged it just redirects
      * immediately to the remote destination.
@@ -781,8 +780,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private void streamTemplateCore(File templateFile) throws Exception {
         try {
             response.setContentType("text/html;charset=UTF-8");
-            
-            //Why are we tellilng IE how to behave?  Because IE can be set into a mode that causes it to 
+
+            //Why are we tellilng IE how to behave?  Because IE can be set into a mode that causes it to
             //run emulation of IE7, even though it is a much more recent browser.  It ignores the fact that
             //it is more recent, and emulates the old browser unnecessarily.  This appears to be an administration
             //option that allow an organization to run all IE as if they were an older IE.
@@ -792,7 +791,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             //it has to start parsing all over again.  We don't really want 10, but there seems no setting for
             //IE11 and I am worried that older browsers wont know what Edge is.
             response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
-            
+
             Writer out = response.getWriter();
             InputStream is = new FileInputStream(templateFile);
             Reader isr = new InputStreamReader(is, "UTF-8");
@@ -882,13 +881,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         	//NOTE: we are writing tokens into a template that appears in the browser.
         	//throwing an exception is causing infinite redirect
         	//instead output the exception into the page as a comment
-        	
+
         	HTMLWriter.writeHtml(out, "EXCEPTION (" + tokenName + ")");
         	out.write("\n<!--\n");
         	JSONException.convertToJSON(e, "EXCEPTION (" + tokenName + ")")
         	        .write(out, 2, 2);
         	out.write("\n-->\n");
-        	
+
         	//ALSO put it into the system log
         	JSONException.traceException(e, "EXCEPTION while printing token "+tokenName);
         }

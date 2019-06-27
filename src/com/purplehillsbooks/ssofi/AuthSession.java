@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.ObjectOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Serializable;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
@@ -28,7 +29,7 @@ public class AuthSession implements Serializable {
 
 
     // if something goes wrong, note it here for display next time
-    // BUT not all exception object are serializable!!!!!   
+    // BUT not all exception object are serializable!!!!!
     // So put a JSONObject in here instead.
     private ArrayList<String> errMsg = null;
 
@@ -87,7 +88,7 @@ public class AuthSession implements Serializable {
         authName = name;
 
         //This is the official log saying that someone logged in to the system
-        System.out.println("SSOFI LOGIN: userId="+authIdentity+", name="+authName+", at "+new Date());
+        System.out.println("SSOFI LOGIN: userId="+authIdentity+", name="+authName+", at "+currentTimeString());
 
         //we also wipe out any record of a previously sought after id, now that
         //you are logged in we don't need to remember who we thought you might be.
@@ -96,7 +97,7 @@ public class AuthSession implements Serializable {
 
     public void logout() {
         //This is the official log saying that someone logged out of the system
-        System.out.println("SSOFI LOGOUT: userId="+authIdentity+", name="+authName+", at "+new Date());
+        System.out.println("SSOFI LOGOUT: userId="+authIdentity+", name="+authName+", at "+currentTimeString());
 
         authIdentity = null;
         authName = null;
@@ -289,4 +290,12 @@ public class AuthSession implements Serializable {
         as.return_to = restored.getString("return_to");
         return as;
     }
+
+
+    //TODO: move this to a common location
+    static final SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd-HH.mm.ss");
+    public static String currentTimeString() {
+        return dateFormatter.format(new Date());
+    }
+
 }
