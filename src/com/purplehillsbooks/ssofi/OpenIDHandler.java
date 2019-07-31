@@ -366,7 +366,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 System.out.println("SSOFI: error --- " + AuthSession.currentTimeString());
                 JSONException.traceException(e, "OpenIDHandler");
                 System.out.println("SSOFI: --- ------------------  --- ");
-                displayRootPage();
+                displayErrorPage(eorig);
                 return;
             }
             catch (Exception eeeee) {
@@ -422,6 +422,38 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             streamTemplate("justLoggedIn");
         }
 
+    }
+
+    private void displayErrorPage(Exception e) {
+        response.setContentType("text/html;charset=UTF-8");
+
+        //Why are we telling IE how to behave?  Because IE can be set into a mode that causes it to
+        //run emulation of IE7, even though it is a much more recent browser.  It ignores the fact that
+        //it is more recent, and emulates the old browser unnecessarily.  This appears to be an administration
+        //option that allow an organization to run all IE as if they were an older IE.
+        //This command says to act like IE 10.  Would be better if we could say IE10 and above.
+        //Not all versions of IE obey this command.  Microsoft say that the best practice is to put
+        //this in a header, and not a meta-tag because a metatag will slow down handling of the page becausei
+        //it has to start parsing all over again.  We don't really want 10, but there seems no setting for
+        //IE11 and I am worried that older browsers wont know what Edge is.
+        response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
+
+        try {
+            Writer out = response.getWriter();
+            out.write("<html><body>\n<h1>Error Occurred</h1>\n<pre>");
+            JSONObject errObj = JSONException.convertToJSON(e, "Accessing SSOFI main capabilities");
+            errObj.write(out, 2, 2);
+            out.write("</pre>\n</body></html>");
+            out.flush();
+        }
+        catch( Exception e2) {
+            JSONException.traceException(e2, "FAILURE creating error page");
+        }
+
+        // clear out any recorded error now that it has been displayed
+        if (aSession!=null) {
+            aSession.clearError();
+        }
     }
 
 
