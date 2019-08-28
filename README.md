@@ -3,18 +3,25 @@ This is a SSOFI Identity Server with the LightweightProtocol enhancement.
 
 SSOFI was created because there was a need for straight forward way to authenticate users in the Java J2EE environment that would allow a user to sign in once, and then gain access to any number of cooperating servers.  A single SSOFI server forms a domain designated by the URL to that server.   The features are:
 
-* Strong Protection of Passwords.  Each password entered by a users is salted and encrypted multiple times in a way to make it very expensive for an attacker to brute-force guess the password.
-* Flexible System Architecture.  
-** The application that is using the SSOFI service has no constraints on where or how it is deployed.  The application at URL2 can use the SSOFI server at URL1 without any required dependency between URL2 and URL1.  The only requirement is that the application be able to access SSOFI at URL1, and that the SSOFI server can access the application at URL2.
-** The SSOFI server can be configured with a HTTPS connection in order to assure the privacy of the users password while the application is not required to have HTTPS if it is not needed for its data privacy.  Even though we gradually move towards a world where all connections are SSL encrypted, there are still many cases (testing, trials, special purpose, small applications) where setting up SSL can be an unacceptable overhead so SSOFI does not require it.
-* SSOFI Lightweight Access Protocol (SLAP) simplifies usage from a variety of runtime environments
-** Authentication is performed exclusively with JSON formatted packets with no more than 6 data values.
-** All requests are simple REST GET or POST requests
-** Browsers support JSON natively, so a JavaScript library to implement the protocol has been provided and it is only 200 lines of JavaScript code.
-* Very Low Overhead
-** SSOFI server does not require a database to be set up or configured.  All data is stored in simple JSON files.
-** A SSOFI server requires only TomCat for the Java web runtime environment along with a single file folder to store all the data.
-** SSOFI will also run in a J2EE environment like JBoss if that is more convenient for the client applications
+* **Strong Protection of Passwords.**  
+  * Each password entered by a users is salted and encrypted multiple times in a way to make it very expensive for an attacker to brute-force guess the password.
+  * Only the SSOFI server ever has access to the user's actual password.  None of the applications ever see or handle that.
+* **Flexible System Architecture.**  
+  * SSOFI is designed to provide a single convenient consistent authentication in an environment where there are dozens or hundreds of separate applications located on different cloud server.  The user logs in once, and then is consistently and safely authenticated to each of the cooperating applications.
+  * The application that is using the SSOFI service has no constraints on where or how it is deployed.  The application at URL2 can use the SSOFI server at URL1 without any required dependency between URL2 and URL1.  The only requirement is that the application be able to access SSOFI at URL1, and that the SSOFI server can access the application at URL2.
+  * The SSOFI server can be configured with a HTTPS connection in order to assure the privacy of the users password while the application is not required to have HTTPS if it is not needed for its data privacy.  Even though we gradually move towards a world where all connections are SSL encrypted, there are still many cases (testing, trials, special purpose, small applications) where setting up SSL can be an unacceptable overhead so SSOFI does not require it.
+* **SSOFI Lightweight Access Protocol (SLAP)** simplifies usage from a variety of runtime environments
+  * Authentication is performed exclusively with JSON formatted packets with no more than 6 data values.
+  * All requests are simple REST GET or POST requests
+  * Browsers support JSON natively, so a JavaScript library to implement the protocol has been provided and it is only 200 lines of JavaScript code.
+* **Very Low Overhead**
+  * SSOFI server does not require a database to be set up or configured.  All data is stored in simple JSON files.
+  * A SSOFI server requires only TomCat for the Java web runtime environment along with a single file folder to store all the data.
+  * SSOFI will also run in a J2EE environment like JBoss if that is more convenient for the client applications
+* **Configurable User Interface.** All user interface screens are implemented using HTML files with template tokens in them so that it is easy to reconfigure the layout, look and feel of the interaction to fit that of the client application.
+* **Long term Sessions.**  Users can enter credentials once and remain logged in for long periods of time.  By default a login session is one month.  However, the application is free to have much shorter sessions time, like 30 minutes, to allow for clearing out of cached resources.  The application with the short login session performs an invisible authentication with the SSOFI server to authenticate the user reliably whenever needed.
+* **Remembering User ID.** The last user id used at a particular browser is retained for long persions (1 year by default) to simplify the process of logging in for the user.  This burden is not placed on client applications. 
+
 
 # build
 in the "build" folder there is a "How_To_Build.txt" file that explains how to set up your environment to do a build.
