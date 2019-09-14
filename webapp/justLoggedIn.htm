@@ -47,37 +47,7 @@
 <body ng-app="myApp" ng-controller="myCtrl" style="{{bodyStyle}}">
   <div id="bodyWrapper">
     <img src="$/logoSSOFI.gif"/>
-    
-    <div id="userDisplayWrapper" ng-show="info.dispEmail && info.dispId">
-        <table cellpadding="0" cellspacing="0" width="100%">
-            <tr>
-                <td><img src="$/headerUserInfo.gif" width="546" alt="" /></td>
-            </tr>
-            <tr>
-                <td class="loginWrapperContentArea">
-                    <div>
-                        <table class="spaceyTable">
-                            <tr>
-                                <td>Full Name:</td>
-                                <td><span class="userNameClass">{{info.dispName}}</span></td>
-                            </tr>
-
-                            <tr>
-                                <td>Email Address:</td>
-                                <td>{{info.dispEmail}}</td>
-                            </tr>
-                            <tr>
-                                <td>Key:</td>
-                                <td>{{info.dispId}}</td>
-                            </tr>
-                        </table>
-                     </div>
-                </td>
-            </tr>
-        </table>
-    </div>
-    
-    
+       
 
     <div id="loginWrapper">
         <form method="GET" action="{{info.baseUrl}}">
@@ -93,8 +63,7 @@
                         <div class="loginSpacing">
                             You are logged in as:<br /><br/>
                             <span class="userNameClass">{{info.userName}}</span><br />
-                            <span><b><a href="{{info.userId}}">{{info.userId}}</a></b> 
-                            / {{info.userEmail}}</span>
+                            <span><b>{{info.userId}}</b></span>
                             
                             <br /><br />
                             <button type="submit" class="btn btn-primary" name="openid.mode"
