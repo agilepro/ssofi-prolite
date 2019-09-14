@@ -51,9 +51,15 @@
             <form method="post" action="{{info.baseUrl}}">
                 <input type="hidden" name="openid.mode" value="loginAction"/>
                 <table cellpadding="0" cellspacing="0" width="100%">
-                    <tr>
-                        <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
-                    </tr>
+                <tr>
+                        <td><img src="$/headerLogin.gif" width="546" alt="" /></td>
+                </tr>
+                <tr>
+                        <td>
+                            <img src="$/logoSSOFI.gif" />
+                            <hr/>
+                        </td>
+                </tr>
                     <tr>
                         <td class="loginWrapperContentArea">
                             <span ng-show="info.userError" class="errorArea"><strong>{{info.userError}}</strong></span>

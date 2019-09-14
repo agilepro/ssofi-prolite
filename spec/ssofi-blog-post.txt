@@ -1,0 +1,131 @@
+Open Source Identity Server
+
+Today's post is about SSOFI (Single Sign-On Federated Identity) which is an open source project that unloads some of the more challenging issues from the application.   Log in once, and then use any number of applications.  The server is fast, lightweight, and easy to deploy. 
+
+Why do you want a identity server?
+
+Every single little application you write has to worry about who the user is that is accessing it.  That means a password, but passwords have to be guarded carefully, and stored with the correct encryption.  Any web traffic carrying passwords needs to be set up properly with encryption.  Beyond the UI to enter the password, you need features to reset passwords, or to set them up the first time, and that means you need to access an email server.   All of that, just to allow someone to log in!
+
+An identity server takes all of that out of the application.  All of the maintenance and management if passwords is done in one place on one server accessed one encrypted socket connection.  The application has a simple JSON REST protocol to determine reliably exactly who the user is.  This allows lightweight applications to be written, and users can access them seamlessly.  The applications get strong authentication, without need to implement all the troublesome overhead.
+
+Also, when it comes to development, debugging, and testing, applications often need a special environment which is different from the regular one.  The identity server is not tied into your network.  Each application can specify a different identity server (production, test, development) and the users are authenticated accordingly.
+
+Furthermore in some cases you want allow users to authenticate to an LDAP server, and on other cases to a simple email address id that allows them to reset their own password.  THe application need not be aware of these differences.  It uses a single consistent SLAP protocol to reliably find out who the user is.
+
+Benefits from centralized identity
+
+Consider the movement to micro-services, and to lots of small applications deployed.  Every single application needs to know who the user is.  If every application has a different password would be a huge usability issue.  If there is a common database of passwords which each application checks against, then there is also a security issue because each application has access to the password and must handle that correctly.  
+
+What the user wants is to log in once, and to have that same identity to work transparently in every application.  That is what SSOFI provides.  It is quite simple.  You really have only one login session, and that is to the SSOFI server.  The password is received and handled in the right way with all the appropriate encryptions.
+
+Once logged into the SSOFI server, each application that trusts the server can verify user identity with a simple JSON REST interaction.  This happens without bothing the user, and it makes the entire environment appear like you log in once, and you log in to all the application.
+
+All of the special precautions needed for handling passwords can be done at that one SSOFI server.  That SSOFI server can be placed on a publicly available cloud server, given a well known domain name, and encrypted with an SSL certificate.  Features of password reset and user invitation are included as well when the SSOFI server is configured to send email.  None of that need to be duplicated in every application.
+
+What is the overhead?
+
+The biggest thing is that it is trivial to install.  It is a WAR file, and all you do is submit it to a TomCat or JBoss server.  It needs a folder to store the files in.  For the password recovery and invitation features, you need to configure the host name, port, SMTP user and password.  That literally is all you have to do.  It takes almost no memory (a few megabytes) and a small amount of disk space (a few K bytes per user).
+
+The SSOFI server and the application need not be on the same network at all.  You can use a SSOFI server hosted on a public cloud, even while your applications remain protected in the test environment.  All that is necessary is that the client browser, and the application server, both be able to access the address of the SSOFI server.  In general you set up one SSOFI server and use it for all applications being run anywhere.
+
+You can run as many of them as you want, for production use or testing use.  The application specifies with server it is going to "trust" and it works.  There is no fiddling with network domains or complicated routing.  The SSOFI server is known by its URL, and all you need to do is change that one URL to make the application run with a different set of users.
+
+
+Design Goals for SSOFI
+
+Strong Protection of Passwords.
+
+Each password entered by a users is salted and encrypted multiple times in a way to make it very expensive for an attacker to brute-force guess the password.
+
+Only the SSOFI server ever has access to the user's actual password. None of the applications ever see or handle that.
+
+Flexible System Architecture.
+
+SSOFI is designed to provide a single convenient consistent authentication in an environment where there are dozens or hundreds of separate applications located on different cloud server. The user logs in once, and then is consistently and safely authenticated to each of the cooperating applications.
+
+The application that is using the SSOFI service has no constraints on where or how it is deployed. The application at URL2 can use the SSOFI server at URL1 without any required dependency between URL2 and URL1. The only requirement is that the application be able to access SSOFI at URL1, and that the SSOFI server can access the application at URL2.
+
+The SSOFI server can be configured with a HTTPS connection in order to assure the privacy of the users password while the application is not required to have HTTPS if it is not needed for its data privacy. Even though we gradually move towards a world where all connections are SSL encrypted, there are still many cases (testing, trials, special purpose, small applications) where setting up SSL can be an unacceptable overhead so SSOFI does not require it.
+
+SSOFI Lightweight Access Protocol (SLAP) simplifies usage from a variety of runtime environments
+
+Authentication is performed exclusively with JSON formatted packets with no more than 6 data values.
+
+All requests are simple REST GET or POST requests
+
+Browsers support JSON natively, so a JavaScript library to implement the protocol has been provided and it is only 200 lines of JavaScript code.
+
+Very Low Overhead
+
+SSOFI server does not require a database to be set up or configured. All data is stored in simple JSON files.
+
+A SSOFI server requires only TomCat for the Java web runtime environment along with a single file folder to store all the data.
+
+SSOFI will also run in a J2EE environment like JBoss if that is more convenient for the client applications
+
+Configurable User Interface. All user interface screens are implemented using HTML files with template tokens in them so that it is easy to reconfigure the layout, look and feel of the interaction to fit that of the client application.
+
+Long term Sessions. Users can enter credentials once and remain logged in for long periods of time. By default a login session is one month. However, the application is free to have much shorter sessions time, like 30 minutes, to allow for clearing out of cached resources. The application with the short login session performs an invisible authentication with the SSOFI server to authenticate the user reliably whenever needed.
+
+Remembering User ID. The last user id used at a particular browser is retained for long persions (1 year by default) to simplify the process of logging in for the user. This burden is not placed on client applications.
+
+User Onboarging and Maintenance SSOFI handles common identity functions so that the client applications do not need to.
+
+SSOFI simplifies the development of applications because it handles the user sign up. Users enter an email address, SSOFI verifies the email address, and allows the user to set a password.
+
+Users can reset their passwords at any time through the email.
+
+Users associate a full name with their identifier (email address).
+
+Integration to LDAP Systems. SSOFI can be configured in two different modes, and the relying applications have no need to be configured differently for the two different situations.
+
+SSOFI can be configured completely stand alone. Users authentication with email addresses and SSOFI manages the passwords safely.
+
+SSOFI can also be configured to authenticate through any LDAP server to handle logging in for applications in situations where the users are being managed in a standard directory server.
+
+User Invitation Feature. The application can leverage the SSOFI server to safely invite users to the system. A REST API on the SSOFI server allows an application to instruct SSOFI to send an email to an email address along with an invitation message explaining what the invitation is for, as well as a URL to return to. The email is sent with a single-use token embedded so that the invited user can immediately set their password, and access the application without waiting for another email round trip. The invitation accomplishes the email verification in a single step, simplifying the job of getting users to join the application.
+
+
+Testimony
+
+I have been using SSOFI for about 10 years.  There is a JavaScript library of about 200 lines that implements the SLAP protocol.  Every time I install an application for testing, I just point it at the same identity server.  If I am already logged in, it immediately picks up that identity and knows who I am.   Because the SSOFI server is available from everywhere, it works in the office, at home, on the road, and even in customer sites.   No network domain is involved. You can have a
+
+It really greatly simplifies writing of new applications.  
+
+
+
+
+
+How it Works
+
+Say we have the following configuration:
+
+SSOFI set up at https://myserver/ssofi/
+
+You Application at http://myappserver/myapp/
+
+1) The user accesses your application and brings up the UI.  UI in the browser makes a simple web service call to your app to see if the user is logged in.  If so it serves up content.
+2) If the user is not logged into the app, then the UI will make a simple REST call to SSOFI to see if the user is logged in there.  The user may already be logged in there, and then the protocol skips directly to step 6 below.  
+3) If not logged into SSOFI, the browser is redirected to the SSOFI server with the right parameters to get back.   The SSOFI server presents a login screen.
+4) User submits the password to SSOFI which checks to see that it is correct.  If so, it starts a login session that can last a long time ... by default it is a month.
+5) Then the browser is redirected back to the application.  The application does steps 1 and 2 above, but this time the user is logged into the SSOFI server
+6) In order to log into the APP, the UI requests a challenge from the app;
+7) The UI sends the challenge to the SSOFI server, which returns a token.
+8) The UI passes the challenge and token back to the app (the challenge must match the one just given out)
+9) The app then makes a REST call to the SSOFI server, with the challenge and the token, and confirms the identity of user.
+10) the app sets up a login session for the user, and the content is displayed.
+
+The point is that now the application never touches passwords, never needs to encrypt them or store them carefully.   And -- more importantly -- the user only has to log in once.
+
+
+
+Does it do OpenID?
+
+No.  The early implementations were actually fully OpenID compatible.  However OpenID has a very arcane and error prone interchange protocol, and is not supported by any of the big players any more.  In 2012 SSOFI was rewritten to eliminate the OpenID protocol, to make the implementation smaller, faster, and more reliable.
+
+The current SLAP protocol is entirely JSON REST calls, which are easy to implement in any programming language without needing a large library and a large state engine to keep track of everything.
+
+Does it do OAuth?
+
+Not yet.  This is a direction to be explored, but the demand has not yet appeared.
+

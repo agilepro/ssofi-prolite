@@ -30,7 +30,7 @@
     <link rel="stylesheet" href="$/bootstrap.min.css">
     <script src="$/jquery.min.js"></script>
     <script src="$/angular.min.js"></script>
-    <link rel="stylesheet" href="$/fujitsu.css">
+    <link rel="stylesheet" href="$/global.css">
 
     <script>
     var app = angular.module('myApp', []);
@@ -45,6 +45,8 @@
 
 </head>
 <body ng-app="myApp" ng-controller="myCtrl" style="{{bodyStyle}}">
+  <div id="bodyWrapper">
+    <img src="$/logoSSOFI.gif"/>
     
     <div id="userDisplayWrapper" ng-show="info.dispEmail && info.dispId">
         <table cellpadding="0" cellspacing="0" width="100%">
@@ -83,7 +85,7 @@
              <input type="hidden" name="go" value="{{thisPage}}"/>
              <table cellpadding="0" cellspacing="0" width="100%">
                 <tr>
-                    <td><img src="$/headerFujitsuID.gif" width="546" height="136" alt="" /></td>
+                        <td><img src="$/headerLogin.gif" width="546" alt="" /></td>
                 </tr>
                 <tr>
                     <td class="loginWrapperContentArea">

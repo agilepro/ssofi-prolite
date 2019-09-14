@@ -204,7 +204,7 @@ td.noteSection{
     color:#666;
     }
 .loginSpacing{
-    padding:20px 70px;
+    padding:10px 70px;
     line-height:20px;
     color: #000;
 }
@@ -213,4 +213,37 @@ td.noteSection{
 }
 .spaceyTable tr td {
     padding:5px;
+}
+
+#loginWrapper {
+    margin:60px auto 0px auto;
+    max-width:548px;
+    position:relative;
+    font-size:16px;
+    background-color:#fff;
+    border:1px solid #8c8c8c;
+}
+.loginWrapperContentArea{
+    padding:20px 20px;
+}
+.loginWrapperContentArea h3{
+    font-size:14px;
+    padding:0px;
+    margin:0px;
+    padding-bottom:10px;
+}
+.loginWrapperContentArea h3 span{
+    color:#000;
+    font-weight:bold;
+}
+.userNameClass {
+    font-size:26px;
+    font-style:bold;
+}
+#userDisplayWrapper {
+    margin:60px auto 0px auto;
+    width:548px;
+    position:relative;
+    background-color:#fff;
+    border:1px solid #8c8c8c;
 }
