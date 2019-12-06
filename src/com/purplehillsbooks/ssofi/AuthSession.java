@@ -160,7 +160,6 @@ public class AuthSession implements Serializable {
     }
 
     public void saveParameterList(HttpServletRequest request) {
-        @SuppressWarnings("unchecked")
         Enumeration<String> penum = request.getParameterNames();
         while (penum.hasMoreElements()) {
             String name = penum.nextElement();
@@ -259,6 +258,20 @@ public class AuthSession implements Serializable {
         long createdTime;
     }
 
+
+    public JSONObject userAsJSON() throws Exception {
+        JSONObject persistable = new JSONObject();
+        if (this.loggedIn()) {
+            persistable.put("id",      authIdentity);
+            persistable.put("name",    authName);
+            persistable.put("email",   regEmail);
+            persistable.put("msg",     "Logged In");
+        }
+        else {
+            persistable.put("msg", "Not Logged In");
+        }
+        return persistable;
+    }
 
     public void writeSessionToFile(File outputFile) throws Exception {
         JSONObject persistable = new JSONObject();

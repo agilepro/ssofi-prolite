@@ -61,25 +61,52 @@ public class OpenIDServlet extends HttpServlet {
      */
     public void doGet(HttpServletRequest req, HttpServletResponse resp) {
 
-        setIncrediblyStrangeSecurityHeaders(req,resp);
-        OpenIDHandler iodh = new OpenIDHandler(req, resp);
-        iodh.doGet();
+        try {
+            WebRequest wr = new WebRequest(req,resp);
+            setIncrediblyStrangeSecurityHeaders(req,resp);
+            OpenIDHandler iodh = new OpenIDHandler(wr);
+            iodh.doGet();
+        }
+        catch (Exception e) {
+            //not sure really what to do, only exception is with IO on request object
+            e.printStackTrace();
+        }
     }
 
     public void doPost(HttpServletRequest req, HttpServletResponse resp) {
 
-        setIncrediblyStrangeSecurityHeaders(req,resp);
-        OpenIDHandler iodh = new OpenIDHandler(req, resp);
-        iodh.doPost();
+        try {
+            WebRequest wr = new WebRequest(req,resp);
+            setIncrediblyStrangeSecurityHeaders(req,resp);
+            OpenIDHandler iodh = new OpenIDHandler(wr);
+            iodh.doPost();
+        }
+        catch (Exception e) {
+            //not sure really what to do, only exception is with IO on request object
+            e.printStackTrace();
+        }
     }
 
     public void doPut(HttpServletRequest req, HttpServletResponse resp) {
-        handleException(new Exception("Put operation not allowed on the OpenIDServlet,"), req, resp);
+        try {
+            WebRequest wr = new WebRequest(req,resp);
+            handleException(new Exception("Put operation not allowed on the OpenIDServlet,"), wr);
+        }
+        catch (Exception e) {
+            //not sure really what to do, only exception is with IO on request object
+            e.printStackTrace();
+        }
     }
 
     public void doDelete(HttpServletRequest req, HttpServletResponse resp) {
-        handleException(new Exception("Delete operation not allowed on the OpenIDServlet,"), req,
-                resp);
+        try {
+            WebRequest wr = new WebRequest(req,resp);
+            handleException(new Exception("Delete operation not allowed on the OpenIDServlet,"), wr);
+        }
+        catch (Exception e) {
+            //not sure really what to do, only exception is with IO on request object
+            e.printStackTrace();
+        }
     }
 
     public void init(ServletConfig config) throws ServletException {
@@ -89,10 +116,10 @@ public class OpenIDServlet extends HttpServlet {
         OpenIDHandler.init(config);
     }
 
-    private void handleException(Exception e, HttpServletRequest req, HttpServletResponse resp) {
+    private void handleException(Exception e, WebRequest wr) {
         try {
-            Writer out = resp.getWriter();
-            resp.setContentType("text/html;charset=UTF-8");
+            Writer out = wr.w;
+            wr.response.setContentType("text/html;charset=UTF-8");
             out.write("<html><body><ul><li>Exception: ");
             writeHtml(out, e.toString());
             out.write("</li></ul>\n");

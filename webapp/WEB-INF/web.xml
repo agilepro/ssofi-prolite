@@ -12,4 +12,12 @@
         <servlet-name>OpenIDServlet</servlet-name>
         <url-pattern>/*</url-pattern>
     </servlet-mapping>
-</web-app>
+    <servlet>
+        <servlet-name>RestServlet</servlet-name>
+        <servlet-class>com.purplehillsbooks.ssofi.RestServlet</servlet-class>
+        <load-on-startup>6</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>RestServlet</servlet-name>
+        <url-pattern>/rest/*</url-pattern>
+    </servlet-mapping></web-app>

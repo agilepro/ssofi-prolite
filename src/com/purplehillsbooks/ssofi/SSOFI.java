@@ -7,6 +7,7 @@ import java.net.NetworkInterface;
 import java.util.Properties;
 
 import javax.servlet.ServletContext;
+import javax.servlet.http.Cookie;
 
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.streams.SSLPatch;
@@ -38,7 +39,7 @@ public class SSOFI {
     public String knownAssetPath;
 
     public AuthStyle authStyle = null;
-    public SessionHandler sHand = null;
+    public SessionHandlerFile sHand = null;
     public EmailHandler emailHandler = null;
     public SecurityHandler securityHandler = null;
     public EmailTokenManager tokenManager = null;
@@ -81,7 +82,7 @@ public class SSOFI {
                 }
             }
 
-            sHand = new SessionHandlerFile(dataFolder, sessionDurationSeconds);
+            sHand = new SessionHandlerFile(dataFolder, sessionDurationSeconds, this);
 
             isLDAPMode = "LDAP".equalsIgnoreCase(getSystemProperty("authStyle"));
 
@@ -269,6 +270,55 @@ public class SSOFI {
             macValue = macValue / 36;
         }
         return res.toString();
+    }
+
+
+
+    public String getSSOFISessionId(WebRequest wr) {
+        String sessionId = findCookieValue(wr, "SSOFISession");
+        if (sessionId == null || sessionId.length() < 10) {
+            return createSSOFISessionId(wr);
+        }
+
+        //TODO: determine if it is right to refresh the time period
+        //of this session in the cookie.  Perhaps this time should
+        //be set only when the session is created
+        Cookie previousId = new Cookie("SSOFISession", sessionId);
+        previousId.setMaxAge(sessionDurationSeconds);
+        previousId.setPath("/"); // everything on the server
+        wr.response.addCookie(previousId);
+        return sessionId;
+    }
+    /**
+     * Generate a new, different session ID.
+     * This should be called immediately after logout so that on the next
+     * request the browser is using a new session.
+     * The previous session object should be destroyed as well.
+     */
+    public String createSSOFISessionId(WebRequest wr) {
+        String sessionId = "S" + IdGenerator.createMagicNumber();
+
+        Cookie previousId = new Cookie("SSOFISession", sessionId);
+        previousId.setMaxAge(sessionDurationSeconds);
+        previousId.setPath("/"); // everything on the server
+        wr.response.addCookie(previousId);
+        return sessionId;
+    }
+
+
+    public String findCookieValue(WebRequest wr, String cookieName) {
+        Cookie[] cookies = wr.request.getCookies();
+        if (cookies != null) {
+            for (Cookie oneCookie : cookies) {
+                if (oneCookie != null) {
+                    String cName = oneCookie.getName();
+                    if (cName != null && cookieName.equals(cName)) {
+                        return oneCookie.getValue();
+                    }
+                }
+            }
+        }
+        return null;
     }
 
 }

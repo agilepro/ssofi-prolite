@@ -2,8 +2,6 @@ package com.purplehillsbooks.ssofi;
 
 import java.io.Writer;
 
-import javax.servlet.http.HttpServletResponse;
-
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
 
@@ -11,18 +9,18 @@ public class APIHelper {
 
 	private JSONObject postedObject;
 	private AuthSession aSession;
-	private HttpServletResponse response;
+	private WebRequest wr;
 	private EmailHandler emailHandler = null;
 	private EmailTokenManager tokenManager;
 	boolean destroySession = false;
-	
+
 	public static String baseURL;
 
-	public APIHelper(AuthSession _aSession, JSONObject _postedObject, HttpServletResponse _response,
+	public APIHelper(AuthSession _aSession, JSONObject _postedObject, WebRequest _wr,
 			EmailHandler _emailHandler, EmailTokenManager _tokenManager) {
+	    wr           = _wr;
 		aSession     = _aSession;
 		postedObject = _postedObject;
-		response     = _response;
 		emailHandler = _emailHandler;
 		tokenManager = _tokenManager;
     }
@@ -79,7 +77,7 @@ public class APIHelper {
             //whether you are logged in or not, you get the same response
             //from this command:  you are now logged out.
             System.out.println("SSOFI LAuth request: apiLogout logged out: "+aSession.loggedUserId());
-            
+
             aSession.logout();
             destroySession = true;
             JSONObject jo = new JSONObject();
@@ -138,7 +136,7 @@ public class APIHelper {
         //The idea here is to slow down any attempt to send email.
         //one user to wait 3 seconds is not a problem, but this will
         //significantly slow down a hacker
-        Thread.sleep(3000); 
+        Thread.sleep(3000);
         String magicNumber = tokenManager.generateEmailToken(userId);
         String fromAddress = "weaver@circleweaver.com";
         String fromName = "Weaver";
@@ -154,9 +152,9 @@ public class APIHelper {
 
 
     private void sendJSON(int code, JSONObject jo) throws Exception {
-        response.setContentType("application/json;charset=UTF-8");
-        response.setStatus(code);
-        Writer out = response.getWriter();
+        wr.response.setContentType("application/json;charset=UTF-8");
+        wr.response.setStatus(code);
+        Writer out = wr.w;
         jo.write(out,2,0);
         out.flush();
     }

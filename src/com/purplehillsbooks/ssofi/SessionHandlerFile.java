@@ -9,8 +9,9 @@ import java.io.ObjectOutputStream;
 /**
  * This saves the sessions in files in a folder
  */
-public class SessionHandlerFile implements SessionHandler {
+public class SessionHandlerFile {
     File folder;
+    SSOFI ssofi;
 
     /**
      * This is the limit, in seconds, on how old a session can be.
@@ -24,7 +25,8 @@ public class SessionHandlerFile implements SessionHandler {
      */
     long timeLimit;
 
-    public SessionHandlerFile(File mainFolder, long _timeLimit) throws Exception {
+    public SessionHandlerFile(File mainFolder, long _timeLimit, SSOFI _ssofi) throws Exception {
+        ssofi = _ssofi;
         try {
             timeLimit = _timeLimit;
             if (!mainFolder.exists()) {
@@ -40,13 +42,13 @@ public class SessionHandlerFile implements SessionHandler {
             if (!folder.canWrite()) {
                 throw new Exception("SessionFolder is not writeable by the server.");
             }
-            
+
             File[] children = folder.listFiles();
             if (children==null) {
                 throw new Exception("Unknown problem.  OS returned null for children.  "
                             +"Does the system user have access to the SessionFolder?");
             }
-    
+
             // clean out old files
             long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
             for (File child : children) {
@@ -59,7 +61,7 @@ public class SessionHandlerFile implements SessionHandler {
                     }
                 }
             }
-            
+
         }
         catch (Exception e) {
             throw new Exception("Unable to initialize the SessionFolder ("+mainFolder+").", e);
@@ -71,7 +73,7 @@ public class SessionHandlerFile implements SessionHandler {
     /**
      * pass in the session id, and get the session information back
      */
-    public synchronized AuthSession getAuthSession(String sessionId) throws Exception {
+    public synchronized AuthSession getAuthSession(WebRequest wr, String sessionId) throws Exception {
         long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
         File sessionFile = new File(folder, sessionId + ".sess");
         try {
@@ -92,6 +94,12 @@ public class SessionHandlerFile implements SessionHandler {
             if (as == null) {
                 as = new AuthSession();
             }
+            if (as.presumedId == null ||  as.presumedId.length()==0) {
+                //if the session does not have an assumed user id in it, then
+                //get the last good ID from the cookie.
+                as.presumedId = ssofi.findCookieValue(wr, "SSOFIUser");
+            }
+
             return as;
         }
         catch (Exception e) {

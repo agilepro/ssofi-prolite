@@ -16,10 +16,6 @@ import java.util.Properties;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
-
 import com.purplehillsbooks.json.JSONArray;
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
@@ -49,10 +45,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
 
     //MEMBER VARIABLES
+    WebRequest wr;
 
-    HttpServletRequest request;
-    HttpServletResponse response;
-    HttpSession session;
     private boolean isPost = false;
 
     AuthSession aSession;
@@ -98,10 +92,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * Create a new instance for every request then the member functions don't
      * need to pass these all over the place Use an instance ONLY ONCE
      */
-    public OpenIDHandler(HttpServletRequest httpReq, HttpServletResponse resp) {
-        request = httpReq;
-        response = resp;
-        session = request.getSession();
+    public OpenIDHandler(WebRequest _wr) throws Exception {
+        wr = _wr;
     }
 
     /**
@@ -110,18 +102,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void doGet() {
         String sessionId = "?";
         try {
-            sessionId = getSSOFISessionId();
+            sessionId = ssofi.getSSOFISessionId(wr);
 
             if (ssofi.sHand==null) {
                 streamTemplate("configErrScreen");
                 return;
             }
-            aSession = ssofi.sHand.getAuthSession(sessionId);
-            if (aSession.presumedId == null ||  aSession.presumedId.length()==0) {
-                //if the session does not have an assumed user id in it, then
-                //get the last good ID from the cookie.
-                aSession.presumedId = findCookieValue("SSOFIUser");
-            }
+            aSession = ssofi.sHand.getAuthSession(wr, sessionId);
 
             doGetWithSession();
             // doGetWithSession never throws an exception, which means that this
@@ -149,7 +136,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void doPost() {
         try {
             isPost = true;
-            String postType = request.getHeader("Content-Type");
+            String postType = wr.response.getHeader("Content-Type");
             if (postType!=null && (postType.toLowerCase().startsWith("text/plain")
                     || postType.toLowerCase().startsWith("application/json"))) {
                 //now get the posted value
@@ -157,7 +144,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //hazard, and browsers WILL NOT post content cross domains, even if you
                 //say it is OK, in application/json.  But they allow text/plain.
                 //So call it EITHER text/plain or application/json and then parse it.
-                InputStream is = request.getInputStream();
+                InputStream is = wr.request.getInputStream();
                 JSONTokener jt = new JSONTokener(is);
                 postedObject = new JSONObject(jt);
                 is.close();
@@ -209,8 +196,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            requestURL = request.getRequestURL().toString();
-
+            requestURL = wr.requestURL;
+            wr.response.setContentType("text/html; charset=utf-8");
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
                 throw new JSONException("sorry, request must start with ({0}):  ({1})", ssofi.rootURL, requestURL);
@@ -246,11 +233,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 // new session is started every access, causing a flood of sessions, each potentially
                 // lasting for a long time (a month) so persisting these sessions would be a waste.
                 saveSession = false;
-                APIHelper theApi = new APIHelper(aSession, postedObject, response, ssofi.emailHandler, ssofi.tokenManager);
+                APIHelper theApi = new APIHelper(aSession, postedObject, wr, ssofi.emailHandler, ssofi.tokenManager);
                 destroySession = theApi.handleAPICommand(mode);
                 if (destroySession) {
                     //clear out any existing session id
-                    createSSOFISessionId();
+                    ssofi.createSSOFISessionId(wr);
                 }
                 return;
             }
@@ -263,12 +250,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     //user is logged in, so just jump back
                     //we don't care if logged in as a different user.
                     //preserve the current logged in user session
-                    response.sendRedirect(reqParam("go"));
+                    wr.response.sendRedirect(reqParam("go"));
                 }
                 else {
                     aSession.return_to = reqParam("go");
                     aSession.quickLogin = true;
-                    response.sendRedirect("?openid.mode=displayForm");
+                    wr.response.sendRedirect("?openid.mode=displayForm");
                 }
             }
             else if ("logout".equals(mode)) {
@@ -276,9 +263,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 aSession.quickLogin = true;
                 destroySession = true;
                 //set the cookie, but otherwise ignore the new sessionid
-                createSSOFISessionId();
+                ssofi.createSSOFISessionId(wr);
                 setLogin(null);
-                response.sendRedirect(aSession.return_to);
+                wr.response.sendRedirect(aSession.return_to);
             }
             else if ("loginAction".equals(mode)) {
                 assertPost(mode);
@@ -348,7 +335,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 else {
                     aSession.saveError(new JSONException("Unable to log you in to user id ({0}) with that password.  Please try again or reset your password.", enteredId));
                 }
-                response.sendRedirect(ssofi.baseURL);
+                wr.response.sendRedirect(ssofi.baseURL);
             }
             else {
                 if (!"loginView".equals(mode) && !"displayForm".equals(mode)) {
@@ -377,7 +364,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
 
     private void setRequestedId() throws Exception  {
-        String email = request.getParameter("email");
+        String email = wr.request.getParameter("email");
         if (email!=null) {
             requestedIdentity = new AddressParser(ssofi.baseURL + email);
         }
@@ -388,7 +375,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     String reqParam(String name) throws Exception {
 
-        String val = request.getParameter(name);
+        String val = wr.request.getParameter(name);
         if (val == null || val.length() == 0) {
             throw new JSONException("Got a request without a required '{0}' parameter", name);
         }
@@ -400,7 +387,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      */
     String defParam(String name, String defaultVal) throws Exception {
 
-        String val = request.getParameter(name);
+        String val = wr.request.getParameter(name);
         if (val == null || val.length() == 0) {
             return defaultVal;
         }
@@ -425,7 +412,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     private void displayErrorPage(Exception e) {
-        response.setContentType("text/html;charset=UTF-8");
+        wr.response.setContentType("text/html;charset=UTF-8");
 
         //Why are we telling IE how to behave?  Because IE can be set into a mode that causes it to
         //run emulation of IE7, even though it is a much more recent browser.  It ignores the fact that
@@ -436,10 +423,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         //this in a header, and not a meta-tag because a metatag will slow down handling of the page becausei
         //it has to start parsing all over again.  We don't really want 10, but there seems no setting for
         //IE11 and I am worried that older browsers wont know what Edge is.
-        response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
+        wr.response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
 
         try {
-            Writer out = response.getWriter();
+            Writer out = wr.w;
             out.write("<html><body>\n<h1>Error Occurred</h1>\n<pre>");
             JSONObject errObj = JSONException.convertToJSON(e, "Accessing SSOFI main capabilities");
             errObj.write(out, 2, 2);
@@ -466,7 +453,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         try {
             String option = reqParam("option");
             if (option.equals("Cancel")) {
-                response.sendRedirect("?openid.mode=displayForm");
+                wr.response.sendRedirect("?openid.mode=displayForm");
                 return;
             }
             if (!aSession.regEmailConfirmed) {
@@ -500,16 +487,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 throw new JSONException("Unable to log you in to user id ({0}) with that password.  Please try again or reset your password.", emailId);
             }
             if ((aSession.return_to != null) && (aSession.return_to.length() > 0)) {
-                response.sendRedirect(aSession.return_to);
+                wr.response.sendRedirect(aSession.return_to);
             }
             else {
-                response.sendRedirect(ssofi.baseURL);
+                wr.response.sendRedirect(ssofi.baseURL);
             }
             return;
         }
         catch (Exception e) {
             aSession.saveError(e);
-            response.sendRedirect("?openid.mode=registerForm");
+            wr.response.sendRedirect("?openid.mode=registerForm");
             return;
         }
     }
@@ -521,7 +508,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         // first see if they pressed the Cancel key
         String op = reqParam("op");
         if (op.equals("Cancel")) {
-            response.sendRedirect("?openid.mode=displayForm");
+            wr.response.sendRedirect("?openid.mode=displayForm");
             return;
         }
         String fullName = defParam("fullName", null);
@@ -536,24 +523,24 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             if (!flag) {
                 aSession.saveError(new Exception(
                         "Doesn't look like you gave the correct old password.  Required in order to change passwords."));
-                response.sendRedirect("?openid.mode=passwordForm");
+                wr.response.sendRedirect("?openid.mode=passwordForm");
                 return;
             }
             if (newPwd1.length() < 6) {
                 aSession.saveError(new Exception("New password must be 6 or more characters long."));
-                response.sendRedirect("?openid.mode=passwordForm");
+                wr.response.sendRedirect("?openid.mode=passwordForm");
                 return;
             }
             if (!newPwd1.equals(newPwd2)) {
                 aSession.saveError(new Exception(
                         "The new password values supplied do not match.  Try again"));
-                response.sendRedirect("?openid.mode=passwordForm");
+                wr.response.sendRedirect("?openid.mode=passwordForm");
                 return;
             }
 
             ssofi.authStyle.changePassword(aSession.loggedUserId(), oldPwd, newPwd1);
         }
-        response.sendRedirect("?openid.mode=displayForm");
+        wr.response.sendRedirect("?openid.mode=displayForm");
     }
 
 
@@ -570,10 +557,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             setLogin(enteredId);
             if (aSession.quickLogin) {
                 //if you are not really doing the openid protocol, then you can get out quickly
-                response.sendRedirect(aSession.return_to);
+                wr.response.sendRedirect(aSession.return_to);
             }
             else {
-                response.sendRedirect("?openid.mode=displayForm");
+                wr.response.sendRedirect("?openid.mode=displayForm");
             }
         }
         else {
@@ -587,14 +574,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         if (!ssofi.emailHandler.validate(userId)) {
             aSession.saveError(new Exception("The id supplied (" + userId
                     + ") does not appear to be a valid email address."));
-            response.sendRedirect("?openid.mode=requestForm&email="+URLEncoder.encode(userId, "UTF-8"));
+            wr.response.sendRedirect("?openid.mode=requestForm&email="+URLEncoder.encode(userId, "UTF-8"));
             return;
         }
 
         // Security check
-        aSession.saveParameterList(request);
+        aSession.saveParameterList(wr.request);
         Properties secProp = new Properties();
-        secProp.put(SecurityHandler.REGIS_REQ_REMOTE_IP, request.getRemoteAddr());
+        secProp.put(SecurityHandler.REGIS_REQ_REMOTE_IP, wr.request.getRemoteAddr());
         secProp.put(SecurityHandler.REGIS_REQ_EMAILID, defParam("registerEmail", ""));
         secProp.put(SecurityHandler.CAPTCHA_CHALLANGE_REQ,
                 defParam(SecurityHandler.CAPTCHA_CHALLANGE_REQ, ""));
@@ -606,7 +593,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         catch (Exception e) {
             aSession.saveError(e);
-            response.sendRedirect("?openid.mode=requestForm&email="+URLEncoder.encode(userId, "UTF-8"));
+            wr.response.sendRedirect("?openid.mode=requestForm&email="+URLEncoder.encode(userId, "UTF-8"));
             return;
         }
 
@@ -616,7 +603,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         String magicNumber = ssofi.tokenManager.generateEmailToken(userId);
         aSession.startRegistration(userId);
         ssofi.emailHandler.sendVerifyEmail(userId, magicNumber, aSession.return_to, ssofi.baseURL);
-        response.sendRedirect("?openid.mode=confirmForm&email="+URLEncoder.encode(userId, "UTF-8"));
+        wr.response.sendRedirect("?openid.mode=confirmForm&email="+URLEncoder.encode(userId, "UTF-8"));
     }
 
 
@@ -649,7 +636,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //correctly.  If so, go ahead and redirect to the
                 //application as if it was a normal link.
                 if (ui.hasPassword) {
-                    response.sendRedirect(aSession.return_to);
+                    wr.response.sendRedirect(aSession.return_to);
                     return;
                 }
 
@@ -665,7 +652,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //probably clicked on the link again, to try again to set password.
                 aSession.presumedId = registerEmail;
                 requestedIdentity = null;
-                response.sendRedirect("?openid.mode=registerForm");
+                wr.response.sendRedirect("?openid.mode=registerForm");
                 return;
             }
 
@@ -699,7 +686,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     "If you have set up a password, please log in.  "
                     +"If not, request a new email registration email message.  "
                     +"The confirmation key supplied has expired. "));
-            response.sendRedirect("?openid.mode=loginView");
+            wr.response.sendRedirect("?openid.mode=loginView");
             return;
         }
 
@@ -713,7 +700,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             setLogin(registerEmail);
 
             //always go to register because they might have chose this link in order to reset their password
-            response.sendRedirect("?openid.mode=registerForm");
+            wr.response.sendRedirect("?openid.mode=registerForm");
         }
     }
 
@@ -739,7 +726,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             Cookie userIdCookie = new Cookie("SSOFIUser", loggedId);
             userIdCookie.setMaxAge(31000000); // about 1 year
             userIdCookie.setPath("/"); // everything on the server
-            response.addCookie(userIdCookie);
+            wr.response.addCookie(userIdCookie);
         }
     }
 
@@ -755,7 +742,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return aSession.presumedId;
         }
         else {
-            return findCookieValue("SSOFIUser");
+            return ssofi.findCookieValue(wr,"SSOFIUser");
         }
     }
 
@@ -775,18 +762,18 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     public void serveUpAsset(String resourceName) throws Exception {
-        ServletContext sc = session.getServletContext();
+        ServletContext sc = wr.session.getServletContext();
         String path = sc.getRealPath("/$/" + resourceName);
 
         if (resourceName.endsWith(".css")) {
-            response.setContentType("text/css");
+            wr.response.setContentType("text/css");
         }
 
-        TemplateStreamer.streamRawFile(response.getOutputStream(), new File(path));
+        TemplateStreamer.streamRawFile(wr.outStream, new File(path));
     }
 
     private void streamTemplate(String fileName) throws Exception {
-        javax.servlet.ServletContext sc2 = session.getServletContext();
+        javax.servlet.ServletContext sc2 = wr.session.getServletContext();
         File ctxPath = new File(sc2.getRealPath("/"));
 
         // fist check to see if a special auth style specific version exists
@@ -811,7 +798,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     private void streamTemplateCore(File templateFile) throws Exception {
         try {
-            response.setContentType("text/html;charset=UTF-8");
+            wr.response.setContentType("text/html;charset=UTF-8");
 
             //Why are we tellilng IE how to behave?  Because IE can be set into a mode that causes it to
             //run emulation of IE7, even though it is a much more recent browser.  It ignores the fact that
@@ -822,9 +809,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             //this in a header, and not a meta-tag because a metatag will slow down handling of the page becausei
             //it has to start parsing all over again.  We don't really want 10, but there seems no setting for
             //IE11 and I am worried that older browsers wont know what Edge is.
-            response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
+            wr.response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
 
-            Writer out = response.getWriter();
+            Writer out = wr.w;
             InputStream is = new FileInputStream(templateFile);
             Reader isr = new InputStreamReader(is, "UTF-8");
             TemplateStreamer.streamTemplate(out, isr, this);
@@ -968,53 +955,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         HTMLWriter.writeHtml(out, urlValue.substring(startPos));
     }
 
-    public String getSSOFISessionId() {
-        String sessionId = findCookieValue("SSOFISession");
-        if (sessionId == null || sessionId.length() < 10) {
-            return createSSOFISessionId();
-        }
-
-        //TODO: determine if it is right to refresh the time period
-        //of this session in the cookie.  Perhaps this time should
-        //be set only when the session is created
-        Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(ssofi.sessionDurationSeconds);
-        previousId.setPath("/"); // everything on the server
-        response.addCookie(previousId);
-        return sessionId;
-    }
-
-    /**
-     * Generate a new, different session ID.
-     * This should be called immediately after logout so that on the next
-     * request the browser is using a new session.
-     * The previous session object should be destroyed as well.
-     */
-    public String createSSOFISessionId() {
-        String sessionId = "S" + IdGenerator.createMagicNumber();
-
-        Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(ssofi.sessionDurationSeconds);
-        previousId.setPath("/"); // everything on the server
-        response.addCookie(previousId);
-        return sessionId;
-    }
-
-
-    public String findCookieValue(String cookieName) {
-        Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (Cookie oneCookie : cookies) {
-                if (oneCookie != null) {
-                    String cName = oneCookie.getName();
-                    if (cName != null && cookieName.equals(cName)) {
-                        return oneCookie.getValue();
-                    }
-                }
-            }
-        }
-        return null;
-    }
 
     @Override
     public void closeLoop(String arg0) throws Exception {
