@@ -77,7 +77,7 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
             //if this fails, then it is a failure communicating to the client
             //and we can not return an error to them, so simply report to the
             //server log file and give up.
-            System.out.println("AA-FATAL-ERROR:"+nonReturnable.toString());
+            System.out.println("SSOFI-FATAL-ERROR:"+nonReturnable.toString());
             JSONException.traceException(nonReturnable, "RestServlet.service");
             resp.setStatus(501);
             return;
@@ -90,7 +90,7 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
                 //Return all the normal headers, but an empty body.
                 wr.response.setContentLength(0);
                 wr.w.flush();
-                System.out.println("AA-OPTIONS,"+startTime+",0,"+req.getContextPath());
+                System.out.println("SSOFI-OPTIONS,"+startTime+",0,"+req.getContextPath());
                 return;
             }
             else {

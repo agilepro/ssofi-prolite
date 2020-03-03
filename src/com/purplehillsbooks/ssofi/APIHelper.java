@@ -31,9 +31,9 @@ public class APIHelper {
         	sendJSON(200, responseObj);
         }
         catch(Exception e) {
-            JSONException.traceException(e, "handleAPICommand: mode="+mode);
-            JSONObject jo = JSONException.convertToJSON(e, "SSOFI LAuth EXCEPTION mode="+mode);
-            sendJSON(200, jo);
+            JSONException.traceException(e, "Unable to handle SSOFI request for "+mode);
+            JSONObject jo = JSONException.convertToJSON(e, "Unable to handle SSOFI request for "+mode);
+            sendJSON(400, jo);
         }
         return destroySession;
     }
@@ -76,7 +76,7 @@ public class APIHelper {
         if ("apiLogout".equals(mode)) {
             //whether you are logged in or not, you get the same response
             //from this command:  you are now logged out.
-            System.out.println("SSOFI LAuth request: apiLogout logged out: "+aSession.loggedUserId());
+            System.out.println("SSOFI: apiLogout logged out: "+aSession.loggedUserId());
 
             aSession.logout();
             destroySession = true;

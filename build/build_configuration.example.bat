@@ -3,26 +3,18 @@
 :# Java home
 :#
 :#############################################################################
-set "JAVA_HOME=c:\Program Files\Java\jdk1.8.0_20\"
+set "JAVA_HOME=c:\Program Files\Java\jdk1.8.0_231\"
 
 :#############################################################################
 :#
 :# Path to source directory.
 :#
 :#############################################################################
-set "SOURCE_DIR=c:\GitHub\ssofi-prolite\trunk\"
-
-:#############################################################################
-:#
-:# Path to ant installation. 
-:# If Ant is installed and in your executable path, then set to nothing
-:#
-:#############################################################################
-set "ANT_DIR=c:\Program Files\apache-ant-1.9.4\bin\"
+set "SOURCE_DIR=c:\github\ssofi-prolite\"
 
 :#############################################################################
 :#
 :# Path to build directory. the war will be created here.
 :#
 :#############################################################################
-set "TARGET_DIR=c:\build\ssofiProvider\"
+set "TARGET_DIR=c:\build\ssofi\"

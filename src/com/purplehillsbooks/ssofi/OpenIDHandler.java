@@ -136,7 +136,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void doPost() {
         try {
             isPost = true;
-            String postType = wr.response.getHeader("Content-Type");
+            String postType = wr.request.getHeader("Content-Type");
             if (postType!=null && (postType.toLowerCase().startsWith("text/plain")
                     || postType.toLowerCase().startsWith("application/json"))) {
                 //now get the posted value
@@ -149,12 +149,15 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 postedObject = new JSONObject(jt);
                 is.close();
             }
+            else {
+                throw new Exception("SSOFI: doPost but can not understand Content-Type: "+postType);
+            }
 
             //this does not throw anything, but only call if above successful
             doGet();
         }
         catch (Exception e) {
-            System.out.println("SSOFI: !!! Unable to handle post: "+e);
+            System.out.println("SSOFI: !!! Unable to handle post to: "+wr.requestURL);
             JSONException.traceException(e, "POST");
         }
     }
