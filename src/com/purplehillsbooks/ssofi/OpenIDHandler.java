@@ -16,6 +16,7 @@ import java.util.Properties;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.http.Cookie;
+
 import com.purplehillsbooks.json.JSONArray;
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
@@ -149,7 +150,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 postedObject = new JSONObject(jt);
                 is.close();
             }
-            else {
+            else if (!postType.contains("urlencoded")) {
                 throw new Exception("SSOFI: doPost but can not understand Content-Type: "+postType);
             }
 
@@ -567,8 +568,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
         }
         else {
-            throw new Exception("Unable to log you in to user id (" + enteredId
-                + ") with that password.  Please try again or reset your password.");
+            aSession.saveError(new Exception("Unable to log you in to user id (" + enteredId
+                    + ") with that password.  Please try again or reset your password."));
+            wr.response.sendRedirect("?openid.mode=displayForm");
         }
     }
 
