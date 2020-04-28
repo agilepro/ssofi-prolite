@@ -280,13 +280,17 @@ public class SSOFI {
             return createSSOFISessionId(wr);
         }
 
-        //TODO: determine if it is right to refresh the time period
-        //of this session in the cookie.  Perhaps this time should
-        //be set only when the session is created
+
+        /*
+         * 
+         * Cookie class does not support SameSite which is now required
+         * 
         Cookie previousId = new Cookie("SSOFISession", sessionId);
         previousId.setMaxAge(sessionDurationSeconds);
         previousId.setPath("/"); // everything on the server
         wr.response.addCookie(previousId);
+        */
+        wr.response.addHeader("SetCookie", "SSOFISession="+sessionId+";Max-Age=2500000;path=/;SameSite=None;Secure");
         return sessionId;
     }
     /**
