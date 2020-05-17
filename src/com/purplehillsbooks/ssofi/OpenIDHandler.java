@@ -672,11 +672,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             //you might just want to follow the link, and forget about the invite aspect.
             //The solution to this is to put both an invite and a non-invite link
             //in the email so that the user has the choice.
-            throw new Exception("Sorry there is a problem.  You are logged in as "
+            aSession.saveError( new Exception("Sorry there is a problem.  You are logged in as "
                     +aSession.loggedUserId()
                     +" but you have clicked on a link validating the email for "
                     +registerEmail
-                    +".  If you wish to validate that other email address, please logout before clicking on the link again.");
+                    +".  If you wish to validate that other email address, please logout before clicking on the link again."));
+            wr.response.sendRedirect("?openid.mode=loginView");
+            return;
         }
 
         //we know they are not logged in here.  So check the token.  Set up as if this
