@@ -86,3 +86,45 @@ These 10 settings are for LDAP usage
 * attr.name.lastName=sn
 * attr.name.mail=mail
 
+
+# java.naming.factory.initial
+
+The only known value for this is com.sun.jndi.ldap.LdapCtxFactory
+
+# java.naming.provider.url
+
+This is the LDAP url to use to specify the host and the port that the directory server is running on.
+
+# java.naming.security.authentication
+
+Different versions of the LDAP support different types of authentication. The LDAP v2 defines three types of authentication: anonymous, simple (clear-text password), and Kerberos v4.  The LDAP v3 supports anonymous, simple, and SASL authentication. SASL is the Simple Authentication and Security Layer (RFC 2222). It specifies a challenge-response protocol in which data is exchanged between the client and the server for the purposes of authentication and establishment of a security layer on which to carry out subsequent communication. By using SASL, the LDAP can support any type of authentication agreed upon by the LDAP client and server. 
+
+For SSOFI the only viable mode is 'simple' where a username and password are passed to the directory server for authenticating.  
+
+# java.naming.security.principal
+
+Specifies the name of the user/program doing the authentication and depends on the value of the java.naming.security.authentication property.  This is the userid that SSOFI will use to access the server, and so a user must be specified here that has access to the users who are to be authenticated.
+
+# java.naming.security.credentials
+
+Specify the password for the user in java.naming.security.principal
+
+# queryBase
+
+When searching for users, it will search from this point through all the subtree below this point.  Use this to limite the scope of the search to relevant users.
+
+# attr.name.uid
+
+Specify the field to use for the user id.  This is normally 'uid' but it can be other things depending uponn the way the directory server was configured.
+
+# attr.name.firstName
+
+Specify the field that holds the first name, or given name, for the person.  Usually the X.500 standard 'givenName'
+
+# attr.name.lastName
+
+Specify the field that holds the surname for the person.  Usually the X.500 standard 'sn'
+
+# attr.name.mail
+
+Specify the field that holds the email address of the person.  Usually the X.500 standard 'mail'
