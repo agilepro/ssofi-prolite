@@ -8,6 +8,13 @@ public interface AuthStyle {
 
     /**
      * Retrieve and return the information about the specified user
+     * or return a null if the user does not exist
+     */
+    public UserInformation getExistingUserOrNull(String idOrKey) throws Exception;
+
+    
+    /**
+     * Retrieve and return the information about the specified user
      * UserInformation has a 'exists' flag saying whether a profile exists or
      * not. This method should never return null. Instead, return empty record
      * with exist=false;

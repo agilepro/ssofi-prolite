@@ -96,36 +96,47 @@ public class AuthStyleLocal implements AuthStyle {
         return false;
     }
 
-    public UserInformation getOrCreateUser(String searchEmail) throws Exception {
+    public UserInformation getExistingUserOrNull(String searchEmail) throws Exception {
         if (searchEmail==null) {
             throw new Exception("Program-Logic-Error: getOrCreateUser called with null searchEmail");
         }
-        UserInformation uret = new UserInformation();
 
         User foundUser = searchUsersByAny(searchEmail);
-
         if (foundUser == null) {
-            uret.key = User.generateKey();
-            uret.emailAddress = searchEmail;
-            uret.fullName = "User "+searchEmail;
-            uret.hasPassword = false;
-            if (makeUpUsers) {
-                // generates a user record for any email address, just based on
-                // email address
-                uret.exists = true;
-            }
-            else {
-                uret.exists = false;
-            }
+            return null;
+        }
+        
+        UserInformation uret = new UserInformation();
+        uret.key = foundUser.getKey();
+        uret.exists = true;
+        uret.fullName = foundUser.getFullName();
+        uret.emailAddress = foundUser.getEmailMatchingSearchTerm(searchEmail);
+        String password = foundUser.getPassword();
+        uret.hasPassword = (password!=null && password.length()>0);
+        return uret;
+    }
+    
+    public UserInformation getOrCreateUser(String searchEmail) throws Exception {
+
+        UserInformation uret = getExistingUserOrNull(searchEmail);
+        if (uret!=null) {
+            return uret;
+        }
+        
+        uret = new UserInformation();
+        uret.key = User.generateKey();
+        uret.emailAddress = searchEmail;
+        uret.fullName = "User "+searchEmail;
+        uret.hasPassword = false;
+        if (makeUpUsers) {
+            // generates a user record for any email address, just based on
+            // email address
+            uret.exists = true;
         }
         else {
-            uret.key = foundUser.getKey();
-            uret.exists = true;
-            uret.fullName = foundUser.getFullName();
-            uret.emailAddress = foundUser.getEmailMatchingSearchTerm(searchEmail);
-            String password = foundUser.getPassword();
-            uret.hasPassword = (password!=null && password.length()>0);
+            uret.exists = false;
         }
+
         System.out.println("FOUND: name="+uret.fullName+", key="+uret.key+", email="+uret.emailAddress);
         return uret;
     }

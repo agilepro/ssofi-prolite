@@ -13,7 +13,7 @@ public class UserInformation {
     public String key;
     public String fullName;
     public String emailAddress;
-    public String directoryName;
+    public String distinguishedName;
 
     public JSONObject getJSON() throws Exception {
         JSONObject jo = new JSONObject();
