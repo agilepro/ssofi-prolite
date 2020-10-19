@@ -83,7 +83,7 @@ public class SSOFI {
                 }
             }
 
-            sHand = new SessionHandlerFile(dataFolder, sessionDurationSeconds, this);
+            sHand = new SessionHandlerFile(dataFolder, sessionDurationSeconds);
 
             isLDAPMode = "LDAP".equalsIgnoreCase(getSystemProperty("authStyle"));
 
@@ -278,7 +278,7 @@ public class SSOFI {
     public String getSSOFISessionId(WebRequest wr) {
 
         //cookies can not be trusted because Chrome is putting too many restrictions
-        //and the documented methods don't seem to be working.   But se don't need
+        //and the documented methods don't seem to be working.   But we don't need
         //to use cookies, we just need a clear session id token that can not
         //be easily spoofed and rotates frequently enough.
         //the URL 'ss' parameter will take precedence over the cookie.
@@ -286,19 +286,33 @@ public class SSOFI {
 
 
         if (sessionId==null) {
+            //we did not find an 'ss' parameter.  In this case it could be the regular
+            //web UI wanting something served, and in this case use the regular 
+            //session provided by TomCat associated with the JSession.
             sessionId = wr.getSessionAttribute("SSOFISession");
 
         }
         if (sessionId==null) {
+            //so, 'ss' parameter and no java session.  In this case use the cookie
+            //for backward compatibility.   We are not setting this cookie any more
+            //but if it is there, use it.
             sessionId = wr.findCookieValue("SSOFISession");
         }
         if (sessionId == null || sessionId.length() < 10) {
+            //if the value is missing or look illegitimate, then throw it away, and 
+            //generate a new session.
             sessionId = createSSOFISessionId(wr);
         }
 
+        //Store the session in the java session so that the normal UI can leverage
+        //that session reliably why the user is actually on the SSOFI site.
         wr.setSessionAttribute("SSOFISession", sessionId);
         if (USE_SESSION_COOKIE) {
             wr.setCookie("SSOFISession", sessionId);
+        }
+        else {
+            //clear out the cookie so that the testing cases are not fooled
+            wr.setCookie("SSOFISession", "XYZ");            
         }
         return sessionId;
     }

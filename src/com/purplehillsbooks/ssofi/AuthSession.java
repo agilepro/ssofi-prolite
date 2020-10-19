@@ -1,5 +1,6 @@
 package com.purplehillsbooks.ssofi;
 
+import java.io.File;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -32,7 +33,7 @@ public class AuthSession implements Serializable {
 
     // this is where the entire exchange will return to once done logging in
     // by default, return to the main page of the ID server
-    String return_to = baseURL;
+    String return_to;
 
     // this is the originally passed identity to VERIFY
     String presumedId;
@@ -56,13 +57,6 @@ public class AuthSession implements Serializable {
     // then this will be marked true so we don't have to do it again.
     boolean regEmailConfirmed = false;
 
-    //QUICK mode is the user login and return without all the overhead of
-    //open id.  Redirect with:
-    //    openid.mode=quick&go=http://server/my/return/address
-    //This will log the user in, and return to the specified URL
-    //if the user is already logged in, it returns immediately
-    boolean quickLogin = false;
-
     Properties savedParams = new Properties();
 
     /**
@@ -76,17 +70,17 @@ public class AuthSession implements Serializable {
     public AuthSession(String newSession) {
         sessionId = newSession;
     }
-    private AuthSession() throws Exception {
-        throw new Exception("don't use this constructor");
-    }
 
     public boolean loggedIn() {
-        return authIdentity != null;
+        return authIdentity != null && authIdentity.length()>0;
     }
 
     public void login(String id, String name) {
+        if (id==null || id.length()==0) {
+            throw new RuntimeException("id value needs to be non-null during login");
+        }
         authIdentity = id;
-        if (name==null) {
+        if (name==null || name.length()==0) {
             throw new RuntimeException("Program Logic Error: null NAME passed at login time.  Why?");
         }
         authName = name;
@@ -105,7 +99,8 @@ public class AuthSession implements Serializable {
 
         authIdentity = null;
         authName = null;
-        quickLogin = false;
+        regEmail = null;
+        return_to = null;
     }
 
     public String loggedUserId() {
@@ -115,6 +110,13 @@ public class AuthSession implements Serializable {
     public String loggedUserName() {
         return authName;
     }
+    
+    public void assureName() {
+        if (authName==null || authName.length()==0) {
+            authName = "User: "+authIdentity;
+        }
+    }
+    
 
     public void saveError(Exception e) {
         ArrayList<String> newErrs = new ArrayList<String>();
@@ -176,24 +178,6 @@ public class AuthSession implements Serializable {
         return savedParams.getProperty(name);
     }
 
-
-    /**
-     * return a copy of this object
-     *
-    public AuthSession copy() {
-        AuthSession myCopy = new AuthSession(sessionId);
-        myCopy.errMsg = this.errMsg;
-        myCopy.authIdentity = this.authIdentity;
-        myCopy.authName = this.authName;
-        myCopy.presumedId = this.presumedId;
-        myCopy.regEmail = this.regEmail;
-        myCopy.regEmailConfirmed = this.regEmailConfirmed;
-        myCopy.return_to = this.return_to;
-        myCopy.savedParams = this.savedParams;
-        myCopy.quickLogin = this.quickLogin;
-        return myCopy;
-    }
-    */
 
     /**
      * A token is generated and stored associated with the challenge.
@@ -266,12 +250,12 @@ public class AuthSession implements Serializable {
 
     public JSONObject userAsJSON() throws Exception {
         JSONObject persistable = new JSONObject();
+        persistable.put("ss",  sessionId);
         if (this.loggedIn()) {
-            persistable.put("ss",      sessionId);
-            persistable.put("id",      authIdentity);
-            persistable.put("name",    authName);
-            persistable.put("email",   regEmail);
-            persistable.put("msg",     "Logged In");
+            persistable.put("userId",    authIdentity);
+            persistable.put("userName",  authName);
+            persistable.put("email",     regEmail);
+            persistable.put("msg",       "Logged In");
         }
         else {
             persistable.put("msg", "Not Logged In");
@@ -279,8 +263,8 @@ public class AuthSession implements Serializable {
         return persistable;
     }
 
-    /*
-    public void writeSessionToFile(File outputFile) throws Exception {
+    
+    public void writeSessionToFile(File sessionFolder) throws Exception {
         JSONObject persistable = new JSONObject();
         persistable.put("authIdentity", authIdentity);
         persistable.put("authName",     authName);
@@ -288,29 +272,29 @@ public class AuthSession implements Serializable {
         persistable.put("regEmail",     regEmail);
         persistable.put("return_to",    return_to);
 
-        FileOutputStream fileOut = new FileOutputStream(outputFile);
-        ObjectOutputStream out = new ObjectOutputStream(fileOut);
-        OutputStreamWriter w = new OutputStreamWriter(out, "UTF-8");
-        persistable.write(w,0,2);
-        out.close();
-        fileOut.close();
+        File sessionFile = new File(sessionFolder, sessionId+".ss");
+        persistable.writeToFile(sessionFile);
     }
 
-    public AuthSession readSessionFromFile(File sessionFile) throws Exception {
-        FileInputStream fileIn = new FileInputStream(sessionFile);
-        InputStreamReader in = new InputStreamReader(fileIn);
-        JSONObject restored = new JSONObject(in);
-        in.close();
-        fileIn.close();
-        AuthSession as = new AuthSession();
-        as.authIdentity = restored.getString("authIdentity");
-        as.authName = restored.getString("authName");
-        as.presumedId = restored.getString("presumedId");
-        as.regEmail = restored.getString("regEmail");
-        as.return_to = restored.getString("return_to");
+    public static AuthSession readOrCreateSessionFile(File sessionFolder, String sessionId) throws Exception {
+        File sessionFile = new File(sessionFolder, sessionId+".ss");
+        AuthSession as = new AuthSession(sessionId);
+        if (sessionFile.exists()) {
+            JSONObject restored = JSONObject.readFromFile(sessionFile);
+            as.authIdentity = restored.optString("authIdentity");
+            as.authName = restored.optString("authName");
+            as.presumedId = restored.optString("presumedId");
+            as.regEmail = restored.optString("regEmail");
+            as.return_to = restored.optString("return_to");
+            return as;
+        }
+        else {
+            as.writeSessionToFile(sessionFolder);
+            System.out.println("SSOFI: brand new session for: "+sessionId);
+        }
         return as;
     }
-    */
+    
 
 
     //TODO: move this to a common location

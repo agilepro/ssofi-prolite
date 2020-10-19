@@ -50,13 +50,8 @@ public class APIHelper {
             String token     = postedObject.getString("token");
             AuthSession auth = AuthSession.verifyToken(identity, challenge, token);
             if (auth!=null) {
-                JSONObject responseObj = new JSONObject();
-                responseObj.put("userId", auth.loggedUserId());
-                String name = auth.loggedUserName();
-                responseObj.put("userName", name);
-                if (name==null || name.length()==0) {
-                    responseObj.put("userName", "User: "+auth.loggedUserId());
-                }
+                auth.assureName();
+                JSONObject responseObj = auth.userAsJSON();
                 responseObj.put("challenge", challenge);  //do we need this?
                 responseObj.put("token", token);          //do we need this?
                 responseObj.put("verified", true);
@@ -66,6 +61,7 @@ public class APIHelper {
             }
             else {
                 postedObject.put("msg", "failure, the token does not match");
+                postedObject.put("ss", aSession.sessionId);
                 postedObject.remove("userId");
                 postedObject.remove("userName");
                 postedObject.put("verified", false);
@@ -80,9 +76,7 @@ public class APIHelper {
 
             aSession.logout();
             destroySession = true;
-            JSONObject jo = new JSONObject();
-            jo.put("msg", "User logged out");
-            return jo;
+            return aSession.userAsJSON();
         }
         if ("apiSendInvite".equals(mode)) {
             if (postedObject==null) {
@@ -102,17 +96,11 @@ public class APIHelper {
         }
         if (!aSession.loggedIn()) {
             System.out.println("SSOFI LAuth request: not logged in, not allowed: "+mode);
-            JSONObject jo = new JSONObject();
-            jo.put("msg", "User not found, must be logged in to perform "+mode);
-            return jo;
+            return aSession.userAsJSON();
         }
         System.out.println("SSOFI LAuth request: "+mode+" - "+aSession.loggedUserId());
         if ("apiWho".equals(mode)) {
-            JSONObject jo = new JSONObject();
-            jo.put("msg", "User logged in");
-            jo.put("userId",   aSession.loggedUserId());
-            jo.put("userName", aSession.loggedUserName());
-            return jo;
+            return aSession.userAsJSON();
         }
         if ("apiGenerate".equals(mode)) {
             if (postedObject==null) {
@@ -120,6 +108,7 @@ public class APIHelper {
             }
             String challenge = postedObject.getString("challenge");
             String token = aSession.generateToken(challenge);
+            postedObject.put("ss",       aSession.sessionId);
             postedObject.put("userId",   aSession.loggedUserId());
             postedObject.put("userName", aSession.loggedUserName());
             postedObject.put("token",    token);

@@ -55,12 +55,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     private String paramGo = "";
 
-    private String loggedOpenId;
+    //private String loggedOpenId;
 
     // addressedUserId is the id of the user you are DISPLAYING
     // which may have nothing to do with the user who is logged in
     // Any logged in user, can display any other user.
-    private String addressedUserId;
+    //private String addressedUserId;
 
     // If the UI is DISPLAYING user info, then this
     // member will hold the information to display
@@ -219,20 +219,20 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
 
             // set up loggedUserId and loggedOpenId
-            determineLoggedUser();
+            //determineLoggedUser();
 
-            addressedUserId = requestURL.substring(ssofi.rootURL.length());
+            //addressedUserId = requestURL.substring(ssofi.rootURL.length());
 
-            if (addressedUserId.length() > 0) {
-                displayInfo = ssofi.authStyle.getOrCreateUser(addressedUserId);
-            }
+            //if (addressedUserId.length() > 0) {
+            //    displayInfo = ssofi.authStyle.getOrCreateUser(addressedUserId);
+            //}
 
             String mode = defParam("openid.mode", "displayForm");
             String loginIndicator = " (anonymous) ";
             if (aSession.loggedIn()) {
                 loginIndicator =    " (logged in) ";
             }
-            System.out.println("SSOFI REQUEST: "+mode+loginIndicator+requestURL);
+            System.out.println("SSOFI REQUEST: "+aSession.sessionId+" - "+mode+loginIndicator+wr.request.getQueryString());
 
             if (mode.startsWith("api")) {
                 // Want to avoid saving a session as a result of every API call.  The API call will never
@@ -263,13 +263,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 }
                 else {
                     aSession.return_to = reqParam("go");
-                    aSession.quickLogin = true;
+                    saveSession = true;
                     reDirectHome();
                 }
             }
             else if ("logout".equals(mode)) {
                 aSession.return_to = reqParam("go");
-                aSession.quickLogin = true;
                 destroySession = true;
                 //set the cookie, but otherwise ignore the new sessionid
                 ssofi.createSSOFISessionId(wr);
@@ -564,11 +563,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         password = reqParam("password");
         if (ssofi.authStyle.authenticateUser(enteredId, password)) {
             setLogin(enteredId);
-            if (aSession.quickLogin) {
+            if (aSession.return_to!=null && aSession.return_to.length()>0) {
                 //if you are not really doing the openid protocol, then you can get out quickly
                 wr.response.sendRedirect(aSession.return_to);
             }
             else {
+                //no other place to return to, so just go to main screen
                 reDirectHome();
             }
         }
@@ -724,12 +724,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     private void setLogin(String loggedId) throws Exception {
         if (loggedId == null) {
             aSession.logout();
-            loggedOpenId = "";
         }
         else {
 			UserInformation ui = ssofi.authStyle.getOrCreateUser(loggedId);
 			aSession.login(loggedId, ui.fullName);
-            loggedOpenId = AddressParser.composeOpenId(loggedId);
 
             // This is a 'low security' cookie.  It keeps the Id of the usr
             // that successfully logged in so that next time we can
@@ -760,7 +758,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * returns null if not logged in checks the session. If no session, it
      * checks the cookies. if no cookies, or cookies invalid, then not logged
      * in.
-     */
+     *
     private void determineLoggedUser() throws Exception {
         if (aSession.loggedIn()) {
             loggedOpenId = AddressParser.composeOpenId(aSession.loggedUserId());
@@ -768,7 +766,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         else {
             loggedOpenId = "";
         }
-    }
+    */
 
     public void serveUpAsset(String resourceName) throws Exception {
         ServletContext sc = wr.session.getServletContext();
@@ -846,19 +844,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void writeTokenValue(Writer out, String tokenName) throws Exception {
         try {
             if ("userInfo".equals(tokenName)) {
-                JSONObject jo = new JSONObject();
+                JSONObject jo = aSession.userAsJSON();
                 jo.put("isLDAP", ssofi.isLDAPMode);
                 jo.put("isLocal", !ssofi.isLDAPMode);
-                if (aSession.loggedIn()) {
-                    jo.put("userId", aSession.loggedUserId());
-                    jo.put("userEmail", aSession.regEmail);
-                    UserInformation userInfo = ssofi.authStyle.getOrCreateUser(aSession.loggedUserId());
-                    if (userInfo.exists) {
-                        jo.put("userKey", userInfo.key);
-                        jo.put("userName", userInfo.fullName);
-                    }
-                    jo.put("openId", loggedOpenId);
-                }
                 if (displayInfo != null && displayInfo.exists) {
                     jo.put("dispId", displayInfo.key);
                     jo.put("dispName", displayInfo.fullName);
