@@ -100,7 +100,7 @@ public class SessionHandlerFile {
     }
 
     public synchronized void deleteAuthSession(String sessionId) throws Exception {
-        File sessionFile = new File(sessionFolder, sessionId + ".sess");
+        File sessionFile = new File(sessionFolder, sessionId + ".ss");
         if (sessionFile.exists()) {
             sessionFile.delete();
         }
