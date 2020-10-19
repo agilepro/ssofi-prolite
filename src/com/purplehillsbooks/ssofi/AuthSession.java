@@ -1,11 +1,5 @@
 package com.purplehillsbooks.ssofi;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.InputStreamReader;
-import java.io.ObjectOutputStream;
-import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -27,6 +21,9 @@ public class AuthSession implements Serializable {
 
     public static String baseURL;
 
+    //This is the key for the session, and this object is
+    //stored in a file with this session Id in it.
+    public String sessionId;
 
     // if something goes wrong, note it here for display next time
     // BUT not all exception object are serializable!!!!!
@@ -75,6 +72,13 @@ public class AuthSession implements Serializable {
      * Verification is usually short: only a few seconds, so unlikely to be a problem.
      */
     private static Vector<ChallengeTokenEntry> challengeTokenMap = new Vector<ChallengeTokenEntry>();
+
+    public AuthSession(String newSession) {
+        sessionId = newSession;
+    }
+    private AuthSession() throws Exception {
+        throw new Exception("don't use this constructor");
+    }
 
     public boolean loggedIn() {
         return authIdentity != null;
@@ -175,9 +179,9 @@ public class AuthSession implements Serializable {
 
     /**
      * return a copy of this object
-     */
+     *
     public AuthSession copy() {
-        AuthSession myCopy = new AuthSession();
+        AuthSession myCopy = new AuthSession(sessionId);
         myCopy.errMsg = this.errMsg;
         myCopy.authIdentity = this.authIdentity;
         myCopy.authName = this.authName;
@@ -189,6 +193,7 @@ public class AuthSession implements Serializable {
         myCopy.quickLogin = this.quickLogin;
         return myCopy;
     }
+    */
 
     /**
      * A token is generated and stored associated with the challenge.
@@ -262,6 +267,7 @@ public class AuthSession implements Serializable {
     public JSONObject userAsJSON() throws Exception {
         JSONObject persistable = new JSONObject();
         if (this.loggedIn()) {
+            persistable.put("ss",      sessionId);
             persistable.put("id",      authIdentity);
             persistable.put("name",    authName);
             persistable.put("email",   regEmail);
@@ -273,6 +279,7 @@ public class AuthSession implements Serializable {
         return persistable;
     }
 
+    /*
     public void writeSessionToFile(File outputFile) throws Exception {
         JSONObject persistable = new JSONObject();
         persistable.put("authIdentity", authIdentity);
@@ -303,6 +310,7 @@ public class AuthSession implements Serializable {
         as.return_to = restored.getString("return_to");
         return as;
     }
+    */
 
 
     //TODO: move this to a common location

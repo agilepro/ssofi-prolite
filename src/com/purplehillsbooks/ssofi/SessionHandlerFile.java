@@ -10,8 +10,8 @@ import java.io.ObjectOutputStream;
  * This saves the sessions in files in a folder
  */
 public class SessionHandlerFile {
-    File folder;
-    SSOFI ssofi;
+    private File sessionFolder;
+    private SSOFI ssofi;
 
     /**
      * This is the limit, in seconds, on how old a session can be.
@@ -32,18 +32,18 @@ public class SessionHandlerFile {
             if (!mainFolder.exists()) {
                 throw new Exception("SessionFolder does not exist or the system user does not have access to it.");
             }
-            folder = mainFolder;
+            sessionFolder = mainFolder;
             if (!mainFolder.isDirectory()) {
                 throw new Exception("SessionFolder appears to be a file or something other than a folder/directory.");
             }
-            if (!folder.canRead()) {
+            if (!sessionFolder.canRead()) {
                 throw new Exception("SessionFolder is not readable by the server.");
             }
-            if (!folder.canWrite()) {
+            if (!sessionFolder.canWrite()) {
                 throw new Exception("SessionFolder is not writeable by the server.");
             }
 
-            File[] children = folder.listFiles();
+            File[] children = sessionFolder.listFiles();
             if (children==null) {
                 throw new Exception("Unknown problem.  OS returned null for children.  "
                             +"Does the system user have access to the SessionFolder?");
@@ -75,7 +75,7 @@ public class SessionHandlerFile {
      */
     public synchronized AuthSession getAuthSession(WebRequest wr, String sessionId) throws Exception {
         long oldestTimeStampAllowed = System.currentTimeMillis() - (timeLimit*1000);
-        File sessionFile = new File(folder, sessionId + ".sess");
+        File sessionFile = new File(sessionFolder, sessionId + ".sess");
         try {
             AuthSession as = null;
             if (sessionFile.exists()) {
@@ -89,15 +89,22 @@ public class SessionHandlerFile {
                     as = (AuthSession) in.readObject();
                     in.close();
                     fileIn.close();
+                    //migration for files that did not have the session id yet
+                    as.sessionId = sessionId;
                 }
             }
             if (as == null) {
-                as = new AuthSession();
+                //since we did not find an existing session, destroy that ID and generate
+                //another one for a brand new session.   This helps rotate sessions ids
+                //frequently, and harder to steal.
+                sessionId = ssofi.createSSOFISessionId(wr);
+                as = new AuthSession(sessionId);
+                saveAuthSession(sessionId, as);
             }
             if (as.presumedId == null ||  as.presumedId.length()==0) {
                 //if the session does not have an assumed user id in it, then
                 //get the last good ID from the cookie.
-                as.presumedId = ssofi.findCookieValue(wr, "SSOFIUser");
+                as.presumedId = wr.findCookieValue("SSOFIUser");
             }
 
             return as;
@@ -110,8 +117,12 @@ public class SessionHandlerFile {
     public synchronized void saveAuthSession(String sessionId, AuthSession thisSession)
             throws Exception {
 
-        File sessionFile = new File(folder, sessionId + ".sess");
-        File tempFile = new File(folder, sessionId + System.currentTimeMillis() + ".$temp");
+        //this is to assure that the session ID is included for bigration cases
+        //and that it is the same as the file that is being stored.
+        thisSession.sessionId = sessionId;
+
+        File sessionFile = new File(sessionFolder, sessionId + ".sess");
+        File tempFile = new File(sessionFolder, sessionId + System.currentTimeMillis() + ".$temp");
         FileOutputStream fileOut = new FileOutputStream(tempFile);
         ObjectOutputStream out = new ObjectOutputStream(fileOut);
         out.writeObject(thisSession);
@@ -137,7 +148,7 @@ public class SessionHandlerFile {
     }
 
     public synchronized void deleteAuthSession(String sessionId) throws Exception {
-        File sessionFile = new File(folder, sessionId + ".sess");
+        File sessionFile = new File(sessionFolder, sessionId + ".sess");
         if (sessionFile.exists()) {
             sessionFile.delete();
         }

@@ -7,7 +7,6 @@ import java.net.NetworkInterface;
 import java.util.Properties;
 
 import javax.servlet.ServletContext;
-import javax.servlet.http.Cookie;
 
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.streams.SSLPatch;
@@ -46,6 +45,8 @@ public class SSOFI {
 
     public int sessionDurationSeconds = 2500000;   //30 days
     public boolean isLDAPMode = false;
+
+    public static boolean USE_SESSION_COOKIE = false;
 
 
     public static synchronized SSOFI getSSOFI(ServletContext sc) {
@@ -275,22 +276,30 @@ public class SSOFI {
 
 
     public String getSSOFISessionId(WebRequest wr) {
-        String sessionId = findCookieValue(wr, "SSOFISession");
+
+        //cookies can not be trusted because Chrome is putting too many restrictions
+        //and the documented methods don't seem to be working.   But se don't need
+        //to use cookies, we just need a clear session id token that can not
+        //be easily spoofed and rotates frequently enough.
+        //the URL 'ss' parameter will take precedence over the cookie.
+        String sessionId = wr.request.getParameter("ss");
+
+
+        if (sessionId==null) {
+            sessionId = wr.getSessionAttribute("SSOFISession");
+
+        }
+        if (sessionId==null) {
+            sessionId = wr.findCookieValue("SSOFISession");
+        }
         if (sessionId == null || sessionId.length() < 10) {
-            return createSSOFISessionId(wr);
+            sessionId = createSSOFISessionId(wr);
         }
 
-
-        /*
-         * 
-         * Cookie class does not support SameSite which is now required
-         * 
-        Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(sessionDurationSeconds);
-        previousId.setPath("/"); // everything on the server
-        wr.response.addCookie(previousId);
-        */
-        wr.response.addHeader("SetCookie", "SSOFISession="+sessionId+";Max-Age=2500000;path=/;SameSite=None;Secure");
+        wr.setSessionAttribute("SSOFISession", sessionId);
+        if (USE_SESSION_COOKIE) {
+            wr.setCookie("SSOFISession", sessionId);
+        }
         return sessionId;
     }
     /**
@@ -302,27 +311,22 @@ public class SSOFI {
     public String createSSOFISessionId(WebRequest wr) {
         String sessionId = "S" + IdGenerator.createMagicNumber();
 
-        Cookie previousId = new Cookie("SSOFISession", sessionId);
-        previousId.setMaxAge(sessionDurationSeconds);
-        previousId.setPath("/"); // everything on the server
-        wr.response.addCookie(previousId);
+        wr.setSessionAttribute("SSOFISession", sessionId);
+
+        {
+            //just testing
+            String nextId = wr.getSessionAttribute("SSOFISession");
+            if (!nextId.equals(sessionId)) {
+                System.out.println("SSOFI: FAILURE to set the session id: "+nextId);
+            }
+
+        }
+        wr.setSessionAttribute("SSOFISession", sessionId);
+        if (USE_SESSION_COOKIE) {
+            wr.setCookie("SSOFISession",sessionId);
+        }
         return sessionId;
     }
 
-
-    public String findCookieValue(WebRequest wr, String cookieName) {
-        Cookie[] cookies = wr.request.getCookies();
-        if (cookies != null) {
-            for (Cookie oneCookie : cookies) {
-                if (oneCookie != null) {
-                    String cName = oneCookie.getName();
-                    if (cName != null && cookieName.equals(cName)) {
-                        return oneCookie.getValue();
-                    }
-                }
-            }
-        }
-        return null;
-    }
 
 }

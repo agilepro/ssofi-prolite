@@ -8,6 +8,7 @@ import java.io.Writer;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -240,6 +241,39 @@ public class WebRequest {
             response.setContentType("application/octet-stream");
         }
         StreamHelper.copyInputToOutput(content, outStream);
+    }
+
+    /**
+     * proper way to set the session cookie
+     * Java Cookie class does not handle SameSite
+     * Note: SameSite=None will work only over HTTPS
+     * Any test server not using HTTPS will fail to work
+     * because the browser will reject it.
+     */
+    public void setCookie(String name, String sessionId) {
+        response.addHeader("SetCookie", name+"="+sessionId+";Max-Age=2500000;path=/;SameSite=None;Secure");
+    }
+
+    public String findCookieValue(String cookieName) {
+        Cookie[] cookies = request.getCookies();
+        if (cookies != null) {
+            for (Cookie oneCookie : cookies) {
+                if (oneCookie != null) {
+                    String cName = oneCookie.getName();
+                    if (cName != null && cookieName.equals(cName)) {
+                        return oneCookie.getValue();
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public String getSessionAttribute (String key) {
+        return (String) session.getAttribute(key);
+    }
+    public void setSessionAttribute (String key, String value) {
+        session.setAttribute(key, value);
     }
 
 }

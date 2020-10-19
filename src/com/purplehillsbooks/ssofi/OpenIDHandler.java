@@ -15,7 +15,6 @@ import java.util.Properties;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
-import javax.servlet.http.Cookie;
 
 import com.purplehillsbooks.json.JSONArray;
 import com.purplehillsbooks.json.JSONException;
@@ -184,6 +183,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
+
+    private void reDirectHome() throws Exception {
+        wr.response.sendRedirect("?openid.mode=displayForm&ss="+aSession.sessionId);
+    }
+
+
     /**
      * Handles the request with the assumption that the session object has been
      * fetched, and will be saved afterwards.
@@ -259,7 +264,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 else {
                     aSession.return_to = reqParam("go");
                     aSession.quickLogin = true;
-                    wr.response.sendRedirect("?openid.mode=displayForm");
+                    reDirectHome();
                 }
             }
             else if ("logout".equals(mode)) {
@@ -457,7 +462,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         try {
             String option = reqParam("option");
             if (option.equals("Cancel")) {
-                wr.response.sendRedirect("?openid.mode=displayForm");
+                reDirectHome();
                 return;
             }
             if (!aSession.regEmailConfirmed) {
@@ -512,7 +517,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         // first see if they pressed the Cancel key
         String op = reqParam("op");
         if (op.equals("Cancel")) {
-            wr.response.sendRedirect("?openid.mode=displayForm");
+            reDirectHome();
             return;
         }
         String fullName = defParam("fullName", null);
@@ -544,7 +549,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
             ssofi.authStyle.changePassword(aSession.loggedUserId(), oldPwd, newPwd1);
         }
-        wr.response.sendRedirect("?openid.mode=displayForm");
+        reDirectHome();
     }
 
 
@@ -564,13 +569,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 wr.response.sendRedirect(aSession.return_to);
             }
             else {
-                wr.response.sendRedirect("?openid.mode=displayForm");
+                reDirectHome();
             }
         }
         else {
             aSession.saveError(new Exception("Unable to log you in to user id (" + enteredId
                     + ") with that password.  Please try again or reset your password."));
-            wr.response.sendRedirect("?openid.mode=displayForm");
+            reDirectHome();
         }
     }
 
@@ -730,10 +735,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             // that successfully logged in so that next time we can
             // remember and save the user having to type in again.
             // But there is no security value here.
-            Cookie userIdCookie = new Cookie("SSOFIUser", loggedId);
-            userIdCookie.setMaxAge(31000000); // about 1 year
-            userIdCookie.setPath("/"); // everything on the server
-            wr.response.addCookie(userIdCookie);
+            wr.setCookie("SSOFIUser", loggedId);
         }
     }
 
@@ -749,7 +751,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return aSession.presumedId;
         }
         else {
-            return ssofi.findCookieValue(wr,"SSOFIUser");
+            return wr.findCookieValue("SSOFIUser");
         }
     }
 
@@ -823,10 +825,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             Reader isr = new InputStreamReader(is, "UTF-8");
             TemplateStreamer.streamTemplate(out, isr, this);
             isr.close();
+
             out.flush();
 
             // clear out any recorded error now that it has been displayed
             if (aSession!=null) {
+                out.write("SESSION = "+aSession.sessionId);
                 aSession.clearError();
             }
         }
