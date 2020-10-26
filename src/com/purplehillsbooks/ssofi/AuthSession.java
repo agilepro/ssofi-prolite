@@ -6,11 +6,13 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.purplehillsbooks.json.JSONArray;
 import com.purplehillsbooks.json.JSONObject;
 
 /**
@@ -29,7 +31,7 @@ public class AuthSession implements Serializable {
     // if something goes wrong, note it here for display next time
     // BUT not all exception object are serializable!!!!!
     // So put a JSONObject in here instead.
-    private ArrayList<String> errMsg = null;
+    private List<String> errMsg = new ArrayList<String>();
 
     // this is where the entire exchange will return to once done logging in
     // by default, return to the main page of the ID server
@@ -50,12 +52,13 @@ public class AuthSession implements Serializable {
     // This is the email address supplied by the user and tested
     // for registering a new email address.  We keep this here
     // so it can be included in the UI template.
-    String regEmail;
+    String emailTested;
 
-    // When the user has successfully confirmed receipt of the magic
-    // number at the specified email address and entered it.
-    // then this will be marked true so we don't have to do it again.
-    boolean regEmailConfirmed = false;
+    // This boolean says whether the email address have been
+    // confirmed during THIS SESSION.   Confirming an email
+    // address allows a user to be created on demand, and also
+    // allows saving of the password without the old password.
+    private boolean emailConfirmed = false;
 
     Properties savedParams = new Properties();
 
@@ -71,26 +74,27 @@ public class AuthSession implements Serializable {
         sessionId = newSession;
     }
 
+    public void changeSessionId(String newSession) {
+        sessionId = newSession;
+    }
+
     public boolean loggedIn() {
         return authIdentity != null && authIdentity.length()>0;
     }
 
-    public void login(String id, String name) {
-        if (id==null || id.length()==0) {
-            throw new RuntimeException("id value needs to be non-null during login");
+    public void login(UserInformation ui) {
+        if (ui==null) {
+            throw new RuntimeException("login needs a UserInformation object");
         }
-        authIdentity = id;
-        if (name==null || name.length()==0) {
-            throw new RuntimeException("Program Logic Error: null NAME passed at login time.  Why?");
-        }
-        authName = name;
+        authIdentity = ui.emailAddress;
+        authName = ui.fullName;
 
         //This is the official log saying that someone logged in to the system
         System.out.println("SSOFI LOGIN: userId="+authIdentity+", name="+authName+", at "+currentTimeString());
 
         //we also wipe out any record of a previously sought after id, now that
         //you are logged in we don't need to remember who we thought you might be.
-        presumedId = id;
+        presumedId = authIdentity;
     }
 
     public void logout() {
@@ -99,8 +103,9 @@ public class AuthSession implements Serializable {
 
         authIdentity = null;
         authName = null;
-        regEmail = null;
+        emailTested = null;
         return_to = null;
+        errMsg.clear();
     }
 
     public String loggedUserId() {
@@ -110,13 +115,16 @@ public class AuthSession implements Serializable {
     public String loggedUserName() {
         return authName;
     }
-    
+    public void updateFullName(String newName) {
+        authName = newName;
+    }
+
     public void assureName() {
         if (authName==null || authName.length()==0) {
             authName = "User: "+authIdentity;
         }
     }
-    
+
 
     public void saveError(Exception e) {
         ArrayList<String> newErrs = new ArrayList<String>();
@@ -124,12 +132,11 @@ public class AuthSession implements Serializable {
         while (runner!=null) {
             String msg = runner.toString();
             //strip off the class name if there is one
-            if (msg.startsWith("java.lang.Exception")
-                    || msg.startsWith("java.lang.RuntimeException")) {
-                int pos = msg.indexOf(":");
+            int pos = msg.indexOf(":");
+            if (pos>0 && (msg.startsWith("java.") || msg.startsWith("com.") || msg.startsWith("org."))) {
                 msg = msg.substring(pos+2);
             }
-            int pos = msg.indexOf("nested exception");
+            pos = msg.indexOf("nested exception");
             if (pos>3) {
                 //some exceptions unnecessarily duplicate the cause exception,
                 //since we don't need it, strip it out.
@@ -141,28 +148,40 @@ public class AuthSession implements Serializable {
         errMsg = newErrs;
     }
     public void clearError() {
-        errMsg = null;
+        errMsg = new ArrayList<String>();
         savedParams.clear();
     }
-    public ArrayList<String> getErrorList() {
-        if (errMsg!=null) {
-            return errMsg;
-        }
-        return new ArrayList<String>();
+    public List<String> getErrorList() {
+        return errMsg;
     }
 
-    public void reinit(HttpServletRequest request) {
-        return_to = request.getParameter("openid.return_to");
-        presumedId = request.getParameter("openid.identity");
-        if (presumedId==null) {
-        	//get it from the cookie
-        }
-        errMsg = null;
-    }
 
     public void startRegistration(String email) {
-    	regEmail = email;
-        regEmailConfirmed = false;
+    	emailTested = email;
+        emailConfirmed = false;
+    }
+    public void emailConfirmed(UserInformation ui) {
+        authIdentity = ui.emailAddress;
+        authName     = ui.fullName;
+        emailTested  = ui.emailAddress;
+        emailConfirmed = true;
+    }
+    /**
+     * Email confirmation gives you the ability to change the password, but
+     * after chaning the password once, the bit should be turned off to
+     * avoid other password changes.   The window for changin password only
+     * stays open for one setting of the passwords.
+     */
+    public void clearConfirmBit() {
+        emailConfirmed = false;
+    }
+
+    /**
+     * Email address confirmed in this THIS session
+     * so special rules apply.
+     */
+    public boolean hasJustConfirmed() {
+        return emailConfirmed;
     }
 
     public void saveParameterList(HttpServletRequest request) {
@@ -248,29 +267,51 @@ public class AuthSession implements Serializable {
     }
 
 
-    public JSONObject userAsJSON() throws Exception {
-        JSONObject persistable = new JSONObject();
-        persistable.put("ss",  sessionId);
+    public JSONObject userAsJSON(SSOFI ssofi) throws Exception {
+        JSONObject jo = new JSONObject();
+        jo.put("ss",  sessionId);
         if (this.loggedIn()) {
-            persistable.put("userId",    authIdentity);
-            persistable.put("userName",  authName);
-            persistable.put("email",     regEmail);
-            persistable.put("msg",       "Logged In");
+            jo.put("userId",    authIdentity);
+            jo.put("userName",  authName);
+            jo.put("email",     emailTested);
+            jo.put("msg",       "Logged In");
         }
         else {
-            persistable.put("msg", "Not Logged In");
+            jo.put("msg", "Not Logged In");
         }
-        return persistable;
+
+        jo.put("presumedId", this.presumedId);
+        jo.put("isLoggedIn", this.loggedIn());
+        jo.put("isLDAP",   ssofi.isLDAPMode);
+        jo.put("isLocal", !ssofi.isLDAPMode);
+        jo.put("emailConfirmed", this.emailConfirmed);
+
+        JSONArray errors = new JSONArray();
+        for (String msg : getErrorList()) {
+            errors.put(msg);
+        }
+        jo.put("errors", errors);
+        jo.put("baseUrl", ssofi.baseURL);
+        jo.put("go",    return_to);
+
+        return jo;
     }
 
-    
+
     public void writeSessionToFile(File sessionFolder) throws Exception {
+        JSONArray eList = new JSONArray();
+        for (String em : errMsg) {
+            eList.put(em);
+        }
+
         JSONObject persistable = new JSONObject();
         persistable.put("authIdentity", authIdentity);
         persistable.put("authName",     authName);
         persistable.put("presumedId",   presumedId);
-        persistable.put("regEmail",     regEmail);
+        persistable.put("regEmail",     emailTested);
+        persistable.put("errMsg",       eList);
         persistable.put("return_to",    return_to);
+        persistable.put("emailConfirmed", emailConfirmed);
 
         File sessionFile = new File(sessionFolder, sessionId+".ss");
         persistable.writeToFile(sessionFile);
@@ -284,8 +325,10 @@ public class AuthSession implements Serializable {
             as.authIdentity = restored.optString("authIdentity");
             as.authName = restored.optString("authName");
             as.presumedId = restored.optString("presumedId");
-            as.regEmail = restored.optString("regEmail");
+            as.emailTested = restored.optString("regEmail");
             as.return_to = restored.optString("return_to");
+            as.errMsg    = restored.getJSONArray("errMsg").getStringList();
+            as.emailConfirmed = restored.optBoolean("emailConfirmed");
             return as;
         }
         else {
@@ -294,7 +337,7 @@ public class AuthSession implements Serializable {
         }
         return as;
     }
-    
+
 
 
     //TODO: move this to a common location

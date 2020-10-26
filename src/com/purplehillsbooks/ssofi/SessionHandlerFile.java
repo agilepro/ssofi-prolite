@@ -2,6 +2,8 @@ package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 
+import com.purplehillsbooks.json.JSONException;
+
 /**
  * This saves the sessions in files in a folder
  */
@@ -46,7 +48,7 @@ public class SessionHandlerFile {
     }
 
     static long nextTimeToCheck = 0;
-    
+
     public void cleanOutOldSessions() throws Exception {
         if (System.currentTimeMillis()<nextTimeToCheck) {
             //avoid checking more than every 30 seconds
@@ -78,9 +80,9 @@ public class SessionHandlerFile {
      * pass in the session id, and get the session information back
      */
     public synchronized AuthSession getAuthSession(WebRequest wr, String sessionId) throws Exception {
-        cleanOutOldSessions();
-        
+
         try {
+            cleanOutOldSessions();
             AuthSession as = AuthSession.readOrCreateSessionFile(sessionFolder, sessionId);
             if (as.presumedId == null ||  as.presumedId.length()==0) {
                 //if the session does not have an assumed user id in it, then
@@ -91,11 +93,13 @@ public class SessionHandlerFile {
             return as;
         }
         catch (Exception e) {
-            throw new Exception("Failure loading session file for sessionId="+sessionId, e);
+            JSONException.traceException(e, "Failure loading session file for sessionId="+sessionId);
+            AuthSession as2 = new AuthSession(SSOFI.createSSOFISessionId(wr));
+            return as2;
         }
     }
 
-    public synchronized void saveAuthSession(String sessionId, AuthSession thisSession) throws Exception {
+    public synchronized void saveAuthSession(AuthSession thisSession) throws Exception {
         thisSession.writeSessionToFile(sessionFolder);
     }
 

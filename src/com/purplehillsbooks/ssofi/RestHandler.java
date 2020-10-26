@@ -25,6 +25,7 @@ public class RestHandler {
 
     private static SSOFI ssofi;
 
+    APIHelper theHelper;
     WebRequest wr;
     AuthSession aSession;
 
@@ -79,7 +80,7 @@ public class RestHandler {
         }
         String zeroToken = wr.consumePathToken();
         if (!"rest".equals(zeroToken)) {
-            //this should not be possible ... there should always be 'api'
+            //this should not be possible ... there should always be 'rest'
             //this is just a consistency check
             throw new Exception("Program Logic Error: the first path element is expected to be 'rest' but was instead '"+zeroToken+"'");
         }
@@ -91,38 +92,41 @@ public class RestHandler {
         if (isPost) {
             postBody = wr.getPostedObject();
         }
+        else {
+            postBody = new JSONObject();
+        }
 
+
+        APIHelper theApi = new APIHelper(aSession, postBody, wr, ssofi);
         String firstToken = wr.consumePathToken();
-        if ("whoami".equals(firstToken)) {
-            return whoami();
+        if ("generateToken".equals(firstToken)) {
+            return theApi.generateToken();
+        }
+        if ("verifyToken".equals(firstToken)) {
+            return theApi.verifyToken();
+        }
+        if ("whoAmI".equals(firstToken)) {
+            return theApi.whoAmI();
         }
         if ("login".equals(firstToken)) {
-            return login();
+            return theApi.login();
         }
         if ("logout".equals(firstToken)) {
-            return logout();
+            return theApi.logout();
         }
-        if ("setpassword".equals(firstToken)) {
-            return setpassword();
+        if ("setPassword".equals(firstToken)) {
+            return theApi.setPassword();
+        }
+        if ("setName".equals(firstToken)) {
+            return theApi.setName();
+        }
+        if ("sendReset".equals(firstToken)) {
+            return theApi.sendPasswordReset();
+        }
+        if ("sendInvite".equals(firstToken)) {
+            return theApi.sendInvite();
         }
         throw new Exception("SSOFI API is unable to understand the first path element: "+firstToken);
-    }
-
-    private JSONObject whoami() throws Exception {
-        JSONObject user = aSession.userAsJSON();
-        return user;
-    }
-    private JSONObject login() throws Exception {
-        JSONObject user = aSession.userAsJSON();
-        return user;
-    }
-    private JSONObject logout() throws Exception {
-        JSONObject user = aSession.userAsJSON();
-        return user;
-    }
-    private JSONObject setpassword() throws Exception {
-        JSONObject user = aSession.userAsJSON();
-        return user;
     }
 
 }

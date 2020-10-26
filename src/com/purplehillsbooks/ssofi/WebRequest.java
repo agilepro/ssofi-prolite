@@ -136,6 +136,22 @@ public class WebRequest {
             throw new Exception("Failure to read an expected JSON object from the POST stream for this web request: "+requestURL, e);
         }
     }
+    String reqParam(String name) throws Exception {
+
+        String val = request.getParameter(name);
+        if (val == null || val.length() == 0) {
+            throw new JSONException("Got a request without a required '{0}' parameter", name);
+        }
+        return val;
+    }
+    String defParam(String name, String defaultVal) throws Exception {
+
+        String val = request.getParameter(name);
+        if (val == null || val.length() == 0) {
+            return defaultVal;
+        }
+        return val;
+    }
 
     /**
      * Reads the uploaded PUT body, and stores it to the specified
@@ -250,8 +266,11 @@ public class WebRequest {
      * Any test server not using HTTPS will fail to work
      * because the browser will reject it.
      */
+    public void setCookieSecure(String name, String sessionId) {
+        response.addHeader("Set-Cookie", name+"="+sessionId+";Max-Age=2500000;path=/;SameSite=None;Secure");
+    }
     public void setCookie(String name, String sessionId) {
-        response.addHeader("SetCookie", name+"="+sessionId+";Max-Age=2500000;path=/;SameSite=None;Secure");
+        response.addHeader("Set-Cookie", name+"="+sessionId+";Max-Age=2500000;path=/;SameSite=Lax");
     }
 
     public String findCookieValue(String cookieName) {

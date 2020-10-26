@@ -15,10 +15,9 @@ public class AuthStyleLocal implements AuthStyle {
 
     private Mel users = null;
     private File userFile;
-    private Vector<User> userList;
+    private Vector<User> userList = new Vector<User>();
     private long timestampLastRead = 0;
-    private boolean ignorePasswordMode;
-    private boolean makeUpUsers = false;
+    private boolean ignorePasswordMode = false;
 
     public AuthStyleLocal(ServletContext sc, SSOFI ssofi) throws Exception {
 
@@ -33,11 +32,10 @@ public class AuthStyleLocal implements AuthStyle {
         // where people login and out of multiple users frequently
         // passwords are accepted without testing them.
         ignorePasswordMode = "yes".equalsIgnoreCase(ssofi.getSystemProperty("ignorePassword"));
-        makeUpUsers = ignorePasswordMode;
         if (ignorePasswordMode) {
             System.out.println("SSOFI:  ignore password mode -- all passwords will be accepted without testing");
         }
-        
+
         refreshUserInfo();
     }
 
@@ -58,10 +56,8 @@ public class AuthStyleLocal implements AuthStyle {
             }
 
             timestampLastRead = userFile.lastModified();
-            userList = new Vector<User>();
-            for (User u : users.getChildren("user", User.class)) {
-                userList.add(u);
-            }
+            userList.clear();
+            userList.addAll(users.getChildren("user", User.class));
         }
         catch (Exception e) {
             throw new JSONException("Unable to access user file ({0})", e, userFile);
@@ -105,39 +101,38 @@ public class AuthStyleLocal implements AuthStyle {
         if (foundUser == null) {
             return null;
         }
-        
+
         UserInformation uret = new UserInformation();
         uret.key = foundUser.getKey();
-        uret.exists = true;
+        uret.alreadyInFile = true;
         uret.fullName = foundUser.getFullName();
         uret.emailAddress = foundUser.getEmailMatchingSearchTerm(searchEmail);
         String password = foundUser.getPassword();
         uret.hasPassword = (password!=null && password.length()>0);
         return uret;
     }
-    
+
     public UserInformation getOrCreateUser(String searchEmail) throws Exception {
 
         UserInformation uret = getExistingUserOrNull(searchEmail);
         if (uret!=null) {
             return uret;
         }
-        
+
         uret = new UserInformation();
         uret.key = User.generateKey();
         uret.emailAddress = searchEmail;
-        uret.fullName = "User "+searchEmail;
+        uret.fullName = "";
         uret.hasPassword = false;
-        if (makeUpUsers) {
-            // generates a user record for any email address, just based on
-            // email address
-            uret.exists = true;
-        }
-        else {
-            uret.exists = false;
-        }
+        uret.alreadyInFile = false;
 
-        System.out.println("FOUND: name="+uret.fullName+", key="+uret.key+", email="+uret.emailAddress);
+        //now actually create the user
+        User userRec = users.addChild("user", User.class);
+        userRec.setKey(uret.key);
+        userRec.addAddress(searchEmail);
+        saveUserFile();
+
+        System.out.println("SSOFI: CREATED NEW USER RECORD: name="+uret.fullName+", key="+uret.key+", email="+uret.emailAddress);
         return uret;
     }
 
@@ -155,6 +150,8 @@ public class AuthStyleLocal implements AuthStyle {
         users.reformatXML();
         users.writeToFile(userFile);
         timestampLastRead = userFile.lastModified();
+        userList.removeAllElements();
+        userList.addAll(users.getChildren("user", User.class));
     }
 
     public void changePassword(String userId, String oldPwd, String newPwd) throws Exception {
@@ -198,14 +195,15 @@ public class AuthStyleLocal implements AuthStyle {
     public void updateUserInfo(UserInformation userInfo, String newPwd) throws Exception {
         User userRec = searchUsersByAny(userInfo.key);
         if (userRec == null) {
-            if (userInfo.exists) {
-                throw new Exception(
-                        "Don't understand attempt to update a profile that does not exist.  Clear the exist flag to false when you want to create a new profile.");
+            if (userInfo.alreadyInFile) {
+                throw new Exception("Don't understand attempt to update a profile that does not exist.  "
+                        +"Clear the 'alreadyInFile' flag to false when you want to create a new profile.");
             }
+            //now actually create the user
             userRec = users.addChild("user", User.class);
             userRec.setKey(userInfo.key);
         }
-        else if (!userInfo.exists) {
+        else if (!userInfo.alreadyInFile) {
             throw new JSONException(
                     "Don't understand attempt to create a new profile when one with id={0} already exists.  Set the exist flag to update existing profile.", userInfo.key);
         }
@@ -218,8 +216,6 @@ public class AuthStyleLocal implements AuthStyle {
             userRec.setPassword(PasswordEncrypter.getSaltedHash(newPwd));
         }
         saveUserFile();
-        userList.removeAllElements();
-        userList.addAll(users.getChildren("user", User.class));
     }
 
     private User searchUsersByAny(String userNetId) {

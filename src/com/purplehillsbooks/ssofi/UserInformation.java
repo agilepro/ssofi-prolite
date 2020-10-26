@@ -8,7 +8,7 @@ import com.purplehillsbooks.json.JSONObject;
  */
 public class UserInformation {
 
-    public boolean exists = false;
+    public boolean alreadyInFile = false;
     public boolean hasPassword = true;
     public String key;
     public String fullName;

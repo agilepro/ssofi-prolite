@@ -19,6 +19,24 @@
  * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi, Todd Palmer, Tom Yang,
  *
  * justAnonymous.htm
+ *
+ *
+ *
+ * {
+ *   "baseUrl": "http://bobcat:8080/eid/",
+ *   "email": "",
+ *   "errors": [],
+ *   "go": "",
+ *   "isLDAP": false,
+ *   "isLocal": true,
+ *   "isLoggedIn": true,
+ *   "msg": "Logged In",
+ *   "presumedId": "yuiyui@fujitsu.com",
+ *   "ss": "SUAT-IX-RSW-RP-QRH",
+ *   "userId": "yuiyui@fujitsu.com",
+ *   "userName": "Yu Yu"
+ * }
+ * 
  * -->
 <html>
 <head>
@@ -30,14 +48,179 @@
     <script src="$/angular.min.js"></script>
 
     <script>
+    
+    
     var app = angular.module('myApp', []);
     app.controller('myCtrl', function($scope, $http) {
         $scope.info = {{userInfo}};
-        $scope.userId = $scope.info.expectedUser;
+        $scope.error = {};
+        $scope.status = "";
+        
+        $scope.userId = $scope.info.presumedId;
+        $scope.password = "";
+        $scope.oldPass = "";
+        $scope.pass1 = "";
+        $scope.pass2 = "";
         $scope.bodyStyle = {};
+        $scope.mode = 0;
+        
         if ($scope.info.isLDAP) {
             $scope.bodyStyle = {"background-color":"skyblue"};
         }
+        
+        function stdErrorFunction(data) {
+            $scope.status = null;
+            console.log("ERROR: ", data);
+            var exc = data.data.error;
+            var messageList = [];
+            data.data.error.details.forEach( function(item) {
+                messageList.push(item.message);
+            })
+            $scope.info.errors = messageList;
+        }
+        
+        $scope.whoami = function() {
+            var url = "rest/whoAmI?ss="+$scope.info.ss;
+            var data = {};
+            $http({
+                url : url,
+                method : "POST",             
+                data: data 
+            }).then(function(data) {
+                $scope.info = data.data;
+                $scope.backToMainMode();
+            }, stdErrorFunction)
+        }
+        $scope.login = function() {
+            $scope.status = null;
+            var url = "rest/login?ss="+$scope.info.ss;
+            var data = {userId: $scope.userId, password: $scope.password};
+            $http({
+                url : url,
+                method : "POST",             
+                data: data 
+            }).then(function(data) {
+                if ($scope.info.go) {
+                    window.location.assign($scope.info.go);
+                }
+                else {
+                    $scope.info = data.data;
+                    $scope.backToMainMode();
+                    $scope.error = {};
+                    $scope.status = "You are now logged in";
+                }
+            }, stdErrorFunction)
+        }
+        $scope.logout = function() {
+            $scope.status = null;
+            var url = "rest/logout?ss="+$scope.info.ss; 
+            var data = {};
+            $http({
+                url : url,
+                method : "POST",             
+                data: data 
+            }).then(function(data) {
+                $scope.info = data.data;
+                console.log("RESPONSE:", data);
+                $scope.status = "Logout completed successfully";
+                $scope.backToMainMode();
+            }, stdErrorFunction)
+        }
+        $scope.saveName = function(successFunction) {
+            $scope.status = null;
+            var url = "rest/setName?ss="+$scope.info.ss; 
+            var data = {fullName: $scope.info.userName};
+            if (!successFunction) {
+                successFunction = function(data) {
+                    $scope.info = data.data;
+                    console.log("saveName RESPONSE:", data);
+                    $scope.status = "New name saved successfully";
+                    $scope.backToMainMode();
+                }
+            }
+            $http({
+                url : url,
+                method : "POST",             
+                data: data 
+            }).then(successFunction, stdErrorFunction);
+        }
+        $scope.savePassword = function( successFunction ) {
+            $scope.status = null;
+            if ($scope.pass1 != $scope.pass2) {
+                alert("Please enter the same value for passwords.");
+                return;
+            }
+            var url = "rest/setPassword?ss="+$scope.info.ss; 
+            var data = {oldPwd: $scope.oldPass, newPwd: $scope.pass1};
+            if (!successFunction) {
+                successFunction = function(data) {
+                    $scope.info = data.data;
+                    console.log("savePassword RESPONSE:", data);
+                    $scope.status = "New password saved successfully";
+                    $scope.backToMainMode();
+                }
+            }
+            $http({
+                url : url,
+                method : "POST",             
+                data: data 
+            }).then(successFunction, stdErrorFunction);
+        }
+        $scope.emailPasswordReset = function() {
+            $scope.status = null;
+            var url = "rest/sendReset?ss="+$scope.info.ss; 
+            var data = {registerEmail: $scope.userId};
+            $http({
+                url : url,
+                method : "POST",             
+                data: data 
+            }).then(function(data) {
+                $scope.info = data.data;
+                $scope.mode = 5;
+            }, stdErrorFunction)
+        }
+        $scope.savePasswordAndName = function() {
+        var savedName = $scope.info.userName;
+            $scope.status = null;
+            $scope.savePassword( function(data) {
+                $scope.status = "Password Saved";
+                $scope.saveName( function(data) {
+                    $scope.status = "Name & Password Saved";
+                    $scope.info = data.data;
+                    if ($scope.info.go) {
+                        window.location.assign($scope.info.go);
+                    }
+                    else {
+                        $scope.backToMainMode();
+                    }
+                });
+            });
+        }
+        
+        
+        $scope.startRegister = function() {
+            $scope.status = "";
+            $scope.info.errors = [];
+            $scope.mode=3;
+        }
+        $scope.validateCode = function() {
+            $scope.mode = 4;
+        }
+        $scope.backToMainMode = function() {
+            $scope.mode = 1;
+            if ($scope.info.emailConfirmed) {
+                $scope.mode = 6;
+            }
+            else if ($scope.info.isLoggedIn) {
+                $scope.mode = 2;
+            }
+        }
+        $scope.cancelBakToMain = function() {
+            $scope.status = "";
+            $scope.info.errors = [];
+            $scope.backToMainMode();
+        }
+        $scope.whoami();
     });
     app.filter('escape', function() {
         return window.encodeURIComponent;
@@ -51,15 +234,14 @@
   <div id="bodyWrapper">
     <img src="$/logoSSOFI.gif"/>
     
-     
-      
-    <div id="loginWrapper">
-        <form method="post" action="{{info.baseUrl}}">
-            <input type="hidden" name="openid.mode" value="loginAction"/>
+      <div id="loginWrapper" ng-show="mode==1">
             <div><img src="$/headerLogin.gif" width="546" alt="" /></div>
             <div class="loginWrapperContentArea">
-                <div ng-show="info.userError" class="errorArea">
+                <div ng-show="info.errors" class="errorArea">
                     <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+                </div>
+                <div ng-show="status"  class="statusStyle">
+                    <strong>{{status}}</strong>
                 </div>
                 <div class="loginSpacing">
                     <strong ng-show="info.isLocal">Email Address:</strong>
@@ -69,8 +251,8 @@
                 </div>
                 <div class="loginSpacing">
                     <strong>Password:</strong>
-                    <input type="password" name="password" class="form-control"
-                           placeholder="Enter your password" ng-model="userPass"/>
+                    <input type="password" class="form-control"
+                           placeholder="Enter your password" ng-model="password"/>
                 </div>
 
                 <div class="loginSpacing">
@@ -80,7 +262,8 @@
                         our <a href="$/PrivacyPolicy.html" target="_blank">Privacy Policy</a>.</div>
                     </div>
                     <div style="float:right;">
-                        <input type="submit" class="btn btn-primary" title="Log In" name="op" value="Log In" />
+                        <button class="btn btn-primary" ng-click="login()" ng-hide="info.go">Log In</button> 
+                        <button class="btn btn-primary" ng-click="login()" ng-show="info.go">Log In & Return</button> 
                     </div>
                     <div style="clear:both;"></div>
                 </div>
@@ -91,23 +274,303 @@
                     Have you never logged in here before?  Then you can:
                     </div>
                     <div class="loginSpacing">
-                    <b><a href="{{info.baseUrl}}?openid.mode=requestForm&email={{userId|escape}}" title="Register for free account">
-                        ➤ Register for free account</a></b>
+                        <button class="btn btn-default" ng-click="startRegister()">Register for free account</button>
                     </div>
                     <div>
-                    Have you forgotten your password?  Then you can:
+                    Don't remember your password?  Then you can:
                     </div>
                     <div class="loginSpacing">
-                        <b><a href="{{info.baseUrl}}?openid.mode=requestForm&email={{userId|escape}}" title="Reset a forgotten Password">
-                        ➤ Reset your password</a></b>
+                        <button class="btn btn-default" ng-click="startRegister()">Reset your password</button>
                     </div>
                 </div>
 
             </div>
-        </form>
     </div>
 
+    <div id="loginWrapper" ng-show="mode==2">
+        <table cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td><img src="$/headerLogin.gif" width="546" alt="" /></td>
+            </tr>
+            <tr>
+                <td class="loginWrapperContentArea">
+                    <div ng-show="info.errors" class="errorArea">
+                        <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+                    </div>
+                    <div ng-show="status"  class="statusStyle">
+                        <strong>{{status}}</strong>
+                    </div>
+                    <div class="loginSpacing">
+                        You are logged in as:<br /><br/>
+                        <span class="userNameClass">{{info.userName}}</span><br />
+                        <span><b>{{info.userId}}</b></span>
+                        
+                        <br /><br />
+                        <button class="btn btn-primary" ng-click="logout()">
+                            Log Out</button>
+                        &nbsp;
+                        <button ng-show="info.isLocal" class="btn btn-primary" 
+                            ng-click="mode=4"> 
+                            Edit Profile or Password</button>
+                        <br />
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+
+
+    <div class="loginArea" ng-show="mode==4">
+            <div class="registerImg"></div>
+            <div class="mainLoginArea">
+                <center>
+                    <img src="$/step3.gif" width="442" height="46" alt="" />
+                </center>
+                <table class="spaceyTable">
+                    <tr><td colspan="3">
+                        <div ng-show="info.errors" class="errorArea">
+                            <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+                        </div>
+                        <div ng-show="status"  class="statusStyle">
+                            <strong>{{status}}</strong>
+                        </div>
+                    </td></tr>
+                    <tr><td colspan="3">
+                        <h4>Change your Name</h4>
+                    </td></tr>
+                    <tr>
+                        <td><strong>Email address:</strong></td>
+                        <td width="10px"></td>
+                        <td style="width:400px">{{info.userId}}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Full Name:</strong></td>
+                        <td width="10px"></td>
+                        <td><input type="text" class="form-control" ng-model="info.userName"
+                                   placeholder="Enter Your Full Name"/></td>
+                    </tr>
+                    <tr>
+                        <td></td> <td></td>
+                        <td>
+                          <div class="buttonArea">
+                            <div class="btn btn-primary"
+                                ng-click="saveName()">Save Name</div>&nbsp;&nbsp;
+                            <div class="btn btn-primary"
+                                ng-click="cancelBakToMain()">Cancel</div>
+                          </div>
+                        </td>
+                    </tr>
+                    <tr><td colspan="3">
+                        <h4>Change your Password</h4>
+                    </td></tr>
+                    <tr>
+                        <td><strong>Current Password:</strong></td>
+                        <td width="10px"></td>
+                        <td><input type="password" class="form-control"
+                            ng-model="oldPass"
+                            placeholder="Enter your current password"/></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Enter Password:</strong></td>
+                        <td width="10px"></td>
+                        <td><input type="password" name="password" class="form-control"
+                            ng-model="pass1"
+                            placeholder="Enter at least 6 characters"/></td>
+                    </tr>
+                    <tr>
+                        <td><strong>Confirm Password:</strong></td>
+                        <td width="10px"></td>
+                        <td><input type="password" name="confirmPwd" class="form-control"
+                            ng-model="pass2"
+                            placeholder="Enter same password here"/></td>
+                    </tr>
+                    <tr>
+                        <td></td> <td></td>
+                        <td>
+                          <div class="buttonArea">
+                            <div class="btn btn-primary"
+                                ng-click="savePassword()">Save Password</div>&nbsp;&nbsp;
+                            <div class="btn btn-primary"
+                                ng-click="cancelBakToMain()">Cancel</div>
+                          </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+            <div>
+                    <div style="font-size: x-small;width:100%;text-align:center">
+                    By clicking Save you indicate that you have read and agree with
+                    our <a href="$/PrivacyPolicy.html" target="_blank">Privacy Policy</a>.</div>
+            </div>
+    </div>
+
+    <div class="loginArea" ng-show="mode==3">
+        <div class="loginArea">
+            <div class="registerImg"></div>
+            <div class="mainLoginArea">
+                <center>
+                    <img src="$/step1.gif" width="442" height="46" alt="" />
+                    <h4>Send password reset request to your email address</h4>
+                </center>
+                <table class="spaceyTable">
+                    <tr><td colspan="3">
+                        <div ng-show="info.errors" class="errorArea">
+                            <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+                        </div>
+                        <div ng-show="status"  class="statusStyle">
+                            <strong>{{status}}</strong>
+                        </div>
+                    </td></tr>
+                    <tr>
+                        <td><strong>Enter email address:</strong></td>
+                        <td><input type="text" name="registerEmail" 
+                           ng-model="userId" class="form-control" style="width:300px"/></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">{{captcha}}</td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <span class="noteSection"><b>Note:</b> 
+                            You will receive an email with a link that 
+                            will allow you to reset your password.</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div class="buttonArea">
+                                <div class="btn btn-primary" 
+                                       ng-click="emailPasswordReset()">Send Email</div>
+                                <div class="btn btn-primary" title="Cancel" 
+                                       ng-click="cancelBakToMain()">Cancel</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="loginArea" ng-show="mode==5">
+        <div class="loginArea">
+            <div class="registerImg"></div>
+            <div class="mainLoginArea">
+                <center>
+                    <img src="$/step2.gif" width="442" height="46" alt="" />
+                    <h4>Check for Email</h4>
+                </center>
+                <table class="spaceyTable">
+                    <tr><td colspan="3">
+                        <div ng-show="info.errors" class="errorArea">
+                            <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+                        </div>
+                        <div ng-show="status"  class="statusStyle">
+                            <strong>{{status}}</strong>
+                        </div>
+                    </td></tr>
+                    <tr>
+                        <td><strong>Email address:</strong></td>
+                        <td><input type="text" disabled
+                           ng-model="userId" class="form-control" style="width:300px"/></td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div class="noteSection"><b>Note:</b> 
+                            You should receive an email message with a link in it. Follow the instructions in that email to set your password.</div>
+
+                            <div class="noteSection">Note that the link will be usable only once, 
+                            and only within two days of receiving the email.</div>
+
+                            <div class="noteSection">If your email client software does not support clicking on an HTML link, you may need to manually copy the link to the browser address bar.</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td colspan="2">
+                            <div class="buttonArea">
+                                <div class="btn btn-default" t
+                                       ng-click="mode=3">Send Email Again</div>
+                                <div class="btn btn-primary" 
+                                       ng-click="cancelBakToMain()">Cancel</div>
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+    </div>
     
+    
+    <div class="loginArea" ng-show="mode==6">
+        <div class="registerImg"></div>
+        <div class="mainLoginArea">
+            <div ng-show="info.errors" class="errorArea">
+                <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+            </div>
+            <div ng-show="status"  class="statusStyle">
+                <strong>{{status}}</strong>
+            </div>
+            <center>
+                <img src="$/step3.gif" width="442" height="46" alt="" />
+                <h4>Set your Full Name and Password</h4>
+            </center>
+            <table class="spaceyTable">
+                <tr>
+                    <td><strong>Email address:</strong></td>
+                    <td width="10px"></td>
+                    <td style="width:400px">{{info.userId}}</td>
+                </tr>
+                <tr>
+                    <td><strong>Full Name:</strong></td>
+                    <td width="10px"></td>
+                    <td><input type="text" class="form-control" 
+                               ng-model="info.userName"
+                               placeholder="Enter Your Full Name"/></td>
+                </tr>
+                <tr>
+                    <td><strong>Enter Password:</strong></td>
+                    <td width="10px"></td>
+                    <td><input type="password" class="form-control"
+                        ng-model="pass1"
+                        placeholder="Enter at least 6 characters"/></td>
+                </tr>
+                <tr>
+                    <td><strong>Confirm Password:</strong></td>
+                    <td width="10px"></td>
+                    <td><input type="password" class="form-control"
+                        ng-model="pass2"
+                        placeholder="Enter same password here"/></td>
+                </tr>
+            </table>
+        </div>
+        <div>
+            <div class="buttonArea">
+                <div class="btn btn-default" t
+                       ng-click="mode=3">Send Email Again</div>
+                <div class="btn btn-primary" ng-show="info.go"
+                       ng-click="savePasswordAndName()">Save & Return</div>
+                <div class="btn btn-primary" ng-hide="info.go"
+                       ng-click="savePasswordAndName()">Save</div>
+            </div>
+            <div style="float:left;">
+                <div style="font-size: x-small;width:200px;">
+                By clicking Save you indicate that you have read and agree with
+                our <a href="$/PrivacyPolicy.html" target="_blank">Privacy Policy</a>.</div>
+            </div>
+            <div style="clear:both;"></div>
+        </div>
+    </div>
+             
   </div>
+  
+  <div ng-show="showSession">
+      <pre>{{info | json}}</pre>
+  </div>
+  <span ng-click="showSession = !showSession" style="color:#FFF;cursor:pointer">Toggle Debug Info</span>
 </body>
 </html>

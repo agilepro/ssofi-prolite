@@ -46,7 +46,7 @@ public class SSOFI {
     public int sessionDurationSeconds = 2500000;   //30 days
     public boolean isLDAPMode = false;
 
-    public static boolean USE_SESSION_COOKIE = false;
+    public static boolean USE_SESSION_COOKIE = true;
 
 
     public static synchronized SSOFI getSSOFI(ServletContext sc) {
@@ -287,7 +287,7 @@ public class SSOFI {
 
         if (sessionId==null) {
             //we did not find an 'ss' parameter.  In this case it could be the regular
-            //web UI wanting something served, and in this case use the regular 
+            //web UI wanting something served, and in this case use the regular
             //session provided by TomCat associated with the JSession.
             sessionId = wr.getSessionAttribute("SSOFISession");
 
@@ -299,7 +299,7 @@ public class SSOFI {
             sessionId = wr.findCookieValue("SSOFISession");
         }
         if (sessionId == null || sessionId.length() < 10) {
-            //if the value is missing or look illegitimate, then throw it away, and 
+            //if the value is missing or look illegitimate, then throw it away, and
             //generate a new session.
             sessionId = createSSOFISessionId(wr);
         }
@@ -308,11 +308,11 @@ public class SSOFI {
         //that session reliably why the user is actually on the SSOFI site.
         wr.setSessionAttribute("SSOFISession", sessionId);
         if (USE_SESSION_COOKIE) {
-            wr.setCookie("SSOFISession", sessionId);
+            wr.setCookieSecure("SSOFISession", sessionId);
         }
         else {
             //clear out the cookie so that the testing cases are not fooled
-            wr.setCookie("SSOFISession", "XYZ");            
+            wr.setCookieSecure("SSOFISession", "XYZ");
         }
         return sessionId;
     }
@@ -322,7 +322,7 @@ public class SSOFI {
      * request the browser is using a new session.
      * The previous session object should be destroyed as well.
      */
-    public String createSSOFISessionId(WebRequest wr) {
+    public static String createSSOFISessionId(WebRequest wr) {
         String sessionId = "S" + IdGenerator.createMagicNumber();
 
         wr.setSessionAttribute("SSOFISession", sessionId);
@@ -337,7 +337,7 @@ public class SSOFI {
         }
         wr.setSessionAttribute("SSOFISession", sessionId);
         if (USE_SESSION_COOKIE) {
-            wr.setCookie("SSOFISession",sessionId);
+            wr.setCookieSecure("SSOFISession",sessionId);
         }
         return sessionId;
     }

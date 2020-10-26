@@ -40,6 +40,14 @@
         if ($scope.info.isLDAP) {
             $scope.bodyStyle = "background-color:skyblue";
         }
+        
+        $scope.doLogout = function() {
+            alert("ready to logout?");
+            window.location.assign("?openid.mode=logoutAction");
+        }
+        $scope.doEditProfile = function() {
+            window.location.assign("?openid.mode=passwordForm");
+        }
     });
     </script>
 
@@ -50,37 +58,37 @@
        
 
     <div id="loginWrapper">
-        <form method="GET" action="{{info.baseUrl}}">
-             <input type="hidden" name="go" value="{{thisPage}}"/>
-             <input type="hidden" name="go" value="{{thisPage}}"/>
-             <table cellpadding="0" cellspacing="0" width="100%">
-                <tr>
-                        <td><img src="$/headerLogin.gif" width="546" alt="" /></td>
-                </tr>
-                <tr>
-                    <td class="loginWrapperContentArea">
-                        <span class="errorArea"><strong>{{info.userError}}</strong></span>
-                        <div class="loginSpacing">
-                            You are logged in as:<br /><br/>
-                            <span class="userNameClass">{{info.userName}}</span><br />
-                            <span><b>{{info.userId}}</b></span>
-                            
-                            <br /><br />
-                            <button type="submit" class="btn btn-primary" name="openid.mode"
-                                    value="logout">Log Out</button>
-                            &nbsp;
-                            <button ng-show="info.isLocal" type="submit" class="btn btn-primary" name="openid.mode"
-                                    value="passwordForm">Edit Profile or Password</button>
-                            <br />
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>
-                    </td>
-                </tr>
-            </table>
-        </form>
+        <input type="hidden" name="go" value="{{thisPage}}"/>
+        <table cellpadding="0" cellspacing="0" width="100%">
+            <tr>
+                <td><img src="$/headerLogin.gif" width="546" alt="" /></td>
+            </tr>
+            <tr>
+                <td class="loginWrapperContentArea">
+                    <div class="errorArea">
+                        <strong ng-repeat="err in info.errors">{{err}}<br/></strong>
+                    </div>
+                    <div class="loginSpacing">
+                        You are logged in as:<br /><br/>
+                        <span class="userNameClass">{{info.userName}}</span><br />
+                        <span><b>{{info.userId}}</b></span>
+                        
+                        <br /><br />
+                        <button class="btn btn-primary" ng-click="doLogout()">
+                            Log Out</button>
+                        &nbsp;
+                        <button ng-show="info.isLocal" class="btn btn-primary" 
+                            ng-click="doEditProfile()"> 
+                            Edit Profile or Password</button>
+                        <br />
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                </td>
+            </tr>
+        </table>
     </div>
 </body>
 </html>

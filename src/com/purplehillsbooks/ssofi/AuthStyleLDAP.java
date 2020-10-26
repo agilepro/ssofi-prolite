@@ -194,7 +194,7 @@ public class AuthStyleLDAP implements AuthStyle {
                 throw new JSONException("Ooops, don't understand we were looking up user ({0}) but got user ({1})",
                         userNetId, uret.key);
             }
-            uret.exists = true;
+            uret.alreadyInFile = true;
             lastUserLookedUp = uret;
             return uret;
         }

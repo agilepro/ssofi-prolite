@@ -211,6 +211,9 @@ td.noteSection{
 .errorArea{
     color:#F00;
 }
+.statusStyle{
+    color:#0AF;text-align:center
+}
 .spaceyTable tr td {
     padding:5px;
 }
@@ -222,6 +225,22 @@ td.noteSection{
     font-size:16px;
     background-color:#fff;
     border:1px solid #8c8c8c;
+}
+.loginWrapper {
+    margin:60px auto 0px auto;
+    max-width:548px;
+    position:relative;
+    font-size:16px;
+    background-color:#fff;
+    border:1px solid #8c8c8c;
+}
+.loginArea {
+    margin:60px auto 0px auto;
+    max-width:548px;
+    position:relative;
+    font-size:16px;
+    background-color:#fff;
+    border:1px solid #FFFFFF;
 }
 .loginWrapperContentArea{
     padding:20px 20px;

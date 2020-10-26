@@ -80,6 +80,8 @@ public class EmailHandler {
                 .getChildren("profilerequest", ProfileRequest.class));
 
         pattern = Pattern.compile(EMAIL_PATTERN);
+
+        System.out.println("SSOFI: Email configured: "+smtpHost+":"+smtpPort+":"+smtpUser);
     }
 
     public void sendVerifyEmail(String emailId, String magicNumber, String app, String baseURL) throws Exception {
@@ -87,6 +89,9 @@ public class EmailHandler {
         try {
 
             String option = "Email Address Confirmation Message";
+            if (app == null) {
+                app = "";
+            }
 
             Authenticator authenticator = new MyAuthenticator(savedProps);
             Session session = Session.getInstance(savedProps, authenticator);
@@ -194,7 +199,7 @@ public class EmailHandler {
             mp.addBodyPart(textPart);
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
-            
+
             System.out.println("SSOFI: Invitation sent to: "+emailId);
 
         }
@@ -343,7 +348,7 @@ public class EmailHandler {
         newProfReq.writeToFile(profileRequestFile);
     }
 
-    public boolean validate(final String emailId) {
+    public boolean validAddressFormat(final String emailId) {
 
         matcher = pattern.matcher(emailId.trim());
         return matcher.matches();
