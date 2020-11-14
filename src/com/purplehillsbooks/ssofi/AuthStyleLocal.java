@@ -60,7 +60,7 @@ public class AuthStyleLocal implements AuthStyle {
             userList.addAll(users.getChildren("user", User.class));
         }
         catch (Exception e) {
-            throw new JSONException("Unable to access user file ({0})", e, userFile);
+            throw new JSONException("Unable to access user file ({0})", e, userFile.getAbsolutePath());
         }
 
     }
