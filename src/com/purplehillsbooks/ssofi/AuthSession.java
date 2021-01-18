@@ -165,6 +165,7 @@ public class AuthSession implements Serializable {
         authName     = ui.fullName;
         emailTested  = ui.emailAddress;
         emailConfirmed = true;
+        System.out.println("SSOFI: Email confirmed for "+emailTested);
     }
     /**
      * Email confirmation gives you the ability to change the password, but

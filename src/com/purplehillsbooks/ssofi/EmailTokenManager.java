@@ -80,14 +80,14 @@ public class EmailTokenManager {
 	}
 
 	public synchronized boolean validateAndConsume(String email, String token) throws Exception {
-		long yesterday = System.currentTimeMillis() - 24L*60*60*1000;
+		long lastWeek = System.currentTimeMillis() - 7L*24*60*60*1000;
 		JSONArray list = tokenFile.getJSONArray("list");
 		JSONArray filteredList = new JSONArray();
 		boolean foundIt = false;
 		for (int i=0; i<list.length(); i++) {
 			JSONObject listItem = list.getJSONObject(i);
 			long timestamp = listItem.getLong("timestamp");
-			if (timestamp<yesterday)  {
+			if (timestamp<lastWeek)  {
 			    //skip the outdated ones
 				continue;
 			}
@@ -96,6 +96,7 @@ public class EmailTokenManager {
 				String thisToken = listItem.getString("token");
 			    if (thisToken.equals(token)) {
 			    	foundIt = true;
+			    	System.out.println("SSOFI: validated email token and removed: "+token);
 			    	continue;   //don't save this now it is found
 			    }
 			}
