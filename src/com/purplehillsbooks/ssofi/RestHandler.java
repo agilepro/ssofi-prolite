@@ -67,7 +67,7 @@ public class RestHandler {
             throw new Exception("RestHandler is not innitialized correction");
         }
 
-    	System.out.println("SSOFI REST: "+wr.requestURL);
+    	//System.out.println("SSOFI REST: "+wr.requestURL);
         if (wr.pathFinished()) {
             //this should not be possible ... there should always be 'api'
             //this is just a consistency check

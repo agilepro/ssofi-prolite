@@ -121,6 +121,9 @@ public class WebRequest {
     }
 
     public JSONObject getPostedObject() throws Exception {
+    	if (isGet()) {
+    		return null;
+    	}
         if (postedObject!=null) {
             //important to only read the object once!
             return postedObject;

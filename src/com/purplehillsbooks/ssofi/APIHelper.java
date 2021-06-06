@@ -88,8 +88,8 @@ public class APIHelper {
         aSession.clearError();
         try {
             if (!aSession.loggedIn()) {
-                System.out.println("SSOFI: attempt to change password when not logged in: "+aSession.sessionId);
-                throw new Exception("Not currently logged in.");
+                System.out.println("SSOFI ERROR: attempt to change password when not logged in: "+aSession.sessionId);
+                throw new Exception("You can not change a password when you are not logged in.  Maybe your session timed out?");
             }
             if (postedObject==null) {
                 throw new Exception("to change a password there must be a posted JSON object");
@@ -131,8 +131,8 @@ public class APIHelper {
         aSession.clearError();
         try {
             if (!aSession.loggedIn()) {
-                System.out.println("SSOFI: attempt to change name when not logged in: "+aSession.sessionId);
-                throw new Exception("Not currently logged in.");
+                System.out.println("SSOFI ERROR: attempt to change name when not logged in: "+aSession.sessionId);
+                throw new Exception("You can not set your name when you are not logged in.  Maybe your session timed out?");
             }
             if (postedObject==null) {
                 throw new Exception("To change a name there must be a posted JSON object.");
@@ -196,8 +196,9 @@ public class APIHelper {
 	public JSONObject generateToken() throws Exception {
         aSession.clearError();
         if (!aSession.loggedIn()) {
+        	//this is an unusual situation, make noise
             System.out.println("SSOFI: attempt to generate token when not logged in: "+aSession.sessionId);
-            return aSession.userStatusAsJSON(ssofi);
+            throw new Exception("You can not generate a token when you are not logged in.  Maybe your session timed out?");
         }
         if (postedObject==null) {
             throw new Exception("Received a request for generating a token without any posted JSON information");
@@ -235,20 +236,21 @@ public class APIHelper {
         if ("apiVerify".equals(mode)) {
             throw new Exception("apiVerify should have already been handled at higher level!");
         }
-        //do not need to be logged in to verify a token
         if ("apiLogout".equals(mode)) {
             return logout();
         }
-        if ("apiSendInvite".equals(mode)) {
-            return sendInvite();
+        if ("apiWho".equals(mode)) {
+            return whoAmI();
         }
+        //do not need to be logged in to verify a token, to log out or to ask whether logged in
+        //do need to be logged in to send an email or to generate a token
         if (!aSession.loggedIn()) {
             System.out.println("SSOFI LAuth request: not logged in, not allowed: "+mode);
             return aSession.userStatusAsJSON(ssofi);
         }
         System.out.println("SSOFI LAuth request: "+mode+" - "+aSession.loggedUserId());
-        if ("apiWho".equals(mode)) {
-            return whoAmI();
+        if ("apiSendInvite".equals(mode)) {
+            return sendInvite();
         }
         if ("apiGenerate".equals(mode)) {
             return generateToken();

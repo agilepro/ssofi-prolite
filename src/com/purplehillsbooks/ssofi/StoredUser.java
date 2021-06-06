@@ -1,7 +1,5 @@
 package com.purplehillsbooks.ssofi;
 
-import java.util.Vector;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 

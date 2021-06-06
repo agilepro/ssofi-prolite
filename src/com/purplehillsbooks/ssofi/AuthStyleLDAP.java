@@ -235,6 +235,7 @@ public class AuthStyleLDAP implements AuthStyle {
 
         System.out.println("SSOFI: LDAP directory did not return attribute for ("+key+") for user "+userId);
 
+        //generate a message to the log of the available attributes to use on this LDAP server
         StringBuilder sb = new StringBuilder();
         NamingEnumeration<String> allIds = attrs.getIDs();
         while (allIds.hasMore()) {
@@ -243,7 +244,7 @@ public class AuthStyleLDAP implements AuthStyle {
             sb.append(", ");
         }
 
-        System.out.println("SSOFI: LDAP directory available attributes: "+sb.toString());
+        System.out.println("SSOFI: Here is a listing of the LDAP directory available attributes: "+sb.toString());
         return "(Unknown "+key+")";
     }
 

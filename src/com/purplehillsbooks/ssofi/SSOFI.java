@@ -109,6 +109,10 @@ public class SSOFI {
                 rootURL = rootURL + "/";
             }
             knownAssetPath = rootURL + "$/";
+            
+            System.out.println("SSOFI: baseURL: "+baseURL);
+            System.out.println("SSOFI: rootURL: "+rootURL);
+            System.out.println("SSOFI: authStyle: "+authStyle.getStyleIndicator());
 
             File emailConfigFile = new File(dataFolder, "EmailNotification.properties");
             if (!emailConfigFile.exists()) {
@@ -212,8 +216,6 @@ public class SSOFI {
         catch(Exception e) {
             throw new Exception("Unable to read config file ("+configFile+")", e);
         }
-        System.out.println("SSOFI: baseURL: "+config.getProperty("baseURL"));
-        System.out.println("SSOFI: authStyle: "+config.getProperty("authStyle"));
     }
 
     public String getSystemProperty(String key) {

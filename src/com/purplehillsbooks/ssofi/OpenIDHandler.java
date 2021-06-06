@@ -156,8 +156,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             isPost = true;
             String postType = wr.request.getHeader("Content-Type");
             if (postType==null
-                    || !postType.toLowerCase().startsWith("text/plain")
-                    || !postType.toLowerCase().startsWith("application/json")) {
+                    || (!postType.toLowerCase().startsWith("text/plain")
+                       && !postType.toLowerCase().startsWith("application/json"))) {
                 //now get the posted value
                 //believe it or not, some idiot decided that application/json was a security
                 //hazard, and browsers WILL NOT post content cross domains, even if you
@@ -171,7 +171,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         catch (Exception e) {
             System.out.println("SSOFI: !!! Unable to handle post to: "+wr.requestURL);
-            JSONException.traceException(e, "POST");
+            JSONException.traceException(e, "POST failed to "+wr.requestURL);
         }
     }
 /*
@@ -253,6 +253,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             System.out.println("SSOFI REQUEST: "+aSession.sessionId+" - "+mode+loginIndicator+wr.request.getQueryString());
 
             if (mode.startsWith("api")) {
+                System.out.println("SSOFI startsWith(\"api\"): "+mode+" - "+aSession.loggedUserId());
                 // Want to avoid saving a session as a result of every API call.  The API call will never
                 // add or remove a session, it is only used to verify existing sessions.  In general API
                 // round trips should be fast ... only a few seconds ... so persistence is not an
@@ -293,6 +294,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     saveSession = true;
                     reDirectHome();
                 }
+            }
+            else if ("validateKeyAction".equals(mode)) {
+                //this can be GET or POST, and can be done while logged in or not
+                //this will log you in if all is proper
+                modeValidateKeyAction();
             }
             /*
             else if ("logout".equals(mode)) {
@@ -347,11 +353,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 setRequestedId();
                 streamTemplate("confirmForm");
             }
-            else if ("validateKeyAction".equals(mode)) {
-                //this can be GET or POST, and can be done while logged in or not
-                //this will log you in if all is proper
-                modeValidateKeyAction();
-            }
             else if ("registerForm".equals(mode)) {
                 assertGet(mode);
                 assertLoggedIn(mode);
@@ -391,6 +392,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         }
         catch (Exception eorig) {
+        	JSONException.traceException(eorig, "EXCEPTION during doGetWithSession");
             try {
                 aSession.saveError(eorig);
                 ssofi.sHand.saveAuthSession(aSession);
@@ -620,7 +622,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * logged in.  If you are already logged it just redirects
      * immediately to the remote destination.
      */
-    /*
+    
     private void modeValidateKeyAction() throws Exception {
         String registerEmail = reqParam("registerEmail");
         String confirmKey = reqParam("registeredEmailKey").trim();
@@ -677,16 +679,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             //go ahead and prompt again to set the password, because they
             //probably clicked on the link again, to try again to set password.
             aSession.presumedId = registerEmail;
-            requestedIdentity = null;
             reDirectHome();
             return;
 
         }
 
-        //we know they are not logged in here.  So check the token.  Set up as if this
-        //person is really trying to log in.
-//        aSession.presumedId = registerEmail;
-        requestedIdentity = null;
 
         if (!valid) {
             System.out.println("SSOFI: Anonymous attempt to use email link that is not valid: "+wr.request.getQueryString());
@@ -704,14 +701,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             reDirectHome();
         }
     }
-        */
+        
 
 
 
     /**
      * Set to null to clear the login
      */
-    /*
+    
     private void setLogin(String loggedId) throws Exception {
         if (loggedId == null) {
             aSession.logout();
@@ -727,7 +724,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             wr.setCookie("SSOFIUser", loggedId);
         }
     }
-    */
+    
 
 /*
     public String getBestGuessId() {

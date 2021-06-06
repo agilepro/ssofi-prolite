@@ -165,7 +165,6 @@ public class AuthSession implements Serializable {
         authName     = ui.fullName;
         emailTested  = ui.emailAddress;
         emailConfirmed = true;
-        System.out.println("SSOFI: Email confirmed for "+emailTested);
     }
     /**
      * Email confirmation gives you the ability to change the password, but
@@ -214,6 +213,9 @@ public class AuthSession implements Serializable {
             jo.put("msg", "Not Logged In");
             jo.put("errors", errors);
             jo.put("baseUrl", ssofi.baseURL);
+            jo.put("isLoggedIn", this.loggedIn());
+            jo.put("isLDAP",   ssofi.isLDAPMode);
+            jo.put("isLocal", !ssofi.isLDAPMode);
             return jo;
         }
 
@@ -221,6 +223,7 @@ public class AuthSession implements Serializable {
         JSONObject jo = user.getJSON();
         jo.put("ss",     sessionId);
         jo.put("msg",    "Logged In");
+        jo.put("go",     return_to);
 
         jo.put("presumedId", this.presumedId);
         jo.put("isLoggedIn", this.loggedIn());
