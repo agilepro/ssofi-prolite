@@ -12,7 +12,7 @@ public interface AuthStyle {
      */
     public UserInformation getExistingUserOrNull(String idOrKey) throws Exception;
 
-    
+
     /**
      * Retrieve and return the information about the specified user
      * UserInformation has a 'exists' flag saying whether a profile exists or
@@ -45,7 +45,7 @@ public interface AuthStyle {
      * and if so set it to the supplied new password.
      */
     public void changeFullName(String userId, String newName) throws Exception;
-    
+
     /**
      * Forcefully reset the password for the given user id
      */
@@ -62,5 +62,5 @@ public interface AuthStyle {
     /**
      * Search for closest ID
      */
-    public String searchForID(String searchTerm) throws Exception;
+    //public String searchForID(String searchTerm) throws Exception;
 }

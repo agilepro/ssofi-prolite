@@ -16,7 +16,7 @@ import com.purplehillsbooks.json.JSONObject;
 /**
  * This servlet serves up data using the following base URL:
  *
- * http://{machine:port}/{application}/api/    ==   {baseurl}
+ * http://{machine:port}/{application}/rest/    ==   {baseurl}
  *
  * The details of course depends upon the host and how to install
  * the application server.  All of that is represented by the

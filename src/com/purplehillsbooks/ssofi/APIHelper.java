@@ -8,59 +8,23 @@ import com.purplehillsbooks.json.JSONObject;
 
 public class APIHelper {
 
-    private SSOFI ssofi;
-    private JSONObject postedObject;
-	private AuthSession aSession;
 	private WebRequest wr;
-	private EmailHandler emailHandler = null;
-	private EmailTokenManager tokenManager;
+	private AuthSession aSession;
+    private JSONObject postedObject;
+    private SSOFI ssofi;
 	boolean destroySession = false;
 
 	public static String baseURL;
 
-	public APIHelper(AuthSession _aSession, JSONObject _postedObject, WebRequest _wr,SSOFI _ssofi) {
+	public APIHelper(AuthSession _aSession, WebRequest _wr,SSOFI _ssofi) throws Exception {
 	    wr           = _wr;
 		aSession     = _aSession;
-		postedObject = _postedObject;
+		postedObject = wr.getPostedObject();
 		ssofi        = _ssofi;
-		emailHandler = ssofi.emailHandler;
-		tokenManager = ssofi.tokenManager;
     }
 
-	public void setPostObject(JSONObject newPost) {
-	    postedObject = newPost;
-	}
 
-
-	public JSONObject verifyToken() throws Exception {
-        if (postedObject==null) {
-            throw new Exception("Received a request for verifying a token without any posted JSON information");
-        }
-        String identity  = postedObject.getString("userId");
-        String challenge = postedObject.getString("challenge");
-        String token     = postedObject.getString("token");
-        AuthSession auth = AuthSession.verifyToken(identity, challenge, token);
-        if (auth!=null) {
-            JSONObject responseObj = auth.userAsJSON(ssofi);
-            responseObj.put("challenge", challenge);  //do we need this?
-            responseObj.put("token", token);          //do we need this?
-            responseObj.put("verified", true);
-            responseObj.put("msg", "Token matches with the challenge");
-            System.out.println("SSOFI LAuth request: apiVerify success: "+identity);
-            return responseObj;
-        }
-        else {
-            postedObject.put("msg", "failure, the token does not match");
-            postedObject.put("ss", aSession.sessionId);
-            postedObject.remove("userId");
-            postedObject.remove("userName");
-            postedObject.put("verified", false);
-            System.out.println("SSOFI LAuth request: apiVerify FAILED to verify: "+identity);
-            return postedObject;
-        }
-	}
-
-    public JSONObject login() throws Exception {
+	public JSONObject login() throws Exception {
         aSession.clearError();
         // this takes the action of logging the user in, and returning if all OK
         // first see if they pressed the Cancel key
@@ -71,7 +35,7 @@ public class APIHelper {
         if (aSession.loggedIn()) {
             if (aSession.loggedUserId().equalsIgnoreCase(userId)) {
                 //if already to this particular name, then don't change anything
-                return aSession.userAsJSON(ssofi);
+                return aSession.userStatusAsJSON(ssofi);
             }
             else {
                 //since the name changed, log out just to be sure
@@ -79,26 +43,26 @@ public class APIHelper {
             }
         }
 
-        if (ssofi.authStyle.authenticateUser(userId, password)) {
-            UserInformation ui = ssofi.authStyle.getOrCreateUser(userId);
-            aSession.login(ui);
-            ssofi.sHand.saveAuthSession(aSession);
-
-            // This is a 'low security' cookie.  It keeps the Id of the usr
-            // that successfully logged in so that next time we can
-            // remember and save the user having to type in again.
-            // But there is no security value here.
-            wr.setCookie("SSOFIUser", userId);
-            aSession.presumedId = userId;
-            return aSession.userAsJSON(ssofi);
-        }
-        else {
+        if (!ssofi.authStyle.authenticateUser(userId, password)) {
             throw new Exception("Unable to log you in to user id (" + userId
                     + ") with that password.  Please try again or reset your password.");
         }
+
+        UserInformation ui = ssofi.authStyle.getOrCreateUser(userId);
+        aSession.setUserOnSession(ui);
+        ssofi.sHand.saveAuthSession(aSession);
+
+        // This is a 'low security' cookie.  It keeps the Id of the usr
+        // that successfully logged in so that next time we can
+        // remember and save the user having to type in again.
+        // But there is no security value here.
+        wr.setCookie("SSOFIUser", userId);
+        aSession.presumedId = userId;
+        return aSession.userStatusAsJSON(ssofi);
     }
 
-    public JSONObject logout() throws Exception {
+
+	public JSONObject logout() throws Exception {
         aSession.clearError();
         //whether you are logged in or not, you get the same response
         //from this command:  you are now logged out.
@@ -112,32 +76,15 @@ public class APIHelper {
             aSession.changeSessionId(SSOFI.createSSOFISessionId(wr));
             ssofi.sHand.saveAuthSession(aSession);
         }
-        return aSession.userAsJSON(ssofi);
+        return aSession.userStatusAsJSON(ssofi);
 	}
 
-    public JSONObject sendInvite() throws Exception {
-        aSession.clearError();
-        if (postedObject==null) {
-            throw new Exception("Received a request for sending email without any posted JSON information");
-        }
-        //remember, this user ID is NOT the logged in user who is requesting the invitation
-        //but instead the user who is being sent the invitation.
-        String userId = postedObject.getString("userId");
-        String userName = postedObject.optString("userName");
-        String msg = postedObject.getString("msg");
-        String returnUrl = postedObject.getString("return");
-        String subject = postedObject.optString("subject", "Invitation to Collaborate");
-        sendInviteEmail(userId, userName, msg, returnUrl, subject, baseURL);
-        JSONObject okResponse = new JSONObject();
-        okResponse.put("result", "ok");
-        okResponse.put("userId", userId);
-        return okResponse;
+	public JSONObject whoAmI() throws Exception {
+        return aSession.userStatusAsJSON(ssofi);
     }
 
-    public JSONObject whoAmI() throws Exception {
-        return aSession.userAsJSON(ssofi);
-    }
-    public JSONObject setPassword() throws Exception {
+
+	public JSONObject setPassword() throws Exception {
         aSession.clearError();
         try {
             if (!aSession.loggedIn()) {
@@ -171,13 +118,16 @@ public class APIHelper {
             aSession.clearConfirmBit();
             ssofi.sHand.saveAuthSession(aSession);
 
-            return aSession.userAsJSON(ssofi);
+            return aSession.userStatusAsJSON(ssofi);
         }
         catch (Exception e) {
             throw new JSONException("Unable to set password for user ({0})",  e, aSession.loggedUserId());
         }
     }
-    public JSONObject setName() throws Exception {
+
+
+
+	public JSONObject setName() throws Exception {
         aSession.clearError();
         try {
             if (!aSession.loggedIn()) {
@@ -195,13 +145,16 @@ public class APIHelper {
             ssofi.authStyle.changeFullName(aSession.loggedUserId(), fullName);
             aSession.updateFullName(fullName);
             ssofi.sHand.saveAuthSession(aSession);
-            return aSession.userAsJSON(ssofi);
+            return aSession.userStatusAsJSON(ssofi);
         }
         catch (Exception e) {
             throw new JSONException("Unable to set name for user {0}",  e, aSession.loggedUserId());
         }
     }
-    public JSONObject sendPasswordReset() throws Exception {
+
+
+
+	public JSONObject sendPasswordReset() throws Exception {
         aSession.clearError();
         if (postedObject==null) {
             throw new Exception("Received a request for sending email without any posted JSON information");
@@ -234,30 +187,35 @@ public class APIHelper {
         aSession.startRegistration(registerEmail);
         ssofi.emailHandler.sendVerifyEmail(registerEmail, magicNumber, aSession.return_to, ssofi.baseURL);
         ssofi.sHand.saveAuthSession(aSession);
-        return aSession.userAsJSON(ssofi);
+        return aSession.userStatusAsJSON(ssofi);
     }
 
 
 
-    public JSONObject generateToken() throws Exception {
+
+	public JSONObject generateToken() throws Exception {
         aSession.clearError();
         if (!aSession.loggedIn()) {
             System.out.println("SSOFI: attempt to generate token when not logged in: "+aSession.sessionId);
-            return aSession.userAsJSON(ssofi);
+            return aSession.userStatusAsJSON(ssofi);
         }
         if (postedObject==null) {
             throw new Exception("Received a request for generating a token without any posted JSON information");
         }
+        UserInformation user = aSession.getUser();
+
         String challenge = postedObject.getString("challenge");
-        String token = aSession.generateToken(challenge);
-        postedObject.put("ss",       aSession.sessionId);
-        postedObject.put("userId",   aSession.loggedUserId());
-        postedObject.put("userName", aSession.loggedUserName());
-        postedObject.put("token",    token);
-        return postedObject;
+        String token = ChallengeTokenManager.generateToken(challenge, user);
+
+        JSONObject responseObj = user.getJSON();
+        responseObj.put("ss",         aSession.sessionId);
+        responseObj.put("challenge",  challenge);
+        responseObj.put("token",      token);
+        responseObj.put("msg",        "token has been generated, now give this to the server to authenticate");
+        return responseObj;
     }
 
-    public boolean handleAPICommand(String mode) throws Exception {
+	public boolean handleAPICommand(String mode) throws Exception {
         try {
         	JSONObject responseObj = getResponse(mode);
         	sendJSON(200, responseObj);
@@ -274,10 +232,10 @@ public class APIHelper {
 
 
     private JSONObject getResponse(String mode) throws Exception {
-        //do not need to be logged in to verify a token
         if ("apiVerify".equals(mode)) {
-            return verifyToken();
+            throw new Exception("apiVerify should have already been handled at higher level!");
         }
+        //do not need to be logged in to verify a token
         if ("apiLogout".equals(mode)) {
             return logout();
         }
@@ -286,7 +244,7 @@ public class APIHelper {
         }
         if (!aSession.loggedIn()) {
             System.out.println("SSOFI LAuth request: not logged in, not allowed: "+mode);
-            return aSession.userAsJSON(ssofi);
+            return aSession.userStatusAsJSON(ssofi);
         }
         System.out.println("SSOFI LAuth request: "+mode+" - "+aSession.loggedUserId());
         if ("apiWho".equals(mode)) {
@@ -298,16 +256,34 @@ public class APIHelper {
         throw new JSONException("Authentication API can not understand mode {0}", mode);
     }
 
+    public JSONObject sendInvite() throws Exception {
+        aSession.clearError();
+        if (postedObject==null) {
+            throw new Exception("Received a request for sending email without any posted JSON information");
+        }
+        //remember, this user ID is NOT the logged in user who is requesting the invitation
+        //but instead the user who is being sent the invitation.
+        String inviteeId = postedObject.getString("userId");
+        String inviteeName = postedObject.optString("userName");
+        String msg = postedObject.getString("msg");
+        String returnUrl = postedObject.getString("return");
+        String subject = postedObject.optString("subject", "Invitation to Collaborate");
+        sendInviteEmail(inviteeId, inviteeName, msg, returnUrl, subject, baseURL);
+        JSONObject okResponse = new JSONObject();
+        okResponse.put("result", "ok");
+        okResponse.put("userId", inviteeId);
+        return okResponse;
+    }
 
     private void sendInviteEmail(String userId, String userName, String msg, String returnUrl, String subject, String baseURL) throws Exception {
-        if (!emailHandler.validAddressFormat(userId)) {
+        if (!ssofi.emailHandler.validAddressFormat(userId)) {
             throw new JSONException("The id supplied ({0}) does not appear to be a valid email address.", userId);
         }
         //The idea here is to slow down any attempt to send email.
         //one user to wait 3 seconds is not a problem, but this will
         //significantly slow down a hacker
         Thread.sleep(3000);
-        String magicNumber = tokenManager.generateEmailToken(userId);
+        String magicNumber = ssofi.tokenManager.generateEmailToken(userId);
         String fromAddress = "weaver@circleweaver.com";
         String fromName = "Weaver";
         if (aSession.loggedIn()) {
@@ -317,7 +293,7 @@ public class APIHelper {
         if (userName==null || userName.length()<1) {
             userName = aSession.loggedUserName();
         }
-        emailHandler.sendInviteEmail(fromAddress, fromName, userId, msg, subject, magicNumber, returnUrl, baseURL);
+        ssofi.emailHandler.sendInviteEmail(fromAddress, fromName, userId, msg, subject, magicNumber, returnUrl, baseURL);
     }
 
 

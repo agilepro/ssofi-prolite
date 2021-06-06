@@ -15,7 +15,7 @@ public class AuthStyleLocal implements AuthStyle {
 
     private Mel users = null;
     private File userFile;
-    private Vector<User> userList = new Vector<User>();
+    private Vector<StoredUser> userList = new Vector<StoredUser>();
     private long timestampLastRead = 0;
     private boolean ignorePasswordMode = false;
 
@@ -57,7 +57,7 @@ public class AuthStyleLocal implements AuthStyle {
 
             timestampLastRead = userFile.lastModified();
             userList.clear();
-            userList.addAll(users.getChildren("user", User.class));
+            userList.addAll(users.getChildren("user", StoredUser.class));
         }
         catch (Exception e) {
             throw new JSONException("Unable to access user file ({0})", e, userFile.getAbsolutePath());
@@ -76,7 +76,7 @@ public class AuthStyleLocal implements AuthStyle {
         }
 
         // handle real, encrypted case
-        User foundUser = searchUsersByAny(userNetId);
+        StoredUser foundUser = searchUsersByAny(userNetId);
         if (foundUser != null) {
             String storedHash = foundUser.getPassword();
 
@@ -97,16 +97,17 @@ public class AuthStyleLocal implements AuthStyle {
             throw new Exception("Program-Logic-Error: getOrCreateUser called with null searchEmail");
         }
 
-        User foundUser = searchUsersByAny(searchEmail);
+        StoredUser foundUser = searchUsersByAny(searchEmail);
         if (foundUser == null) {
             return null;
         }
 
         UserInformation uret = new UserInformation();
-        uret.key = foundUser.getKey();
+        uret.uniqueKey = foundUser.getKey();
         uret.alreadyInFile = true;
         uret.fullName = foundUser.getFullName();
-        uret.emailAddress = foundUser.getEmailMatchingSearchTerm(searchEmail);
+        uret.emailAddress = foundUser.getEmail();
+        uret.userId = uret.emailAddress;
         String password = foundUser.getPassword();
         uret.hasPassword = (password!=null && password.length()>0);
         return uret;
@@ -120,24 +121,25 @@ public class AuthStyleLocal implements AuthStyle {
         }
 
         uret = new UserInformation();
-        uret.key = User.generateKey();
+        uret.uniqueKey = StoredUser.generateKey();
+        uret.userId = searchEmail;
         uret.emailAddress = searchEmail;
         uret.fullName = "";
         uret.hasPassword = false;
         uret.alreadyInFile = false;
 
         //now actually create the user
-        User userRec = users.addChild("user", User.class);
-        userRec.setKey(uret.key);
-        userRec.addAddress(searchEmail);
+        StoredUser userRec = users.addChild("user", StoredUser.class);
+        userRec.setKey(uret.uniqueKey);
+        userRec.setEmail(searchEmail);
         saveUserFile();
 
-        System.out.println("SSOFI: CREATED NEW USER RECORD: name="+uret.fullName+", key="+uret.key+", email="+uret.emailAddress);
+        System.out.println("SSOFI: CREATED NEW USER RECORD: name="+uret.fullName+", userId="+uret.userId+", email="+uret.emailAddress);
         return uret;
     }
 
     public void setPassword(String userId, String newPwd) throws Exception {
-        User foundUser = searchUsersByAny(userId);
+        StoredUser foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
             throw new JSONException("Internal consistency error: unable to find user record for: {0}", userId);
         }
@@ -151,11 +153,11 @@ public class AuthStyleLocal implements AuthStyle {
         users.writeToFile(userFile);
         timestampLastRead = userFile.lastModified();
         userList.removeAllElements();
-        userList.addAll(users.getChildren("user", User.class));
+        userList.addAll(users.getChildren("user", StoredUser.class));
     }
 
     public void changePassword(String userId, String oldPwd, String newPwd) throws Exception {
-        User foundUser = searchUsersByAny(userId);
+        StoredUser foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
             throw new JSONException("Internal consistency error: unable to find user record for: {0}", userId);
         }
@@ -180,7 +182,7 @@ public class AuthStyleLocal implements AuthStyle {
     }
 
     public void changeFullName(String userId, String newName) throws Exception {
-        User foundUser = searchUsersByAny(userId);
+        StoredUser foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
             throw new JSONException("Internal consistency error: unable to find user record for: {0}", userId);
         }
@@ -193,24 +195,24 @@ public class AuthStyleLocal implements AuthStyle {
 
 
     public void updateUserInfo(UserInformation userInfo, String newPwd) throws Exception {
-        User userRec = searchUsersByAny(userInfo.key);
+        StoredUser userRec = searchUsersByAny(userInfo.userId);
         if (userRec == null) {
             if (userInfo.alreadyInFile) {
                 throw new Exception("Don't understand attempt to update a profile that does not exist.  "
                         +"Clear the 'alreadyInFile' flag to false when you want to create a new profile.");
             }
             //now actually create the user
-            userRec = users.addChild("user", User.class);
-            userRec.setKey(userInfo.key);
+            userRec = users.addChild("user", StoredUser.class);
+            userRec.setKey(userInfo.uniqueKey);
         }
         else if (!userInfo.alreadyInFile) {
             throw new JSONException(
-                    "Don't understand attempt to create a new profile when one with id={0} already exists.  Set the exist flag to update existing profile.", userInfo.key);
+                    "Don't understand attempt to create a new profile when one with id={0} already exists.  Set the exist flag to update existing profile.", userInfo.userId);
         }
         userRec.setFullName(userInfo.fullName);
         if (userInfo.emailAddress!=null) {
             stripEmailFromAllOtherUsers(userInfo);
-            userRec.addAddress(userInfo.emailAddress);
+            userRec.setEmail(userInfo.emailAddress);
         }
         if (newPwd != null) {
             userRec.setPassword(PasswordEncrypter.getSaltedHash(newPwd));
@@ -218,10 +220,10 @@ public class AuthStyleLocal implements AuthStyle {
         saveUserFile();
     }
 
-    private User searchUsersByAny(String userNetId) {
+    private StoredUser searchUsersByAny(String userNetId) {
 
-        for (User oneUser : userList) {
-            if (oneUser.hasEmail(userNetId)) {
+        for (StoredUser oneUser : userList) {
+            if (userNetId.equalsIgnoreCase(oneUser.getEmail())) {
                 return oneUser;
             }
             if (userNetId.equals(oneUser.getKey())) {
@@ -237,8 +239,8 @@ public class AuthStyleLocal implements AuthStyle {
      * User to guarantee that each user record has unique email addresses.
      */
     private void stripEmailFromAllOtherUsers(UserInformation userInfo) throws Exception {
-        for (User oneUser : userList) {
-            if (userInfo.key.equals(oneUser.getKey())) {
+        for (StoredUser oneUser : userList) {
+            if (userInfo.uniqueKey.equals(oneUser.getKey())) {
                 //skip the currently interesting user
                 continue;
             }
@@ -246,6 +248,7 @@ public class AuthStyleLocal implements AuthStyle {
         }
     }
 
+    /*
     public String searchForID(String searchTerm) throws Exception {
 
         // first check if there is a user with an exact match
@@ -264,5 +267,6 @@ public class AuthStyleLocal implements AuthStyle {
 
         return null;
     }
+    */
 
 }

@@ -30,7 +30,6 @@ public class RestHandler {
     AuthSession aSession;
 
     boolean isPost;
-    JSONObject postBody;
 
     public RestHandler(WebRequest _wr) throws Exception {
         wr = _wr;
@@ -64,13 +63,9 @@ public class RestHandler {
      *      rest/setpassword
      */
     public JSONObject handleRequest() throws Exception {
-        String sessionId = ssofi.getSSOFISessionId(wr);
-
         if (ssofi.sHand==null) {
             throw new Exception("RestHandler is not innitialized correction");
         }
-        aSession = ssofi.sHand.getAuthSession(wr, sessionId);
-
 
     	System.out.println("SSOFI REST: "+wr.requestURL);
         if (wr.pathFinished()) {
@@ -89,21 +84,17 @@ public class RestHandler {
             return new JSONObject().put("hello", "world");
         }
 
-        if (isPost) {
-            postBody = wr.getPostedObject();
-        }
-        else {
-            postBody = new JSONObject();
-        }
-
-
-        APIHelper theApi = new APIHelper(aSession, postBody, wr, ssofi);
         String firstToken = wr.consumePathToken();
+        //this does not need a session so do it before looking up the session
+        if ("verifyToken".equals(firstToken)) {
+            return ChallengeTokenManager.genVerifyObj(wr);
+        }
+
+        String sessionId = ssofi.getSSOFISessionId(wr);
+        aSession = ssofi.sHand.getAuthSession(wr, sessionId);
+        APIHelper theApi = new APIHelper(aSession, wr, ssofi);
         if ("generateToken".equals(firstToken)) {
             return theApi.generateToken();
-        }
-        if ("verifyToken".equals(firstToken)) {
-            return theApi.verifyToken();
         }
         if ("whoAmI".equals(firstToken)) {
             return theApi.whoAmI();

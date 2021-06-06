@@ -8,8 +8,6 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Properties;
-import java.util.Vector;
-
 import javax.servlet.http.HttpServletRequest;
 
 import com.purplehillsbooks.json.JSONArray;
@@ -62,14 +60,6 @@ public class AuthSession implements Serializable {
 
     Properties savedParams = new Properties();
 
-    /**
-     * this single hashtable holds many change/token pairs for all the users
-     * It should be cleaned out periodically so that it does not grow forever.
-     * It will be cleared on a reboot, hanging anyone attempting verification at that moment.
-     * Verification is usually short: only a few seconds, so unlikely to be a problem.
-     */
-    private static Vector<ChallengeTokenEntry> challengeTokenMap = new Vector<ChallengeTokenEntry>();
-
     public AuthSession(String newSession) {
         sessionId = newSession;
     }
@@ -82,7 +72,7 @@ public class AuthSession implements Serializable {
         return authIdentity != null && authIdentity.length()>0;
     }
 
-    public void login(UserInformation ui) {
+    public void setUserOnSession(UserInformation ui) {
         if (ui==null) {
             throw new RuntimeException("login needs a UserInformation object");
         }
@@ -123,6 +113,16 @@ public class AuthSession implements Serializable {
         if (authName==null || authName.length()==0) {
             authName = "User: "+authIdentity;
         }
+    }
+    public UserInformation getUser() {
+        if (!this.loggedIn()) {
+            return null;
+        }
+        UserInformation user = new UserInformation();
+        user.userId = authIdentity;
+        user.fullName = authName;
+        user.emailAddress = emailTested;
+        return user;
     }
 
 
@@ -169,8 +169,8 @@ public class AuthSession implements Serializable {
     }
     /**
      * Email confirmation gives you the ability to change the password, but
-     * after chaning the password once, the bit should be turned off to
-     * avoid other password changes.   The window for changin password only
+     * after changing the password once, the bit should be turned off to
+     * avoid other password changes.   The window for changing password only
      * stays open for one setting of the passwords.
      */
     public void clearConfirmBit() {
@@ -199,87 +199,28 @@ public class AuthSession implements Serializable {
     }
 
 
-    /**
-     * A token is generated and stored associated with the challenge.
-     * This should be stored for a limited amount of time.
-     * Actually, it will be stored as long as there is a session,
-     * which could be a few hours, and it might be lost if the server
-     * reboots.
-     *
-     * A challenge can only be used once to generate a token, and if used again
-     * it cancels the token.  However, we don't remember the challenge after that
-     * so if used again it is allowed.
-     *
-     * Also, picking up the verification also cancels the entry, so the same
-     * challenge might be used again after verification.
-     */
-    String generateToken(String challenge) throws Exception {
 
-        ChallengeTokenEntry cte = new ChallengeTokenEntry();
-        cte.challenge = challenge;
-        cte.authSession = this;
-        cte.token = IdGenerator.createMagicNumber();
-        cte.identity = authIdentity;
-        cte.createdTime = System.currentTimeMillis();
 
-        challengeTokenMap.add(cte);
 
-        return cte.token;
-    }
-
-    /**
-     * Verify that the token that matches the challenge has been given.
-     * The token is also invalidated, so that you can not verify a second time.
-     */
-    public static synchronized AuthSession verifyToken(String identity, String challenge, String token) {
-
-        Vector<ChallengeTokenEntry> stillRelevant = new Vector<ChallengeTokenEntry>();
-
-        long tenMinutesAgo = System.currentTimeMillis() - 600000;
-        AuthSession selected = null;
-        for (ChallengeTokenEntry cte : challengeTokenMap) {
-            if (cte.createdTime<tenMinutesAgo) {
-                //ignore anything more than 10 minutes old
-                continue;
-            }
-            if (challenge.equals(cte.challenge) && token.equals(cte.token)
-                    && identity.equals(cte.identity)) {
-                selected = cte.authSession;
-            }
-            else if (!challenge.equals(cte.challenge) && !token.equals(cte.token)) {
-                //do not retain any entry where the challenge OR token match
-                stillRelevant.add(cte);
-            }
+    public JSONObject userStatusAsJSON(SSOFI ssofi) throws Exception {
+        JSONArray errors = new JSONArray();
+        for (String msg : getErrorList()) {
+            errors.put(msg);
         }
 
-        //replace the global map with the new one that omits timed-out entries
-        //and also omits all token and challenge matches.
-        challengeTokenMap = stillRelevant;
-
-        return (selected);
-    }
-
-    private class ChallengeTokenEntry {
-        public String challenge;
-        public String token;
-        public String identity;
-        public AuthSession authSession;
-        long createdTime;
-    }
-
-
-    public JSONObject userAsJSON(SSOFI ssofi) throws Exception {
-        JSONObject jo = new JSONObject();
-        jo.put("ss",  sessionId);
-        if (this.loggedIn()) {
-            jo.put("userId",    authIdentity);
-            jo.put("userName",  authName);
-            jo.put("email",     emailTested);
-            jo.put("msg",       "Logged In");
-        }
-        else {
+        if (!loggedIn()) {
+            JSONObject jo = new JSONObject();
+            jo.put("ss",  sessionId);
             jo.put("msg", "Not Logged In");
+            jo.put("errors", errors);
+            jo.put("baseUrl", ssofi.baseURL);
+            return jo;
         }
+
+        UserInformation user = getUser();
+        JSONObject jo = user.getJSON();
+        jo.put("ss",     sessionId);
+        jo.put("msg",    "Logged In");
 
         jo.put("presumedId", this.presumedId);
         jo.put("isLoggedIn", this.loggedIn());
@@ -287,12 +228,6 @@ public class AuthSession implements Serializable {
         jo.put("isLocal", !ssofi.isLDAPMode);
         jo.put("emailConfirmed", this.emailConfirmed);
 
-        JSONArray errors = new JSONArray();
-        for (String msg : getErrorList()) {
-            errors.put(msg);
-        }
-        jo.put("errors", errors);
-        jo.put("baseUrl", ssofi.baseURL);
         jo.put("go",    return_to);
 
         return jo;

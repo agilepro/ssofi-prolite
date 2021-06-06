@@ -10,16 +10,17 @@ public class UserInformation {
 
     public boolean alreadyInFile = false;
     public boolean hasPassword = true;
-    public String key;
+    public String uniqueKey;
+    public String userId;
     public String fullName;
     public String emailAddress;
-    public String distinguishedName;
+
 
     public JSONObject getJSON() throws Exception {
         JSONObject jo = new JSONObject();
+        jo.put("userId",    userId);
         jo.put("userName",  fullName);
-        jo.put("userId",    emailAddress);
-        jo.put("userKey",   key);
+        jo.put("email",     emailAddress);
         return jo;
     }
 

@@ -30,16 +30,16 @@ public class AuthStyleLDAP implements AuthStyle {
     private String firstNameAttrName;
     private String lastNameAttrName;
     private String mailAttrName;
-    
+
     //set to true for testing to avoid actually requiring a password
     private boolean ignorePasswordMode = false;
-    
+
     //if set to true, this will refuse any IDs that have and at sign in them.
     private boolean rejectAtSign = false;
-    
+
     //can be used to force the user name to have a Active Directory domain
     private String addDomainName = null;
-    
+
     private Hashtable<String, String> htLDAP;
 
     /**
@@ -62,7 +62,7 @@ public class AuthStyleLDAP implements AuthStyle {
         firstNameAttrName = ssofi.getRequiredProperty("attr.name.firstName");
         lastNameAttrName = ssofi.getRequiredProperty("attr.name.lastName");
         mailAttrName = ssofi.getRequiredProperty("attr.name.mail");
-        
+
 
         // ignore passwords mode allows for testing sitautions
         // where people login and out of multiple users frequently
@@ -78,12 +78,13 @@ public class AuthStyleLDAP implements AuthStyle {
         htLDAP.put("java.naming.security.authentication", securityAuthentication);
         htLDAP.put("java.naming.security.principal", securityPrincipal);
         htLDAP.put("java.naming.security.credentials", securityCredentials);
-        
+
         //several web pages suggest that this setting is needed to avoid the
         //Unprocessed Continuation Reference problem
         htLDAP.put("java.naming.referral","follow");
     }
 
+    @Override
     public String getStyleIndicator() {
         return "ldap";
     }
@@ -94,22 +95,16 @@ public class AuthStyleLDAP implements AuthStyle {
 		}
     }
 
+    @Override
     public boolean authenticateUser(String userNetId, String userPwd) throws Exception {
         try {
             if (ignorePasswordMode) {
                 //don't even bother checking the directory at all
-                //this is for testing where you can use any passowrd
+                //this is for testing where you can use any password
                 return true;
             }
 
         	assertValidFormat(userNetId);
-
-
-            UserInformation userInfo = getExistingUserOrNull(userNetId);
-            if (userInfo==null) {
-                System.out.println("SSOFI: Login: user record for ("+userNetId+") does not exist in LDAP server");
-                return false;
-            }
 
             //because we are looking at active directory,
             //check if there is a domain name and add one if missing
@@ -117,7 +112,14 @@ public class AuthStyleLDAP implements AuthStyle {
                 userNetId = addDomainName + "\\" + userNetId;
             }
 
-           
+            UserInformation userInfo = getExistingUserOrNull(userNetId);
+            if (userInfo==null) {
+                System.out.println("SSOFI: Login: user record for ("+userNetId+") does not exist in LDAP server");
+                return false;
+            }
+
+
+
             Hashtable<String, String> envht = new Hashtable<String, String>();
 
             envht.put("java.naming.factory.initial",         factoryInitial);
@@ -127,10 +129,10 @@ public class AuthStyleLDAP implements AuthStyle {
             //several web pages suggest that this setting is needed to avoid the
             //Unprocessed Continuation Reference problem
             envht.put("java.naming.referral",                "follow");
-            envht.put("java.naming.security.principal",      userInfo.distinguishedName);
+            envht.put("java.naming.security.principal",      userInfo.userId);
             envht.put("java.naming.security.credentials",    userPwd);
 
-            System.out.println("SSOFI: Login: trying for user ("+userInfo.distinguishedName+")");
+            System.out.println("SSOFI: Login: trying for user ("+userInfo.userId+")");
 
             //apparently this throws an exception if login password not correct
             new InitialDirContext(envht);
@@ -146,10 +148,10 @@ public class AuthStyleLDAP implements AuthStyle {
         }
     }
 
-    
+    @Override
     public UserInformation getExistingUserOrNull(String userNetId) throws Exception {
         // return the last cached value if it is the same id
-        if (lastUserLookedUp != null && lastUserLookedUp.key.equals(userNetId)) {
+        if (lastUserLookedUp != null && lastUserLookedUp.userId.equals(userNetId)) {
             return lastUserLookedUp;
         }
 
@@ -175,24 +177,24 @@ public class AuthStyleLDAP implements AuthStyle {
 
             SearchResult searchResult = results.next();
             if (searchResult.getNameInNamespace() != null) {
-                uret.distinguishedName = searchResult.getNameInNamespace();
+                uret.userId = searchResult.getNameInNamespace();
             }
 
             Attributes attrs = searchResult.getAttributes();
 
-            uret.key =         checkAndGetAttr(attrs, uidAttrName, userNetId);
+            uret.userId =         checkAndGetAttr(attrs, uidAttrName, userNetId);
             String firstName = checkAndGetAttr(attrs, firstNameAttrName, userNetId);
             String lastName =  checkAndGetAttr(attrs, lastNameAttrName, userNetId);
             uret.fullName = firstName + " " + lastName;
             uret.emailAddress = checkAndGetAttr(attrs, mailAttrName, userNetId);
 
-            System.out.println("SSOFI: uid: "+userNetId+", full name: "+uret.fullName+", emailAddress: "+uret.emailAddress+", dn: "+uret.distinguishedName);
+            System.out.println("SSOFI: uid: "+userNetId+", full name: "+uret.fullName+", emailAddress: "+uret.emailAddress+", dn: "+uret.uniqueKey);
 
             //must compare case insensitive because user ids are case insensitive
             //and directory will return in a different way, sometimes upper sometimes lower
-            if (!userNetId.equalsIgnoreCase(uret.key)) {
+            if (!userNetId.equalsIgnoreCase(uret.userId)) {
                 throw new JSONException("Ooops, don't understand we were looking up user ({0}) but got user ({1})",
-                        userNetId, uret.key);
+                        userNetId, uret.userId);
             }
             uret.alreadyInFile = true;
             lastUserLookedUp = uret;
@@ -202,7 +204,7 @@ public class AuthStyleLDAP implements AuthStyle {
             if (ignorePasswordMode) {
                 //to get around LDAP problems within a multinational Japanese company, when we get an exception
                 //just continue and allow a user with that id and use the same for name.
-                uret.key = userNetId;
+                uret.userId = userNetId;
                 uret.fullName = userNetId;
                 return uret;
             }
@@ -211,7 +213,8 @@ public class AuthStyleLDAP implements AuthStyle {
     }
 
 
-    
+
+    @Override
     public UserInformation getOrCreateUser(String userNetId) throws Exception {
         UserInformation userInfo = getExistingUserOrNull(userNetId);
         if (userInfo!=null) {
@@ -219,7 +222,7 @@ public class AuthStyleLDAP implements AuthStyle {
         }
         return new UserInformation();
     }
-    
+
     /**
      * Look up and get the value of an attribute.
      * If no attribute, then make a report into the log listing all the available attributes
@@ -244,6 +247,7 @@ public class AuthStyleLDAP implements AuthStyle {
         return "(Unknown "+key+")";
     }
 
+    @Override
     public void setPassword(String userId, String newPwd) throws Exception {
 
         DirContext ctx = new InitialDirContext(htLDAP);
@@ -251,30 +255,35 @@ public class AuthStyleLDAP implements AuthStyle {
         mods[0] = new ModificationItem(DirContext.REPLACE_ATTRIBUTE, new BasicAttribute(
                 "userpassword", newPwd));
         UserInformation userInfo = getOrCreateUser(userId);
-        ctx.modifyAttributes(userInfo.distinguishedName, mods);
+        ctx.modifyAttributes(userInfo.uniqueKey, mods);
         ctx.close();
     }
 
+    @Override
     public void changePassword(String userId, String oldPwd, String newPwd) throws Exception {
         setPassword(userId, newPwd);
 
     }
 
+    @Override
     public void changeFullName(String userId, String newName) throws Exception {
         //can't change name
         throw new Exception("LDAP version can not change the full name");
     }
 
 
+    @Override
     public void updateUserInfo(UserInformation user, String password) throws Exception {
         throw new Exception("This is an LDAP based provider, and you can not update the LDAP server using this mechanism.  LDAP is read only");
     }
 
+    /*
     public String searchForID(String searchTerm) throws Exception {
         // this is a very lame search ... it only does an EXACT match
         // must consider a better way to search for users in the future
         UserInformation ui = getOrCreateUser(searchTerm);
         return ui.key;
     }
+    */
 
 }

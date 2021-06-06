@@ -65,7 +65,7 @@ public class SSOFI {
             findInitializeDataFolder();
 
             //get the server id from the MAC address of this machine
-            User.guidTail = generateServerId();
+            StoredUser.guidTail = generateServerId();
 
             // disable Java certificate validation in the SSL level
             // necessary so that bytes can be read reliably over SSL

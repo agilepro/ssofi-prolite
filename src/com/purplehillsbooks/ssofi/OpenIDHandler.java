@@ -9,7 +9,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.Writer;
-import java.net.URLEncoder;
 import java.util.List;
 
 import javax.servlet.ServletConfig;
@@ -17,7 +16,6 @@ import javax.servlet.ServletContext;
 
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
-import com.purplehillsbooks.json.JSONTokener;
 import com.purplehillsbooks.streams.HTMLWriter;
 import com.purplehillsbooks.temps.TemplateStreamer;
 import com.purplehillsbooks.temps.TemplateTokenRetriever;
@@ -36,6 +34,32 @@ import com.purplehillsbooks.temps.TemplateTokenRetriever;
  * be null if nobody is logged in. The logged in user is based on a cookie that
  * is set upon successful login. Note that the openId protocol does not require
  * that the display user be the user logging in.
+ *
+ * rootURL is usually https://server:port/ssofi
+ *
+ * ADDRESSES SUPPORTED:
+ *
+ * --this is the default
+ * {rootURL}/xxx?ss={session}&openid.mode=displayForm
+ *
+ * --this is the modern API used by SLAP.js
+ * {rootURL}/xxx?ss={session}&openid.mode=apiWho
+ * {rootURL}/xxx?ss={session}&openid.mode=apiGenerate
+ * {rootURL}/xxx?ss={session}&openid.mode=apiVerify
+ * {rootURL}/xxx?ss={session}&openid.mode=apiLogout
+ * {rootURL}/xxx?ss={session}&openid.mode=quick
+ * {rootURL}/xxx?ss={session}&openid.mode=apiSendInvite
+ *
+ * {rootURL}/xxx?ss={session}&openid.mode=logout
+ * {rootURL}/xxx?ss={session}&openid.mode=loginAction
+ * {rootURL}/xxx?ss={session}&openid.mode=logoutAction
+ * {rootURL}/xxx?ss={session}&openid.mode=passwordForm
+ * {rootURL}/xxx?ss={session}&openid.mode=passwordAction
+ * {rootURL}/xxx?ss={session}&openid.mode=requestForm
+ * {rootURL}/xxx?ss={session}&openid.mode=registerNewAction
+ * {rootURL}/xxx?ss={session}&openid.mode=confirmForm
+ * {rootURL}/xxx?ss={session}&openid.mode=validateKeyAction
+ *
  */
 public class OpenIDHandler implements TemplateTokenRetriever {
 
@@ -58,11 +82,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     // might have been passed as part of the protocol to
     // request authentication, or it might come from the
     // cookies that remember who you logged in as last time.
-    private AddressParser requestedIdentity = null;
-
-    //if the operation was a POST, and if the contents is JSON
-    //then the resulting parsed value will appear here
-    private JSONObject postedObject = null;
+    //private AddressParser requestedIdentity = null;
 
     /**
      * Handler static variables must be set up before handling any request. This
@@ -90,6 +110,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void doGet() {
         String sessionId = "?";
         try {
+            String mode = wr.defParam("openid.mode", "displayForm");
+
+            //the verify can be done without any session and by anyone, so
+            //to simplify the handling of the session, identify this kind
+            //of request here, and handle quickly, before looking for session.
+            if ("apiVerify".equals(mode)) {
+                ChallengeTokenManager.handleVerifyRequest(wr);
+                return;
+            }
+
             sessionId = ssofi.getSSOFISessionId(wr);
 
             if (ssofi.sHand==null) {
@@ -98,7 +128,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             aSession = ssofi.sHand.getAuthSession(wr, sessionId);
 
-            doGetWithSession();
+            doGetWithSession(mode);
             // doGetWithSession never throws an exception, which means that this
             // is being saved whether an error occurs or not! That is the right
             // thing because the session object holds the error message for the
@@ -125,19 +155,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         try {
             isPost = true;
             String postType = wr.request.getHeader("Content-Type");
-            if (postType!=null && (postType.toLowerCase().startsWith("text/plain")
-                    || postType.toLowerCase().startsWith("application/json"))) {
+            if (postType==null
+                    || !postType.toLowerCase().startsWith("text/plain")
+                    || !postType.toLowerCase().startsWith("application/json")) {
                 //now get the posted value
-                //believe it ot not, some idiot decided that application/json was a security
+                //believe it or not, some idiot decided that application/json was a security
                 //hazard, and browsers WILL NOT post content cross domains, even if you
                 //say it is OK, in application/json.  But they allow text/plain.
                 //So call it EITHER text/plain or application/json and then parse it.
-                InputStream is = wr.request.getInputStream();
-                JSONTokener jt = new JSONTokener(is);
-                postedObject = new JSONObject(jt);
-                is.close();
-            }
-            else if (!postType.contains("urlencoded")) {
                 throw new Exception("SSOFI: doPost but can not understand Content-Type: "+postType);
             }
 
@@ -149,17 +174,19 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             JSONException.traceException(e, "POST");
         }
     }
-
+/*
     private void assertPost(String mode) throws Exception {
         if (!isPost) {
             throw new JSONException("The request for mode ({0}) must be a POST request.", mode);
         }
     }
+    */
     private void assertGet(String mode) throws Exception {
         if (isPost) {
             throw new JSONException("The request for mode ({0}) must be a GET request.", mode);
         }
     }
+    /*
     private void assertLoggedIn(String mode) throws Exception {
         if (!aSession.loggedIn()) {
             throw new JSONException("Please login to access {0}.  Maybe your session expired, or logged out in a different browser tab?", mode);
@@ -170,6 +197,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             throw new JSONException("You appear logged in, but {0} is used only when not logged in.  Did you log in recently in another browser tab?", mode);
         }
     }
+    */
 
 
     private void reDirectHome() throws Exception {
@@ -185,11 +213,13 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
     }
 
+
+
     /**
      * Handles the request with the assumption that the session object has been
      * fetched, and will be saved afterwards.
      */
-    public void doGetWithSession() {
+    public void doGetWithSession(String mode) {
         String requestURL = "";
 
         // check and see if this is the very first access in an attempt stream
@@ -216,23 +246,11 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-
-            // set up loggedUserId and loggedOpenId
-            //determineLoggedUser();
-
-            //addressedUserId = requestURL.substring(ssofi.rootURL.length());
-
-            //if (addressedUserId.length() > 0) {
-            //    displayInfo = ssofi.authStyle.getOrCreateUser(addressedUserId);
-            //}
-
-            String mode = defParam("openid.mode", "displayForm");
             String loginIndicator = " (anonymous) ";
             if (aSession.loggedIn()) {
                 loginIndicator =    " (logged in) ";
             }
             System.out.println("SSOFI REQUEST: "+aSession.sessionId+" - "+mode+loginIndicator+wr.request.getQueryString());
-            APIHelper theApi = new APIHelper(aSession, postedObject, wr, ssofi);
 
             if (mode.startsWith("api")) {
                 // Want to avoid saving a session as a result of every API call.  The API call will never
@@ -242,6 +260,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 // new session is started every access, causing a flood of sessions, each potentially
                 // lasting for a long time (a month) so persisting these sessions would be a waste.
                 saveSession = false;
+                APIHelper theApi = new APIHelper(aSession, wr, ssofi);
                 destroySession = theApi.handleAPICommand(mode);
                 if (destroySession) {
                     //clear out any existing session id
@@ -275,6 +294,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     reDirectHome();
                 }
             }
+            /*
             else if ("logout".equals(mode)) {
                 aSession.return_to = reqParam("go");
                 destroySession = true;
@@ -359,6 +379,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 }
                 reDirectHome();
             }
+            */
             else {
                 if (!"loginView".equals(mode) && !"displayForm".equals(mode)) {
                     throw new JSONException("Don't understand the mode ({0})", mode);
@@ -367,6 +388,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 // login or display or display any kind of error
                 displayRootPage();
             }
+
         }
         catch (Exception eorig) {
             try {
@@ -381,12 +403,14 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
 
+    /*
     private void setRequestedId() throws Exception  {
         String email = wr.request.getParameter("email");
         if (email!=null) {
             requestedIdentity = new AddressParser(ssofi.baseURL + email);
         }
     }
+    */
 
     /**
      * get the value directly from the current request object
@@ -412,15 +436,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * is the place where you can enter a user id
      */
     private void displayRootPage() throws Exception {
-        //if (!aSession.loggedIn()) {
-            streamTemplate("justAnonymous");
-        //}
-        //else {
-       //     streamTemplate("justLoggedIn");
-       // }
-
+        streamTemplate("justAnonymous");
     }
 
+    /*
     private void displayErrorPage(Exception e) {
         wr.response.setContentType("text/html;charset=UTF-8");
 
@@ -452,6 +471,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             aSession.clearError();
         }
     }
+    */
 
 
     /**
@@ -459,6 +479,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * this will either create or update the user profile. It will save
      * regardless of whether there was a profile there before.
      */
+    /*
     private void modeCreateNewUserAction() throws Exception {
         try {
             String option = reqParam("option");
@@ -505,9 +526,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return;
         }
     }
+    */
 
 
-
+/*
     private void modePasswordAction() throws Exception {
         // this takes the action of logging the user in, and returning if all OK
         // first see if they pressed the Cancel key
@@ -547,9 +569,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         reDirectHome();
     }
+*/
 
-
-
+/*
     private void modeLoginAction(APIHelper theApi) throws Exception {
 
         JSONObject simPostedObj = new JSONObject();
@@ -569,7 +591,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
         reDirectHome();
     }
-
+    */
+/*
     private void modeRegisterNewAction(APIHelper theApi) throws Exception {
         //take the URL parameter and simulate a post object
         String registerEmail = reqParam("registerEmail").trim();
@@ -579,6 +602,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         theApi.sendPasswordReset();
         wr.response.sendRedirect("?openid.mode=confirmForm&email="+URLEncoder.encode(registerEmail, "UTF-8"));
     }
+    */
 
 
     /*
@@ -596,6 +620,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * logged in.  If you are already logged it just redirects
      * immediately to the remote destination.
      */
+    /*
     private void modeValidateKeyAction() throws Exception {
         String registerEmail = reqParam("registerEmail");
         String confirmKey = reqParam("registeredEmailKey").trim();
@@ -679,19 +704,21 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             reDirectHome();
         }
     }
+        */
 
 
 
     /**
      * Set to null to clear the login
      */
+    /*
     private void setLogin(String loggedId) throws Exception {
         if (loggedId == null) {
             aSession.logout();
         }
         else {
 			UserInformation ui = ssofi.authStyle.getOrCreateUser(loggedId);
-			aSession.login(ui);
+			aSession.setUserOnSession(ui);
 
             // This is a 'low security' cookie.  It keeps the Id of the usr
             // that successfully logged in so that next time we can
@@ -700,8 +727,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             wr.setCookie("SSOFIUser", loggedId);
         }
     }
+    */
 
-
+/*
     public String getBestGuessId() {
         if (aSession.loggedIn()) {
             return aSession.loggedUserId();
@@ -716,7 +744,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             return wr.findCookieValue("SSOFIUser");
         }
     }
-
+*/
 
     public void serveUpAsset(String resourceName) throws Exception {
         ServletContext sc = wr.session.getServletContext();
@@ -793,7 +821,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void writeTokenValue(Writer out, String tokenName) throws Exception {
         try {
             if ("userInfo".equals(tokenName)) {
-                JSONObject jo = aSession.userAsJSON(ssofi);
+                JSONObject jo = aSession.userStatusAsJSON(ssofi);
                 jo.write(out,2,12);
             }
             else if ("thisPage".equals(tokenName)) {
@@ -903,14 +931,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
     @Override
     public void debugDump(Writer arg0) throws Exception {
-        // TODO Auto-generated method stub
         // NOTE: should switch to using ChunkTemplates ....
         throw new Exception("debugDump not implemented");
     }
 
     @Override
     public boolean ifValue(String arg0) throws Exception {
-        // TODO Auto-generated method stub
         // NOTE: should switch to using ChunkTemplates ....
         throw new Exception("ifValue not implemented");
     }
@@ -918,14 +944,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     @Override
     public void writeTokenDate(Writer arg0, String arg1, String arg2)
             throws Exception {
-        // TODO Auto-generated method stub
         // NOTE: should switch to using ChunkTemplates ....
         throw new Exception("writeTokenDate not implemented");
     }
 
     @Override
     public void writeTokenValueRaw(Writer arg0, String arg1) throws Exception {
-        // TODO Auto-generated method stub
         // NOTE: should switch to using ChunkTemplates ....
         throw new Exception("writeTokenValueRaw not implemented");
     }
