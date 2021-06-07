@@ -117,6 +117,10 @@ public class AuthStyleLDAP implements AuthStyle {
                 System.out.println("SSOFI: Login: user record for ("+userNetId+") does not exist in LDAP server");
                 return false;
             }
+            if (userInfo.uniqueKey==null) {
+                System.out.println("SSOFI: Login: user record for ("+userNetId+") malformed and does not have a DistinguishedName");
+                return false;
+            }
 
 
 
@@ -129,7 +133,7 @@ public class AuthStyleLDAP implements AuthStyle {
             //several web pages suggest that this setting is needed to avoid the
             //Unprocessed Continuation Reference problem
             envht.put("java.naming.referral",                "follow");
-            envht.put("java.naming.security.principal",      userInfo.userId);
+            envht.put("java.naming.security.principal",      userInfo.uniqueKey);
             envht.put("java.naming.security.credentials",    userPwd);
 
             System.out.println("SSOFI: Login: trying for user ("+userInfo.userId+")");
@@ -177,7 +181,7 @@ public class AuthStyleLDAP implements AuthStyle {
 
             SearchResult searchResult = results.next();
             if (searchResult.getNameInNamespace() != null) {
-                uret.userId = searchResult.getNameInNamespace();
+                uret.uniqueKey = searchResult.getNameInNamespace();
             }
 
             Attributes attrs = searchResult.getAttributes();
@@ -198,6 +202,7 @@ public class AuthStyleLDAP implements AuthStyle {
             }
             uret.alreadyInFile = true;
             lastUserLookedUp = uret;
+            System.out.println("SSOFI: RETURNING USER: "+uret.getJSON().toString(2));
             return uret;
         }
         catch (Exception e) {
@@ -229,8 +234,11 @@ public class AuthStyleLDAP implements AuthStyle {
      * since every LDAP server might be set up differently.
      */
     private String checkAndGetAttr(Attributes attrs, String key, String userId) throws Exception {
+
         if (attrs.get(key) != null) {
-            return (String) attrs.get(key).get();
+            String value = (String) attrs.get(key).get();
+            System.out.println("SSOFI: found value ("+key+"="+value+") for "+userId);
+            return value;
         }
 
         System.out.println("SSOFI: LDAP directory did not return attribute for ("+key+") for user "+userId);

@@ -42,9 +42,7 @@ public class AuthSession implements Serializable {
     // null when use not logged in.
     private String authIdentity;
 
-    // this is the verified identity that the user is logged in as
-    // null when use not logged in.
-    private String authName;
+    private UserInformation authUser = null;
 
     // FOLLOWING TWO FIELDS FOR REGISTRATION OR RESETTING PASSWORD
     // This is the email address supplied by the user and tested
@@ -76,11 +74,12 @@ public class AuthSession implements Serializable {
         if (ui==null) {
             throw new RuntimeException("login needs a UserInformation object");
         }
-        authIdentity = ui.emailAddress;
-        authName = ui.fullName;
+        authUser = ui;
+        authIdentity = ui.userId;
+        emailTested = ui.emailAddress;
 
         //This is the official log saying that someone logged in to the system
-        System.out.println("SSOFI LOGIN: userId="+authIdentity+", name="+authName+", at "+currentTimeString());
+        System.out.println("SSOFI LOGIN: userId="+authIdentity+", name="+authUser.fullName+", at "+currentTimeString());
 
         //we also wipe out any record of a previously sought after id, now that
         //you are logged in we don't need to remember who we thought you might be.
@@ -89,13 +88,13 @@ public class AuthSession implements Serializable {
 
     public void logout() {
         //This is the official log saying that someone logged out of the system
-        System.out.println("SSOFI LOGOUT: userId="+authIdentity+", name="+authName+", at "+currentTimeString());
+        System.out.println("SSOFI LOGOUT: userId="+authIdentity+", name="+authUser.fullName+", at "+currentTimeString());
 
         authIdentity = null;
-        authName = null;
         emailTested = null;
         return_to = null;
         errMsg.clear();
+        authUser = null;
     }
 
     public String loggedUserId() {
@@ -103,26 +102,25 @@ public class AuthSession implements Serializable {
     }
 
     public String loggedUserName() {
-        return authName;
+        if (authUser==null) {
+            return null;
+        }
+        return authUser.fullName;
     }
     public void updateFullName(String newName) {
-        authName = newName;
+        if (authUser==null) {
+            throw new RuntimeException("Can not set a new name on a user when nobody is logged in");
+        }
+        authUser.fullName = newName;
     }
 
     public void assureName() {
-        if (authName==null || authName.length()==0) {
-            authName = "User: "+authIdentity;
+        if (authUser.fullName==null || authUser.fullName.length()==0) {
+            authUser.fullName = "User: "+authIdentity;
         }
     }
     public UserInformation getUser() {
-        if (!this.loggedIn()) {
-            return null;
-        }
-        UserInformation user = new UserInformation();
-        user.userId = authIdentity;
-        user.fullName = authName;
-        user.emailAddress = emailTested;
-        return user;
+        return authUser;
     }
 
 
@@ -161,8 +159,8 @@ public class AuthSession implements Serializable {
         emailConfirmed = false;
     }
     public void emailConfirmed(UserInformation ui) {
+        authUser = ui;
         authIdentity = ui.emailAddress;
-        authName     = ui.fullName;
         emailTested  = ui.emailAddress;
         emailConfirmed = true;
     }
@@ -244,10 +242,20 @@ public class AuthSession implements Serializable {
         }
 
         JSONObject persistable = new JSONObject();
-        persistable.put("authIdentity", authIdentity);
-        persistable.put("authName",     authName);
+        if (authUser!=null) {
+            //new way to store user info
+            persistable = authUser.getJSON();
+
+            //this is redundant.  I want to change to the fields above, however
+            //I don't want to break any existing sessions.   Starting June 2021
+            //we write the above AND below.  After July 2021 was can assume ALL
+            //sessions have the above fields, and we can remove the below, as well
+            //as change the fields that are read.
+            persistable.put("authIdentity", authUser.userId);
+            persistable.put("authName",     authUser.fullName);
+            persistable.put("regEmail",     authUser.emailAddress);
+        }
         persistable.put("presumedId",   presumedId);
-        persistable.put("regEmail",     emailTested);
         persistable.put("errMsg",       eList);
         persistable.put("return_to",    return_to);
         persistable.put("emailConfirmed", emailConfirmed);
@@ -261,10 +269,17 @@ public class AuthSession implements Serializable {
         AuthSession as = new AuthSession(sessionId);
         if (sessionFile.exists()) {
             JSONObject restored = JSONObject.readFromFile(sessionFile);
-            as.authIdentity = restored.optString("authIdentity");
-            as.authName = restored.optString("authName");
+            String uid = restored.optString("authIdentity");
+            as.authIdentity = uid;
+            if (uid!=null && uid.length()>0) {
+                as.authUser = new UserInformation();
+                as.authUser.userId = uid;
+                as.authUser.fullName = restored.optString("authName");
+                as.authUser.emailAddress = restored.optString("regEmail");
+                as.emailTested = restored.optString("regEmail");
+            }
+
             as.presumedId = restored.optString("presumedId");
-            as.emailTested = restored.optString("regEmail");
             as.return_to = restored.optString("return_to");
             as.errMsg    = restored.getJSONArray("errMsg").getStringList();
             as.emailConfirmed = restored.optBoolean("emailConfirmed");

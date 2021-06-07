@@ -21,6 +21,7 @@ public class UserInformation {
         jo.put("userId",    userId);
         jo.put("userName",  fullName);
         jo.put("email",     emailAddress);
+        jo.put("source",    "UI:"+userId);
         return jo;
     }
 

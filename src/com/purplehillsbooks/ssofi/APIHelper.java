@@ -80,7 +80,9 @@ public class APIHelper {
 	}
 
 	public JSONObject whoAmI() throws Exception {
-        return aSession.userStatusAsJSON(ssofi);
+        JSONObject rrr = aSession.userStatusAsJSON(ssofi);
+        System.out.println("SSOFI: REST/WHO: "+rrr.toString(2));
+        return rrr;
     }
 
 
