@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.Properties;
+import java.util.Set;
 
 import javax.servlet.ServletContext;
 
@@ -25,6 +26,7 @@ public class SSOFI {
     private Properties config;
     private File dataFolder;
     private File configFile;
+    private TextEncrypter textEncrypter;
 
     public boolean initialized = false;
     public Exception initFailure = null;
@@ -48,7 +50,6 @@ public class SSOFI {
 
     public static boolean USE_SESSION_COOKIE = true;
 
-
     public static synchronized SSOFI getSSOFI(ServletContext sc) {
         SSOFI ssofi = (SSOFI) sc.getAttribute("SSOFI");
         if (ssofi == null) {
@@ -61,7 +62,11 @@ public class SSOFI {
     private SSOFI(ServletContext _sc) {
         try {
             sc = _sc;
-
+            
+            //initialize a text encrypter which later is used for
+            //decrypting values from property files
+            textEncrypter = new TextEncrypter("DESede");
+            
             findInitializeDataFolder();
 
             //get the server id from the MAC address of this machine
@@ -129,6 +134,7 @@ public class SSOFI {
                 Properties propEmail = new Properties();
                 propEmail.load(fisEmail);
                 fisEmail.close();
+                propEmail = decryptProperties(propEmail);
                 emailHandler = new EmailHandler(this, propEmail);
             }
             catch (Exception e) {
@@ -193,7 +199,37 @@ public class SSOFI {
         }
         System.out.println("SSOFI: data folder: "+dataFolder);
     }
-
+    
+    private String decryptText(String text) {
+        if(text == null || text.trim().isEmpty()) {
+            return text;
+        }
+        String myText = text.trim();
+        try {
+            return textEncrypter.decrypt(myText);
+        } catch(Exception e) {
+            return myText;
+        }
+    }
+    
+    //This method loops through all the properties and try to decrypt the value for each property
+    //If the value is not an encrypted value, it simply returns the value as is
+    //Although this approach may incur a small performance cost, it is more flexible than
+    //hard code the names of those properties that need to be decrypted
+    //This means it can handle future changes like adding a new encrypted property
+    //Since this method is only called at the SSOFI initialization phase, the performance is not an issue
+    private Properties decryptProperties(Properties props) {
+        if(props == null) {
+            return props;
+        }
+        Properties newProps = new Properties();
+        Set<String> keys = props.stringPropertyNames();
+        for(String key : keys) {
+            newProps.setProperty(key, decryptText(props.getProperty(key)));
+        }
+        return newProps;
+    }
+    
     private void readConfigFile() throws Exception {
         configFile = new File(dataFolder, "config.txt");
         System.out.println("SSOFI: config file: "+configFile);
@@ -211,6 +247,7 @@ public class SSOFI {
             Properties tprop = new Properties();
             tprop.load(fis);
             fis.close();
+            tprop = decryptProperties(tprop);
             config = tprop;
         }
         catch(Exception e) {
