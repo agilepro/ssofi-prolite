@@ -286,13 +286,4 @@ public class AuthStyleLDAP implements AuthStyle {
         throw new Exception("This is an LDAP based provider, and you can not update the LDAP server using this mechanism.  LDAP is read only");
     }
 
-    /*
-    public String searchForID(String searchTerm) throws Exception {
-        // this is a very lame search ... it only does an EXACT match
-        // must consider a better way to search for users in the future
-        UserInformation ui = getOrCreateUser(searchTerm);
-        return ui.key;
-    }
-    */
-
 }

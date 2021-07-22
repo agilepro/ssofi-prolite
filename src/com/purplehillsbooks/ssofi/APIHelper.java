@@ -168,7 +168,6 @@ public class APIHelper {
         }
 
         // Security check
-        aSession.saveParameterList(wr.request);
         Properties secProp = new Properties();
         secProp.put(SecurityHandler.REGIS_REQ_REMOTE_IP, wr.request.getRemoteAddr());
         secProp.put(SecurityHandler.REGIS_REQ_EMAILID, registerEmail);
@@ -184,7 +183,6 @@ public class APIHelper {
 
         aSession.presumedId = registerEmail;
 
-        aSession.savedParams.clear();
         String magicNumber = ssofi.tokenManager.generateEmailToken(registerEmail);
         aSession.startRegistration(registerEmail);
         ssofi.emailHandler.sendVerifyEmail(registerEmail, magicNumber, aSession.return_to, ssofi.baseURL);
@@ -224,9 +222,7 @@ public class APIHelper {
         	sendJSON(200, responseObj);
         }
         catch(Exception e) {
-            JSONException.traceException(e, "Unable to handle SSOFI request for "+mode);
-            JSONObject jo = JSONException.convertToJSON(e, "Unable to handle SSOFI request for "+mode);
-            aSession.saveError(e);
+            JSONObject jo = aSession.saveError(e, "Unable to handle SSOFI request for "+mode);
             ssofi.sHand.saveAuthSession(aSession);
             sendJSON(400, jo);
         }

@@ -58,9 +58,4 @@ public interface AuthStyle {
      * style. This method returns the 'xxx' in that case.
      */
     public String getStyleIndicator();
-
-    /**
-     * Search for closest ID
-     */
-    //public String searchForID(String searchTerm) throws Exception;
 }

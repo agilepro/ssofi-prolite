@@ -127,6 +127,10 @@
             }, stdErrorFunction)
         }
         $scope.saveName = function(successFunction) {
+            if (!$scope.info.userName) {
+                alert("Enter a full name for the user.");
+                return;
+            }
             $scope.status = null;
             var url = "rest/setName?ss="+$scope.info.ss; 
             var data = {fullName: $scope.info.userName};
@@ -145,8 +149,16 @@
         }
         $scope.savePassword = function( successFunction ) {
             $scope.status = null;
+            if (!$scope.pass1) {
+                alert("Enter the first value for the password.");
+                return;
+            }
+            if (!$scope.pass2) {
+                alert("Enter a second value for the password.");
+                return;
+            }
             if ($scope.pass1 != $scope.pass2) {
-                alert("Please enter the same value for passwords.");
+                alert("Please enter the same value for the two passwords.");
                 return;
             }
             var url = "rest/setPassword?ss="+$scope.info.ss; 

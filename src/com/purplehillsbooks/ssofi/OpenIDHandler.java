@@ -186,18 +186,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             throw new JSONException("The request for mode ({0}) must be a GET request.", mode);
         }
     }
-    /*
-    private void assertLoggedIn(String mode) throws Exception {
-        if (!aSession.loggedIn()) {
-            throw new JSONException("Please login to access {0}.  Maybe your session expired, or logged out in a different browser tab?", mode);
-        }
-    }
-    private void assertAnonymous(String mode) throws Exception {
-        if (aSession.loggedIn()) {
-            throw new JSONException("You appear logged in, but {0} is used only when not logged in.  Did you log in recently in another browser tab?", mode);
-        }
-    }
-    */
 
 
     private void reDirectHome() throws Exception {
@@ -241,6 +229,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 throw new JSONException("sorry, request must start with ({0}):  ({1})", ssofi.rootURL, requestURL);
             }
 
+            //this is rootURL + "$/" and it is for the bits and pieces for the page
             if (requestURL.startsWith(ssofi.knownAssetPath)) {
                 serveUpAsset(requestURL.substring(ssofi.knownAssetPath.length()));
                 return;
@@ -300,87 +289,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //this will log you in if all is proper
                 modeValidateKeyAction();
             }
-            /*
-            else if ("logout".equals(mode)) {
-                aSession.return_to = reqParam("go");
-                destroySession = true;
-                //set the cookie, but otherwise ignore the new sessionid
-                SSOFI.createSSOFISessionId(wr);
-                setLogin(null);
-                redirectBackToCaller();
-            }
-            else if ("loginAction".equals(mode)) {
-                assertPost(mode);
-                //if already logged in, then this is a NOOP
-                modeLoginAction(theApi);
-            }
-            else if ("logoutAction".equals(mode)) {
-                destroySession = true;
-                //set the cookie, but otherwise ignore the new sessionid
-                SSOFI.createSSOFISessionId(wr);
-                setLogin(null);
-                redirectBackToCaller();
-            }
-            else if ("passwordForm".equals(mode)) {
-                assertGet(mode);
-                assertLoggedIn(mode);
-                // this is the mode that displays prompt to change password
-                streamTemplate("passwordForm");
-            }
-            else if ("passwordAction".equals(mode)) {
-                assertPost(mode);
-                assertLoggedIn(mode);
-                modePasswordAction();
-            }
-            else if ("requestForm".equals(mode)) {
-                assertGet(mode);
-                assertAnonymous(mode);
-                // this is the mode that displays prompt to register new user
-                // which then posts to 'registerNewAction'
-                setRequestedId();
-                streamTemplate("requestForm");
-            }
-            else if ("registerNewAction".equals(mode)) {
-                assertPost(mode);
-                assertAnonymous(mode);
-                modeRegisterNewAction(theApi);
-            }
-            else if ("confirmForm".equals(mode)) {
-                assertGet(mode);
-                assertAnonymous(mode);
-                // displays prompt to enter verification key
-                // which then posts to 'validateKeyAction'
-                setRequestedId();
-                streamTemplate("confirmForm");
-            }
-            else if ("registerForm".equals(mode)) {
-                assertGet(mode);
-                assertLoggedIn(mode);
-               // this is the mode that displays prompt for user details
-                // which then posts to 'createNewUserAction'
-                streamTemplate("registerForm");
-            }
-            else if ("createNewUserAction".equals(mode)) {
-                assertPost(mode);
-                assertLoggedIn(mode);
-                modeCreateNewUserAction();
-            }
-            else if ("login".equals(mode)) {
-                // this takes the action of logging the user in, and returning
-                // if all OK
-                String enteredId = reqParam("entered-id");
-                aSession.presumedId = enteredId;
-                String password = reqParam("password");
-                boolean flag = ssofi.authStyle.authenticateUser(enteredId, password);
-                if (flag) {
-                    setLogin(enteredId);
-                }
-                else {
-                    aSession.saveError(new JSONException("Unable to log you in to user id ({0}) with that password.  Please try again or reset your password.", enteredId));
-                }
-                reDirectHome();
-            }
-            */
             else {
                 if (!"loginView".equals(mode) && !"displayForm".equals(mode)) {
                     throw new JSONException("Don't understand the mode ({0})", mode);
@@ -392,9 +300,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         }
         catch (Exception eorig) {
-        	JSONException.traceException(eorig, "EXCEPTION during doGetWithSession");
-            try {
-                aSession.saveError(eorig);
+        	try {
+                aSession.saveError(eorig, "EXCEPTION during doGetWithSession");
                 ssofi.sHand.saveAuthSession(aSession);
                 reDirectHome();
             }
@@ -627,19 +534,16 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         String registerEmail = reqParam("registerEmail");
         String confirmKey = reqParam("registeredEmailKey").trim();
         aSession.return_to = defParam("app", aSession.return_to);
+        
+        //anyone clicking on a validate link should forget about any possible earlier 
+        //email confirmations they had.   Those no longer matter.
+        aSession.clearConfirmBit();
 
-        UserInformation ui = ssofi.authStyle.getOrCreateUser(registerEmail);
-        boolean valid = ssofi.tokenManager.validateAndConsume(registerEmail, confirmKey);
-        if (valid) {
-            //this token is still valid link, so mark the session that email confirmed
-            //so that they can change their password if desired.
-            aSession.emailConfirmed(ui);
-        }
-
+        //if failing to use a link, fail BEFORE testing the link
         if (aSession.loggedIn()) {
-            System.out.println("SSOFI: Logged-in user attempt to use email link: "+wr.request.getQueryString());
-
             if (!aSession.loggedUserId().equalsIgnoreCase(registerEmail))  {
+	            System.out.println("SSOFI: Logged-in user attempt to use email link: "+wr.request.getQueryString());
+	
                 //if logged in as a different user: what to do?
                 //Should this log-out and log-in again?  Invalidate the token?
                 //Just redirect back to app would be convenient.
@@ -651,12 +555,26 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //you might just want to follow the link, and forget about the invite aspect.
                 //The solution to this is to put both an invite and a non-invite link
                 //in the email so that the user has the choice.
-                throw new Exception("Sorry there is a problem.  You are logged in as "
-                        +aSession.loggedUserId()
-                        +" but you have clicked on a link validating the email for "
-                        +registerEmail
-                        +".  If you wish to validate that other email address, please logout before clicking on the link again.");
+                throw new JSONException("Sorry there is a problem.  You are logged in as "
+                        +"{0} but you have clicked on a link validating the email for "
+                        +"{1}.  If you wish to validate that other email address, please logout before clicking on the link again.",
+                        aSession.loggedUserId(), registerEmail);
             }
+        }        
+
+        aSession.presumedId = registerEmail;
+        UserInformation ui = ssofi.authStyle.getOrCreateUser(registerEmail);
+        boolean valid = ssofi.tokenManager.validateAndConsume(registerEmail, confirmKey);
+        if (valid) {
+            //this token is still valid link, so mark the session that email confirmed
+            //so that they can change their password if desired.
+            aSession.emailConfirmed(ui);
+        }
+
+        //if logged in AND same email address, then it does not matter if link is valid
+        //we allow chaning password anyway.
+        if (aSession.loggedIn()) {
+            System.out.println("SSOFI: Logged-in user attempt to use email link: "+wr.request.getQueryString());
 
             // User has already logged in, as the correct person,
             // check to see if the user is expecting to set password
@@ -681,7 +599,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             aSession.presumedId = registerEmail;
             reDirectHome();
             return;
-
         }
 
 
@@ -694,7 +611,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
 
         if (valid) {
-
+        	//now the user is officially logged in
             setLogin(registerEmail);
 
             //always go to register because they might have chose this link in order to reset their password
@@ -726,22 +643,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
     
 
-/*
-    public String getBestGuessId() {
-        if (aSession.loggedIn()) {
-            return aSession.loggedUserId();
-        }
-        else if (requestedIdentity!=null) {
-            return requestedIdentity.getUserId();
-        }
-        else if (aSession.presumedId!=null && aSession.presumedId.length()>0){
-            return aSession.presumedId;
-        }
-        else {
-            return wr.findCookieValue("SSOFIUser");
-        }
-    }
-*/
 
     public void serveUpAsset(String resourceName) throws Exception {
         ServletContext sc = wr.session.getServletContext();

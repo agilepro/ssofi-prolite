@@ -248,25 +248,4 @@ public class AuthStyleLocal implements AuthStyle {
         }
     }
 
-    /*
-    public String searchForID(String searchTerm) throws Exception {
-
-        // first check if there is a user with an exact match
-        for (User oneUser : userList) {
-            if (oneUser.hasEmail(searchTerm)) {
-                return searchTerm;
-            }
-        }
-
-        // did not find an exact match, then search for partial strings
-        for (User oneUser : userList) {
-            if (oneUser.hasEmailMatchingSearchTerm(searchTerm)) {
-                return oneUser.getEmailMatchingSearchTerm(searchTerm);
-            }
-        }
-
-        return null;
-    }
-    */
-
 }

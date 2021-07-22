@@ -5,12 +5,9 @@ import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Enumeration;
 import java.util.List;
-import java.util.Properties;
-import javax.servlet.http.HttpServletRequest;
-
 import com.purplehillsbooks.json.JSONArray;
+import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
 
 /**
@@ -55,8 +52,6 @@ public class AuthSession implements Serializable {
     // address allows a user to be created on demand, and also
     // allows saving of the password without the old password.
     private boolean emailConfirmed = false;
-
-    Properties savedParams = new Properties();
 
     public AuthSession(String newSession) {
         sessionId = newSession;
@@ -124,30 +119,40 @@ public class AuthSession implements Serializable {
     }
 
 
-    public void saveError(Exception e) {
-        ArrayList<String> newErrs = new ArrayList<String>();
-        Throwable runner = e;
-        while (runner!=null) {
-            String msg = runner.toString();
-            //strip off the class name if there is one
-            int pos = msg.indexOf(":");
-            if (pos>0 && (msg.startsWith("java.") || msg.startsWith("com.") || msg.startsWith("org."))) {
-                msg = msg.substring(pos+2);
-            }
-            pos = msg.indexOf("nested exception");
-            if (pos>3) {
-                //some exceptions unnecessarily duplicate the cause exception,
-                //since we don't need it, strip it out.
-                msg = msg.substring(0, pos-3);
-            }
-            newErrs.add(msg);
-            runner = runner.getCause();
-        }
-        errMsg = newErrs;
+    public JSONObject saveError(Exception e, String explain) {
+    	JSONObject jo = null;
+    	try {
+	        jo = JSONException.convertToJSON(e, explain);
+	    	
+	    	JSONException.traceConvertedException(System.out, jo);
+	        ArrayList<String> newErrs = new ArrayList<String>();
+	        Throwable runner = e;
+	        while (runner!=null) {
+	            String msg = runner.toString();
+	            //strip off the class name if there is one
+	            int pos = msg.indexOf(":");
+	            if (pos>0 && (msg.startsWith("java.") || msg.startsWith("com.") || msg.startsWith("org."))) {
+	                msg = msg.substring(pos+2);
+	            }
+	            pos = msg.indexOf("nested exception");
+	            if (pos>3) {
+	                //some exceptions unnecessarily duplicate the cause exception,
+	                //since we don't need it, strip it out.
+	                msg = msg.substring(0, pos-3);
+	            }
+	            newErrs.add(msg);
+	            runner = runner.getCause();
+	        }
+	        errMsg = newErrs;
+	        return jo;
+    	}
+    	catch (Exception e2) {
+    		JSONException.traceException(e2, "EXCEPTION while handling EXCEPTION . . . give up");
+    	}
+    	return jo;
     }
     public void clearError() {
         errMsg = new ArrayList<String>();
-        savedParams.clear();
     }
     public List<String> getErrorList() {
         return errMsg;
@@ -182,54 +187,34 @@ public class AuthSession implements Serializable {
         return emailConfirmed;
     }
 
-    public void saveParameterList(HttpServletRequest request) {
-        Enumeration<String> penum = request.getParameterNames();
-        while (penum.hasMoreElements()) {
-            String name = penum.nextElement();
-            String val = request.getParameter(name);
-            savedParams.put(name, val);
-        }
-    }
-
-    public String getSavedParameter(String name) {
-        return savedParams.getProperty(name);
-    }
-
-
-
-
 
     public JSONObject userStatusAsJSON(SSOFI ssofi) throws Exception {
+        JSONObject jo = new JSONObject();
+        jo.put("ss",  sessionId);
+        jo.put("isLoggedIn", this.loggedIn());
+        jo.put("isLDAP",   ssofi.isLDAPMode);
+        jo.put("isLocal", !ssofi.isLDAPMode);
+        
         JSONArray errors = new JSONArray();
         for (String msg : getErrorList()) {
             errors.put(msg);
         }
+        jo.put("errors", errors);
 
         if (!loggedIn()) {
-            JSONObject jo = new JSONObject();
-            jo.put("ss",  sessionId);
             jo.put("msg", "Not Logged In");
-            jo.put("errors", errors);
             jo.put("baseUrl", ssofi.baseURL);
-            jo.put("isLoggedIn", this.loggedIn());
-            jo.put("isLDAP",   ssofi.isLDAPMode);
-            jo.put("isLocal", !ssofi.isLDAPMode);
+            jo.put("presumedId", this.presumedId);
             return jo;
         }
 
-        UserInformation user = getUser();
-        JSONObject jo = user.getJSON();
-        jo.put("ss",     sessionId);
         jo.put("msg",    "Logged In");
         jo.put("go",     return_to);
-
         jo.put("presumedId", this.presumedId);
-        jo.put("isLoggedIn", this.loggedIn());
-        jo.put("isLDAP",   ssofi.isLDAPMode);
-        jo.put("isLocal", !ssofi.isLDAPMode);
+        jo.put("userId", this.authIdentity);
+        jo.put("user", authUser.getJSON());
+        
         jo.put("emailConfirmed", this.emailConfirmed);
-
-        jo.put("go",    return_to);
 
         return jo;
     }

@@ -45,43 +45,6 @@ public class StoredUser extends Mel {
         setScalar("address", val);
     }
 
-    /*
-    public boolean hasEmailMatchingSearchTerm(String searchTerm) {
-        for (String addr : getVector("address")) {
-            if (addr.indexOf(searchTerm) >= 0) {
-                return true;
-            }
-        }
-        return false;
-    }
-    public String getEmailMatchingSearchTerm(String searchTerm) {
-        for (String addr : getVector("address")) {
-            // for surity changing email id and searchterm both to lower case
-            if (addr.toLowerCase().indexOf(searchTerm.toLowerCase()) >= 0) {
-                return addr;
-            }
-
-        }
-        return null;
-    }
-    */
-
-    /*
-    public Vector<String> getAddresses() {
-        return getVector("address");
-    }
-    */
-/*
-    public void addAddress(String newAddress) throws Exception {
-        for (Mel oneAddr : getChildren("address")) {
-            if (newAddress.equalsIgnoreCase(oneAddr.getDataValue())) {
-            	//already there, so don't add anything
-                return;
-            }
-        }
-        addVectorValue("address", newAddress);
-    }
-*/
     public void removeAddress(String oldAddress) throws Exception {
     	if (oldAddress==null) {
     		throw new Exception("Program Logic Error: null address passed to removeAddress");
