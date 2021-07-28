@@ -1,0 +1,215 @@
+
+<!--
+ * Copyright 2013 Keith D Swenson
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Contributors Include: Shamim Quader, Sameer Pradhan, Kumar Raja, Jim Farris,
+ * Sandia Yang, CY Chen, Rajiv Onat, Neal Wang, Dennis Tam, Shikha Srivastava,
+ * Anamika Chaudhari, Ajay Kakkar, Rajeev Rastogi
+ * -->
+<html>
+<head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" type="text/css" href="$/global.css" />
+<style>
+.configDividerRow {
+    background-color:lightskyblue;
+    height: 50px;
+    vertical-align: bottom;
+    font-size:150%;
+    font-family: sans-serif;
+    border-radius: 10px;
+}
+
+.configTable tr {
+    border: 3px solid red;
+}
+
+.configTable tr td {
+    vertical-align: top;
+    padding:10px;
+    margin:3px;
+}
+.configFirstColumn {
+    #background-color:lightskyblue;
+    border: 3px solid lightskyblue;
+    font-family: monospace;
+    border-radius: 10px;
+}
+.configFirstColumn:hover {
+    background-color:lightskyblue;
+}
+</style>
+</head>
+<body>
+<h1>LDAP / OpenID Provider</h1>
+<p>Server is not properly configured for use and can not start up.</p>
+<p>Error received was:</p>
+<table class="configTable">
+    <col width="200">
+    <col width="400">
+    <tr bgcolor="#FFEEEE">
+        <td colspan="2">
+        <hr />
+        <b>{{serverError}}</b>
+        <hr />
+        </td>
+    </tr>
+    <tr>
+        <td colspan="2"><br />
+        Make sure that WEB-INF/config.txt has the following settings in it:</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">baseURL</td>
+        <td>set this to the URL base address of the application as seen 
+        by the actual browser.  This is needed to redirect the browser 
+        to pages in the application. Include a slash on the end.
+        Something like:<br />
+        &nbsp; &nbsp;<tt>https://my.host.com/</tt></td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">rootURL</td>
+        <td>set this to the URL base address of the application as seen 
+        on this actual server.  This setting is necessary to recognize 
+        OpenID values when you have  a proxy configured to rewrite URL addresses.
+        Include a slash on the end.
+        If you don't have a proxy then this will be the same as baseURL.<br />
+        &nbsp; &nbsp;<tt>https://my.host.com/</tt></td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">sessionDurationSeconds</td>
+        <td>Number of seconds before the user has to log in again. 
+            This sets the duration of the cookie sent to the browser in seconds.  
+            2500000 is about 1 month. 86000 is about 1 day.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">captchaPrivateKey<br/>captchaPublicKey</td>
+        <td>In order to prevent automated registration of user accounts, you 
+        can invoke a Captcha verfication graphic by setting these to 
+        values you get by signing up for an account at
+        <a href="http://www.captcha.net/">http://www.captcha.net/</a>.  
+        Leave these values blank and no graphic will be shown.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">authStyle</td>
+        <td>Set this to "LDAP" to authenticate to a dorectory server.<br/>
+            Set to "local" to store passwords unique for this server.</td>
+    </tr>
+    <tr><td style="height:30px;"></td></tr>
+    <tr>
+        <td colspan="2" class="configDividerRow">
+            For 'authStyle=LDAP' style Provider
+        </td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">java.naming.factory.initial</td>
+        <td>set this to the java class that will handle LDAP connection<br />
+        &nbsp; &nbsp;<tt>com.sun.jndi.ldap.LdapCtxFactory</tt></td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">java.naming.provider.url</td>
+        <td>set this to the URL for the LDAP connection<br />
+        &nbsp; &nbsp;<tt>ldap://infrassotest.fjcs.net:389</tt></td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">java.naming.security.authentication</td>
+        <td>set this to the authentication style<br />
+        &nbsp; &nbsp;<tt>simple</tt></td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">java.naming.security.principal</td>
+        <td>set this to the user name that will be used to access LDAP
+        directory<br />
+        &nbsp; &nbsp;<tt>cn=orcladmin</tt></td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">java.naming.security.credentials</td>
+        <td>set this to the password that will be used to access LDAP
+        directory<br />
+        &nbsp; &nbsp;<tt>********</tt></td>
+    </tr>
+    <tr><td style="height:30px;"></td></tr>
+    <tr>
+        <td colspan="2" class="configDividerRow">
+            For 'authStyle=local' style Provider
+        </td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">sessionFolder</td>
+        <td>set this to a file folder that the server can read and write, in which to store a file for each user's session information.<br />
+        &nbsp; &nbsp;<tt>c:/SSOFI_Sessions</tt></td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn"></td>
+        <td>For "local" style provider, you need a file named <b>users.xml</b>
+        in the WEB-INF folder. It should have something like this structure in
+        it:<br />
+        <pre>
+&lt;users&gt;
+  &lt;user&gt;
+    &lt;address&gt;keith.swenson@us.example.com&lt;/address&gt;
+    &lt;password&gt;pwd&lt;/password&gt;
+    &lt;admin&gt;true&lt;/admin&gt;
+  &lt;/user&gt;
+  &lt;user&gt;
+    &lt;address&gt;shamim.quader@us.example.com&lt;/address&gt;
+    &lt;password&gt;pwd&lt;/password&gt;
+    &lt;admin&gt;false&lt;/admin&gt;
+  &lt;/user&gt;
+&lt;/users&gt;
+      </pre></td>
+    </tr>
+    <tr><td style="height:30px;"></td></tr>
+    <tr>
+        <td colspan="2" class="configDividerRow">
+            EmailNotification.properties file settings
+        </td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.transport.protocol</td>
+        <td>Must be set to 'SMTP'</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.smtp.host</td>
+        <td>Set this to the name or IP address of the mail server.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.smtp.port</td>
+        <td>Set this to the port used by the mail server to receive email posts.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.smtp.auth</td>
+        <td>Set to 'true' is user authentication is needed in order to send email
+            with that mail server, 'false' if no authentication is needed.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.smtp.user</td>
+        <td>User name needed to authenticate to the mail server.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.smtp.password</td>
+        <td>Password needed to authenticate to the mail server.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.smtp.from</td>
+        <td>This is the default from address.</td>
+    </tr>
+    <tr>
+        <td class="configFirstColumn">mail.subject</td>
+        <td>This is the default subject text used when no other is prescribed by the situation.</td>
+    </tr>
+
+</table>
+</body>
+</html>

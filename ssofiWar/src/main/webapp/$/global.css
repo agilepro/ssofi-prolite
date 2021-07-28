@@ -1,0 +1,268 @@
+/**************************************
+  Basic CSS
+**************************************/
+
+body {
+    font-family:Arial,Helvetica,Verdana,sans-serif;
+    font-size:14px;
+    color:#666666;
+    margin:0px;
+    padding:0px;
+}
+a:link, a:visited, a:active{
+  text-decoration:none;
+  color:#5377AC;
+}
+a:hover{
+  text-decoration:underline;
+}
+#bodyWrapper {
+    background-color:#fff;
+	background-image:url('headerBgFujitsuID.gif');
+	background-repeat:repeat-x;
+}
+.contentArea{
+    vertical-align:top;
+    padding-left:135px;
+	padding-top:20px;
+    width:716px;
+    padding-bottom:100px;
+}
+.mainContentArea{
+    padding-top:30px;
+}
+.mainLoginArea h4{
+	color:#484848;
+}
+.contentArea p{
+    line-height:20px;
+    margin:0px;
+    padding-bottom:10px;
+}
+.contentArea p b{
+    color:#000000;
+}
+.contentArea p input, .contentArea p img, .contentArea div input, .contentArea div img{
+    vertical-align:middle;
+}
+.labelArea{
+    padding-top:30px;
+    padding-bottom:40px;
+    color:#000000;
+    font-size:12px;
+    font-weight:bold;
+}
+.inputGeneral{
+    height:20px;
+    line-height:20px;
+    padding-left:5px;
+    width:150px;
+    font-size:12px;
+    color:#666;
+}
+.inputEmail{
+    height:20px;
+    line-height:20px;
+    padding-left:5px;
+    width:300px;
+    font-size:12px;
+    color:#666;
+}
+.inputGeneralBig{
+    height:20px;
+    line-height:20px;
+    padding-left:5px;
+    width:405px;
+    font-size:12px;
+    color:#666;
+}
+.btnBlue{
+    background-color:#58a0cc;
+    height:26px;
+    line-height:26px;
+    padding:0px 15px 0px 15px;
+    *padding:0px 10px 0px 10px;
+    border:0px solid #58a0cc;
+    color:#ffffff;
+    cursor:pointer
+}
+.btnGreen{
+    background-color:#81c72e;
+    height:26px;
+    line-height:26px;
+    padding:0px 15px 0px 15px;
+    *padding:0px 10px 0px 10px;
+    border:0px solid #81c72e;
+    color:#ffffff;
+    cursor:pointer
+}
+.btnGray{
+    background-color:#575757;
+    height:26px;
+    line-height:26px;
+    padding:0px 15px 0px 15px;
+    *padding:0px 10px 0px 10px;
+    border:0px solid #81c72e;
+    color:#ffffff;
+    cursor:pointer
+}
+.signInImage{
+    float:left;
+    background-image:url(signInImg.gif);
+    width:81px;
+    height:25px;
+}
+.changePasswordImage{
+    float:left;
+    background-image:url(changePasswordImg.gif);
+    width:174px;
+    height:25px;
+}
+.resetPasswordImage{
+    float:left;
+    background-image:url(resetPasswordImg.gif);
+    width:159px;
+    height:25px;
+}
+.registerImg{
+    float:left;
+    background-image:url(registerImg.gif);
+    width:160px;
+    height:25px;
+}
+.mainLoginArea{
+    clear:both;
+    border-top:1px solid #dbdbdc;
+    border-bottom:1px solid #dbdbdc;
+    padding-top:15px;
+    padding-bottom:15px;
+}
+span.greenAlert{
+    color:#4d8a00;
+    font-weight:bold;
+}
+span.redText{
+    color:#c40000;
+    font-weight:bold;
+}
+span.blueText{
+    color:#013A5F;
+    font-weight:bold;
+}
+.loginLabelArea{
+    padding-top:20px;
+    padding-bottom:20px;
+    color:#000000;
+    font-size:12px;
+    font-weight:bold;
+    line-height: 20px;
+}
+.noteSection{
+	color:#575757;
+	font-size:13px;
+    margin-top:10px;
+    margin-bottom:10px;
+}
+.noteSection b{
+	color:#484848;
+}
+td.noteSection{
+    padding:10px 30px;
+    font-style:italic;
+    font-size:11px;
+}
+.buttonArea{
+    text-align:right;
+    padding-top:10px;
+}
+.sideLinks{
+    float:right;
+    height:25px;
+    font-size:12px;
+    line-height:25px;
+}
+.infoArea h1{
+    font-size:24px;
+    color:#000000;
+    margin:0px;
+    margin-bottom:10px;
+}
+.infoArea table{
+    border-collapse:collapse;
+    line-height:24px;
+}
+.infoArea table tr th{
+    text-align:left;
+}
+
+.inputGeneral300{
+    height:20px;
+    line-height:20px;
+    padding-left:5px;
+    width:274px;
+    font-size:12px;
+    color:#666;
+    }
+.loginSpacing{
+    padding:10px 70px;
+    line-height:20px;
+    color: #000;
+}
+.errorArea{
+    color:#F00;
+}
+.statusStyle{
+    color:#0AF;text-align:center
+}
+.spaceyTable tr td {
+    padding:5px;
+}
+
+#loginWrapper {
+    margin:60px auto 0px auto;
+    max-width:548px;
+    position:relative;
+    font-size:16px;
+    background-color:#fff;
+    border:1px solid #8c8c8c;
+}
+.loginWrapper {
+    margin:60px auto 0px auto;
+    max-width:548px;
+    position:relative;
+    font-size:16px;
+    background-color:#fff;
+    border:1px solid #8c8c8c;
+}
+.loginArea {
+    margin:60px auto 0px auto;
+    max-width:548px;
+    position:relative;
+    font-size:16px;
+    background-color:#fff;
+    border:1px solid #FFFFFF;
+}
+.loginWrapperContentArea{
+    padding:20px 20px;
+}
+.loginWrapperContentArea h3{
+    font-size:14px;
+    padding:0px;
+    margin:0px;
+    padding-bottom:10px;
+}
+.loginWrapperContentArea h3 span{
+    color:#000;
+    font-weight:bold;
+}
+.userNameClass {
+    font-size:26px;
+    font-style:bold;
+}
+#userDisplayWrapper {
+    margin:60px auto 0px auto;
+    width:548px;
+    position:relative;
+    background-color:#fff;
+    border:1px solid #8c8c8c;
+}

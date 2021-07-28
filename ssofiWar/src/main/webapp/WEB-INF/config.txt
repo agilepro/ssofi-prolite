@@ -1,0 +1,47 @@
+# CONFIGURATION FOR SSOFI OopenID Provider
+#
+# You must pick an auth style from the following two:
+# authStyle=local
+#    this is for email based authentication where users specify a password
+# authStyle=ldap
+#    this is for authenticating against an LDAP server
+authStyle=local
+
+#The baseURL is the address of the server FROM THE USER perspective
+#If you are working through a firewall or reverse proxy which change the
+#address, then set here the EXTERNAL view of that address.
+#Include slash on end.
+baseURL=http://kswenson4-t902.corp.fc.local:8080/ssofi2
+
+#set rootURL to the URL base address of the application as seen on this 
+#actual server. This setting is necessary to recognize OpenID values 
+#when you have a proxy configured to rewrite URL addresses. 
+#If you don't have a proxy then this will be the same as baseURL.
+#Include slash on end.
+rootURL=http://kswenson4-t902.corp.fc.local:8080/ssofi2/
+
+#if sessionFolder is set, then the session information will be stored
+#in files in that folder.  For cluster, set this folder to be a shared drive
+#sessionFolder=/opt/SSOFI_Sessions
+
+#Set the logged in session duration.  This sets the duration of the cookie
+#sent to the browser in seconds.  2500000 is about 1 month.
+sessionDurationSeconds=2500000
+
+//Captcha
+captchaPublicKey=
+captchaPrivateKey=
+
+
+#the next 10 settings are for LDAP usage
+java.naming.factory.initial=com.sun.jndi.ldap.LdapCtxFactory
+java.naming.provider.url=ldap\://domain.example.com\:389
+java.naming.security.authentication=simple
+java.naming.security.principal=domain\\user
+java.naming.security.credentials=********
+queryBase=DC\=domain,DC\=example,DC\=com
+attr.name.uid=username
+attr.name.firstName=givenName
+attr.name.lastName=lastName
+attr.name.mail=mail
+
