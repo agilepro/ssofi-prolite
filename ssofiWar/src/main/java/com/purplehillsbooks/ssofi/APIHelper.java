@@ -240,6 +240,9 @@ public class APIHelper {
         if ("apiWho".equals(mode)) {
             return whoAmI();
         }
+        if ("apiSendInvite".equals(mode)) {
+            return sendInvite();
+        }
         //do not need to be logged in to verify a token, to log out or to ask whether logged in
         //do need to be logged in to send an email or to generate a token
         if (!aSession.loggedIn()) {
@@ -247,20 +250,30 @@ public class APIHelper {
             return aSession.userStatusAsJSON(ssofi);
         }
         System.out.println("SSOFI LAuth request: "+mode+" - "+aSession.loggedUserId());
-        if ("apiSendInvite".equals(mode)) {
-            return sendInvite();
-        }
         if ("apiGenerate".equals(mode)) {
             return generateToken();
         }
         throw new JSONException("Authentication API can not understand mode {0}", mode);
     }
 
+    static long nextInviteTime = System.currentTimeMillis();
     public JSONObject sendInvite() throws Exception {
         aSession.clearError();
         if (postedObject==null) {
             throw new Exception("Received a request for sending email without any posted JSON information");
         }
+        
+        //because this API is allowed without being authenticated, throttle to make sure it can not
+        //be used to send thousands of emails.
+        long waitTime = nextInviteTime-System.currentTimeMillis();
+        if (waitTime>0) {
+            nextInviteTime = nextInviteTime + 10000;   //10 seconds minimum between calls
+            Thread.sleep(waitTime);
+        }
+        else {
+            nextInviteTime = System.currentTimeMillis() + 10000;   //10 seconds minimum between calls
+        }
+        
         //remember, this user ID is NOT the logged in user who is requesting the invitation
         //but instead the user who is being sent the invitation.
         String inviteeId = postedObject.getString("userId");

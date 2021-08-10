@@ -30,11 +30,6 @@ dependencies {
     compileOnly 'org.apache.tomcat:tomcat-catalina:8.5.46'
 }
 
-application {
-    // Define the main class for the application.
-    mainClass = 'com.purplehillsbooks.ssofi.App'
-}
-
 tasks.named('test') {
     // Use JUnit Platform for unit tests.
     useJUnitPlatform()
