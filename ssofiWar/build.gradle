@@ -25,7 +25,7 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter:5.7.1'
 
     //use the local libraries
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'thirdparty', include: ['*.jar'])
     
     compileOnly 'org.apache.tomcat:tomcat-catalina:8.5.46'
 }
