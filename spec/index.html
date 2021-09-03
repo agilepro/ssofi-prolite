@@ -1,0 +1,122 @@
+<html>
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"><body><style>h1 {    color:brown;}</style>
+<div class="well"><h1>SSOFI Release / Download</h1>
+
+<p>SSOFI is an Identity Server.   Users log into this one server, and then any number of applications can then confirm that user's identity in a safe, secure way without requiring the user to enter a password in any more than one place.</p>
+
+
+<ul>
+<li><b><a href="ssofi-3.0.war">ssofi-3.0.war</a></b> - Sept 3, 2021 - Build 2021-0903-1308</li>
+</ul>
+
+<h3>Release Notes</h3>
+
+<ul>
+  <li>2021 Sept - Changed to build with Gradle and 
+      now includes a version number into the file name:  ssofi-3.0.war</li>
+  <li>2021 July - Improved error reporting when failing to set password.</li>
+  <li>2021 June - Reworked LDAP support to allow user their user-id that is not formed like a email address, and to return that user-id as the authenticated id</li>
+  <li>2020 October - Rewrote UI as a single page app that uses REST web services to login/out and update data.</li>
+  <li>2020 October - Eliminated use of cookie to save SSOFI sessions.  Session ID is returned in the results
+      and must be passed in as a URL parameter on the REST API requests.</li>
+</ul>
+
+
+
+<p>Find more information at: <a href="https://github.com/agilepro/ssofi-prolite">SSOFI on GitHub</a>
+
+<h3>Installing SSOFI Provider</h3>
+
+<p>You install the ssofi.war like any normal WAR file into a TomCat or JBoss.  
+There is only one setting you need to think about before, and that is where you 
+want all of the data files to be.  The data files consist of:<p>
+
+<ul>
+<li><b>config.txt</b> - a configuration file holding all the settings</li>
+<li><b>EmailNotification.properties</b> - a config file with settings to access the SMTP server</li>
+<li><b>users.xml</b> - the file holding all the user profiles, usually about ~500 bytes per user</li>
+<li><b>EmailTokens.json</b> - a small file that records tokens while email confirmation is pursued</li>
+<li><b>XXXX-XX-XXX-XX-XXX.sess</b> - a file for each active session for logged in users, ~500 bytes each</li>
+<li><b>blockedIp.txt</b> - to prevent denial of service attacks, a list of IP addresses that have made too many requests too quickly.</li>
+</ul>
+
+<p>The location of all these files in in a single configuration file called <b>WEB-INF/config.properties</b> found in the WAR file.  The default location is <b>/opt/SSOFI_Sessions</b>.  If you are OK with that default location there is nothing you have to change in the WAR file.  Just install into TomCat or JBoss.  Or you can change this setting in the WAR file to put the data in a different location.</p>
+
+<h3>CONFIGURATION FOR SSOFI Provider</h3>
+
+
+<p>All of these are found in the <b>/opt/SSOFI_Sessions/config.txt</b>.  This location is the default location for the file, but if you placed the data folder in a different location, look for the file there.</p>
+
+<p>You must pick an <b>authStyle</b> from the following two:</p>
+<ul>
+<li><b>authStyle=local</b> -
+    this is for email based authentication where users specify a password</li>
+<li><b>authStyle=ldap</b> -
+    this is for authenticating against an LDAP server</li>
+</ul>
+
+<p>You must configure the <b>baseURL</b> is the address of the server FROM THE USER perspective.
+If you are working through a firewall or reverse proxy which change the
+address, then set here the EXTERNAL view of that address.
+Include slash on end.</p>
+
+<p>
+Set the <b>rootURL</b> to the URL base address of the application as seen on this 
+actual server. This setting is necessary to recognize OpenID values 
+when you have a proxy configured to rewrite URL addresses. 
+If you don't have a proxy then this will be the same as baseURL.
+Include slash on end.</p>
+
+<p>if <b>sessionFolder</b> is set, then the session information will be stored
+in files in that folder.  For cluster, set this folder to be a shared drive
+This is an optional setting.</p>
+
+<p>Set the logged in session duration with <b>sessionDurationSeconds</b>.  
+This sets the duration of the cookie sent to the browser in seconds.  2500000 is about 1 month.
+If you use this value, users of a particular browser on a particular computer who do not log out,
+will enjoy automatic continuous access to the authenticated applications, 
+and they will be forced to log in at least once every month.</p>
+
+<p>On public facing hosts use a Captcha to avoid a lot of robot manipulation.
+<b>captchaPublicKey</b> & <b>captchaPrivateKey</b>.  </p>
+
+
+<h1>These 10 settings are for LDAP usage</h1>
+<pre>
+java.naming.factory.initial=com.sun.jndi.ldap.LdapCtxFactory
+java.naming.provider.url=ldap\://dxpdemo239\:10389
+java.naming.security.authentication=simple
+java.naming.security.principal=uid=admin,dc=example,dc=com
+java.naming.security.credentials=******
+queryBase=dc\=example,dc\=com
+attr.name.uid=uid
+attr.name.firstName=givenName
+attr.name.lastName=sn
+attr.name.mail=mail
+</pre>
+
+<h3>java.naming.factory.initial</h3>
+<p>The only known value for this is com.sun.jndi.ldap.LdapCtxFactory</p>
+<h3>java.naming.provider.url</h3>
+<p>This is the LDAP url to use to specify the host and the port that the directory server is running on.</p>
+<h3>java.naming.security.authentication</h3>
+<p>Different versions of the LDAP support different types of authentication. The LDAP v2 defines three types of authentication: anonymous, simple (clear-text password), and Kerberos v4.  The LDAP v3 supports anonymous, simple, and SASL authentication. SASL is the Simple Authentication and Security Layer (RFC 2222). It specifies a challenge-response protocol in which data is exchanged between the client and the server for the purposes of authentication and establishment of a security layer on which to carry out subsequent communication. By using SASL, the LDAP can support any type of authentication agreed upon by the LDAP client and server.</p>
+<p>For SSOFI the only viable mode is 'simple' where a username and password are passed to the directory server for authenticating.</p>
+<h3>java.naming.security.principal</h3>
+<p>Specifies the name of the user/program doing the authentication and depends on the value of the java.naming.security.authentication property.  This is the userid that SSOFI will use to access the server, and so a user must be specified here that has access to the users who are to be authenticated.</p>
+<h3>java.naming.security.credentials</h3>
+<p>Specify the password for the user in java.naming.security.principal</p>
+<h3>queryBase</h3>
+<p>When searching for users, it will search from this point through all the subtree below this point.  Use this to limite the scope of the search to relevant users.</p>
+<h3>attr.name.uid</h3>
+<p>Specify the field to use for the user id.  This is normally 'uid' but it can be other things depending uponn the way the directory server was configured.</p>
+<h3>attr.name.firstName</h3>
+<p>Specify the field that holds the first name, or given name, for the person.  Usually the X.500 standard 'givenName'</p>
+<h3>attr.name.lastName</h3>
+<p>Specify the field that holds the surname for the person.  Usually the X.500 standard 'sn'</p>
+<h3>attr.name.mail</h3>
+<p>Specify the field that holds the email address of the person.  Usually the X.500 standard 'mail'</p>
+
+</div>
+</body>
+</html>
