@@ -262,6 +262,7 @@
                 <div class="loginSpacing">
                     <strong>Password:</strong>
                     <input type="password" class="form-control"
+                           ng-keyup="$event.keyCode == 13 && login()"
                            placeholder="Enter your password" ng-model="password"/>
                 </div>
 
