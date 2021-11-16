@@ -137,7 +137,8 @@ public class EmailHandler {
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
 
-            System.out.println("SSOFI: Email verification request sent to: "+emailId);
+            System.out.println("SSOFI: Email verification request sent to: "+emailId
+                     +" at "+AuthSession.currentTimeString());
         }
         catch (Exception e) {
             throw new RuntimeException("Unable to send an email message for (" + emailId + ")", e);
@@ -200,7 +201,7 @@ public class EmailHandler {
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
 
-            System.out.println("SSOFI: Invitation sent to: "+emailId);
+            System.out.println("SSOFI: Invitation sent to: "+emailId+" at "+AuthSession.currentTimeString());
 
         }
         catch (Exception e) {

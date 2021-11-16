@@ -144,7 +144,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             //this exception is not from the operational logic, but the preparation
             //logic or finalization logic which does not deserve sending results
             System.out.println("SSOFI: !!! Error getting or saving session information !!!");
-            JSONException.traceException(e, "GET: session: "+sessionId);
+            JSONException.traceException(e, "GET: session: "+sessionId
+                     +" at "+AuthSession.currentTimeString());
         }
     }
 
@@ -170,7 +171,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             doGet();
         }
         catch (Exception e) {
-            System.out.println("SSOFI: !!! Unable to handle post to: "+wr.requestURL);
+            System.out.println("SSOFI: !!! Unable to handle post to: "+wr.requestURL
+                     +" at "+AuthSession.currentTimeString());
             JSONException.traceException(e, "POST failed to "+wr.requestURL);
         }
     }
@@ -261,7 +263,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
             // anything below here is LIKELY to change the session
             saveSession = true;
-            System.out.println("SSOFI: mode="+mode);
+            System.out.println("SSOFI: mode="+mode+" at "+AuthSession.currentTimeString());
 
 
             if ("quick".equals(mode)) {
@@ -542,7 +544,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         //if failing to use a link, fail BEFORE testing the link
         if (aSession.loggedIn()) {
             if (!aSession.loggedUserId().equalsIgnoreCase(registerEmail))  {
-	            System.out.println("SSOFI: Logged-in user attempt to use email link: "+wr.request.getQueryString());
+	            System.out.println("SSOFI: Logged-in user attempt to use email link: "+wr.request.getQueryString()
+                     +" at "+AuthSession.currentTimeString());
 	
                 //if logged in as a different user: what to do?
                 //Should this log-out and log-in again?  Invalidate the token?
