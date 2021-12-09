@@ -143,7 +143,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         catch (Exception e) {
             //this exception is not from the operational logic, but the preparation
             //logic or finalization logic which does not deserve sending results
-            System.out.println("SSOFI: !!! Error getting or saving session information !!!");
+            System.out.println("SSOFI: !!! Error getting or saving session information !!!  at "+AuthSession.currentTimeString());
             JSONException.traceException(e, "GET: session: "+sessionId
                      +" at "+AuthSession.currentTimeString());
         }
@@ -241,10 +241,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             if (aSession.loggedIn()) {
                 loginIndicator =    " (logged in) ";
             }
-            System.out.println("SSOFI REQUEST: "+aSession.sessionId+" - "+mode+loginIndicator+wr.request.getQueryString());
 
             if (mode.startsWith("api")) {
-                System.out.println("SSOFI startsWith(\"api\"): "+mode+" - "+aSession.loggedUserId());
                 // Want to avoid saving a session as a result of every API call.  The API call will never
                 // add or remove a session, it is only used to verify existing sessions.  In general API
                 // round trips should be fast ... only a few seconds ... so persistence is not an
@@ -263,7 +261,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
             // anything below here is LIKELY to change the session
             saveSession = true;
-            System.out.println("SSOFI: mode="+mode+" at "+AuthSession.currentTimeString());
 
 
             if ("quick".equals(mode)) {
@@ -272,6 +269,8 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                     //user is logged in, so just jump back
                     //we don't care if logged in as a different user.
                     //preserve the current logged in user session
+                    System.out.println("SSOFI ("+aSession.sessionId+"): successful quick confirmation of user: "
+                            +aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
                     this.redirectBackToCaller();
                 }
                 else {
@@ -283,6 +282,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                         }
                     }
                     saveSession = true;
+                    System.out.println("SSOFI ("+aSession.sessionId+"): quick check found user was not logged in at "+AuthSession.currentTimeString());
                     reDirectHome();
                 }
             }
@@ -347,173 +347,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * is the place where you can enter a user id
      */
     private void displayRootPage() throws Exception {
+        System.out.println("SSOFI ("+aSession.sessionId+"): displayed the root page for user at "+AuthSession.currentTimeString());
         streamTemplate("justAnonymous");
     }
-
-    /*
-    private void displayErrorPage(Exception e) {
-        wr.response.setContentType("text/html;charset=UTF-8");
-
-        //Why are we telling IE how to behave?  Because IE can be set into a mode that causes it to
-        //run emulation of IE7, even though it is a much more recent browser.  It ignores the fact that
-        //it is more recent, and emulates the old browser unnecessarily.  This appears to be an administration
-        //option that allow an organization to run all IE as if they were an older IE.
-        //This command says to act like IE 10.  Would be better if we could say IE10 and above.
-        //Not all versions of IE obey this command.  Microsoft say that the best practice is to put
-        //this in a header, and not a meta-tag because a metatag will slow down handling of the page becausei
-        //it has to start parsing all over again.  We don't really want 10, but there seems no setting for
-        //IE11 and I am worried that older browsers wont know what Edge is.
-        wr.response.setHeader("X-UA-Compatible", "IE=EmulateIE10");
-
-        try {
-            Writer out = wr.w;
-            out.write("<html><body>\n<h1>Error Occurred</h1>\n<pre>");
-            JSONObject errObj = JSONException.convertToJSON(e, "Accessing SSOFI main capabilities");
-            errObj.write(out, 2, 2);
-            out.write("</pre>\n</body></html>");
-            out.flush();
-        }
-        catch( Exception e2) {
-            JSONException.traceException(e2, "FAILURE creating error page");
-        }
-
-        // clear out any recorded error now that it has been displayed
-        if (aSession!=null) {
-            aSession.clearError();
-        }
-    }
-    */
-
-
-    /**
-     * this receives a post from a form with user profile detail infor it it
-     * this will either create or update the user profile. It will save
-     * regardless of whether there was a profile there before.
-     */
-    /*
-    private void modeCreateNewUserAction() throws Exception {
-        try {
-            String option = reqParam("option");
-            if (option.equals("Cancel")) {
-                reDirectHome();
-                return;
-            }
-            if (!aSession.hasJustConfirmed()) {
-                throw new Exception(
-                        "Illegal state!  Attempt to create a user profile when the email has not been confirmed.  Is this a hacker???");
-            }
-
-            String emailId = reqParam("emailId");
-            String fullName = defParam("fullName", "");
-            String pwd = reqParam("password");
-            String confirmPwd = reqParam("confirmPwd");
-            if (pwd.length() < 6) {
-                throw new Exception("New password must be 6 or more characters long.");
-            }
-            if (!pwd.equals(confirmPwd)) {
-                throw new Exception("The new password values supplied do not match.  Try again");
-            }
-
-            UserInformation userInfo = ssofi.authStyle.getOrCreateUser(emailId);
-            if (fullName != null && fullName.length()>0) {
-                userInfo.fullName = fullName;
-            }
-
-            ssofi.authStyle.updateUserInfo(userInfo, pwd);
-
-            boolean loginFlag = ssofi.authStyle.authenticateUser(emailId, pwd);
-            if (loginFlag) {
-                setLogin(emailId);
-            }
-            else {
-                throw new JSONException("Unable to log you in to user id ({0}) with that password.  Please try again or reset your password.", emailId);
-            }
-            redirectBackToCaller();
-            return;
-        }
-        catch (Exception e) {
-            aSession.saveError(e);
-            reDirectHome();
-            return;
-        }
-    }
-    */
-
-
-/*
-    private void modePasswordAction() throws Exception {
-        // this takes the action of logging the user in, and returning if all OK
-        // first see if they pressed the Cancel key
-        String op = reqParam("op");
-        if (op.equals("Cancel")) {
-            reDirectHome();
-            return;
-        }
-        String fullName = defParam("fullName", null);
-        if (fullName!=null) {
-            ssofi.authStyle.changeFullName(aSession.loggedUserId(), fullName);
-        }
-        String oldPwd = defParam("oldPwd", null);
-        if (oldPwd!=null) {
-            String newPwd1 = reqParam("newPwd1");
-            String newPwd2 = reqParam("newPwd2");
-            boolean flag = ssofi.authStyle.authenticateUser(aSession.loggedUserId(), oldPwd);
-            if (!flag) {
-                aSession.saveError(new Exception(
-                        "Doesn't look like you gave the correct old password.  Required in order to change passwords."));
-                wr.response.sendRedirect("?openid.mode=passwordForm&ss="+aSession.sessionId);
-                return;
-            }
-            if (newPwd1.length() < 6) {
-                aSession.saveError(new Exception("New password must be 6 or more characters long."));
-                wr.response.sendRedirect("?openid.mode=passwordForm&ss="+aSession.sessionId);
-                return;
-            }
-            if (!newPwd1.equals(newPwd2)) {
-                aSession.saveError(new Exception(
-                        "The new password values supplied do not match.  Try again"));
-                wr.response.sendRedirect("?openid.mode=passwordForm&ss="+aSession.sessionId);
-                return;
-            }
-
-            ssofi.authStyle.changePassword(aSession.loggedUserId(), oldPwd, newPwd1);
-        }
-        reDirectHome();
-    }
-*/
-
-/*
-    private void modeLoginAction(APIHelper theApi) throws Exception {
-
-        JSONObject simPostedObj = new JSONObject();
-        simPostedObj.put("userId", reqParam("entered-id"));
-        simPostedObj.put("password", reqParam("password"));
-
-        theApi.setPostObject(simPostedObj);
-
-        try {
-            theApi.login();
-            redirectBackToCaller();
-            return;
-        }
-        catch (Exception e) {
-            System.out.println("SSOFI: user error: "+JSONException.getFullMessage(e));
-            aSession.saveError(e);
-        }
-        reDirectHome();
-    }
-    */
-/*
-    private void modeRegisterNewAction(APIHelper theApi) throws Exception {
-        //take the URL parameter and simulate a post object
-        String registerEmail = reqParam("registerEmail").trim();
-        postedObject = new JSONObject();
-        postedObject.put("registerEmail", registerEmail);
-        theApi.setPostObject(postedObject);
-        theApi.sendPasswordReset();
-        wr.response.sendRedirect("?openid.mode=confirmForm&email="+URLEncoder.encode(registerEmail, "UTF-8"));
-    }
-    */
 
 
     /*
@@ -577,7 +413,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         //if logged in AND same email address, then it does not matter if link is valid
         //we allow chaning password anyway.
         if (aSession.loggedIn()) {
-            System.out.println("SSOFI: Logged-in user attempt to use email link: "+wr.request.getQueryString());
+            System.out.println("SSOFI: Logged-in user attempt to use email link: "+wr.request.getQueryString()+" at "+AuthSession.currentTimeString());
 
             // User has already logged in, as the correct person,
             // check to see if the user is expecting to set password
@@ -606,7 +442,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
 
         if (!valid) {
-            System.out.println("SSOFI: Anonymous attempt to use email link that is not valid: "+wr.request.getQueryString());
+            System.out.println("SSOFI: Anonymous attempt to use email link that is not valid: "+wr.request.getQueryString()+" at "+AuthSession.currentTimeString());
             throw new Exception(
                     "The confirmation key supplied has expired. "
                     +"If you have set up a password, please log in.  "
@@ -642,6 +478,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             // remember and save the user having to type in again.
             // But there is no security value here.
             wr.setCookie("SSOFIUser", loggedId);
+            System.out.println("SSOFI ("+aSession.sessionId+"): login successful for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
         }
     }
     

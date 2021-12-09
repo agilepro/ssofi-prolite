@@ -74,7 +74,7 @@ public class AuthSession implements Serializable {
         emailTested = ui.emailAddress;
 
         //This is the official log saying that someone logged in to the system
-        System.out.println("SSOFI LOGIN: userId="+authIdentity+", name="+authUser.fullName+", at "+currentTimeString());
+        System.out.println("SSOFI ("+sessionId+"): login successful, userId="+authIdentity+", name="+authUser.fullName+", at "+currentTimeString());
 
         //we also wipe out any record of a previously sought after id, now that
         //you are logged in we don't need to remember who we thought you might be.
@@ -83,7 +83,7 @@ public class AuthSession implements Serializable {
 
     public void logout() {
         //This is the official log saying that someone logged out of the system
-        System.out.println("SSOFI LOGOUT: userId="+authIdentity+", name="+authUser.fullName+", at "+currentTimeString());
+        System.out.println("SSOFI ("+sessionId+"): logout successful for user: "+authIdentity+", at "+currentTimeString());
 
         authIdentity = null;
         emailTested = null;
@@ -272,7 +272,7 @@ public class AuthSession implements Serializable {
         }
         else {
             as.writeSessionToFile(sessionFolder);
-            System.out.println("SSOFI: brand new session for: "+sessionId);
+            System.out.println("SSOFI ("+sessionId+"): brand new session at "+currentTimeString());
         }
         return as;
     }

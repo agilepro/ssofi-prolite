@@ -64,9 +64,11 @@ public class APIHelper {
 
 	public JSONObject logout() throws Exception {
         aSession.clearError();
+        String formerUser = "not-logged-in";
         //whether you are logged in or not, you get the same response
         //from this command:  you are now logged out.
         if (aSession.loggedIn()) {
+            formerUser = aSession.loggedUserId();
             aSession.logout();
 
             //this deletes the file if there is one
@@ -76,12 +78,18 @@ public class APIHelper {
             aSession.changeSessionId(SSOFI.createSSOFISessionId(wr));
             ssofi.sHand.saveAuthSession(aSession);
         }
+        System.out.println("SSOFI ("+aSession.sessionId+"): logout successful, previous user was: "+formerUser+" at "+AuthSession.currentTimeString());
         return aSession.userStatusAsJSON(ssofi);
 	}
 
 	public JSONObject whoAmI() throws Exception {
+
+        String formerUser = "not-logged-in";
+        if (aSession.loggedIn()) {
+            formerUser = aSession.loggedUserId();
+        }
         JSONObject rrr = aSession.userStatusAsJSON(ssofi);
-        System.out.println("SSOFI: REST/WHO: "+rrr.toString(2));
+        System.out.println("SSOFI ("+aSession.sessionId+"): apiWho confirmation of user: "+formerUser+" at "+AuthSession.currentTimeString());
         return rrr;
     }
 
@@ -91,7 +99,7 @@ public class APIHelper {
         try {
             if (!aSession.loggedIn()) {
                 System.out.println("SSOFI ERROR: attempt to change password when not logged in: "+aSession.sessionId);
-                throw new Exception("You can not change a password when you are not logged in.  Maybe your session timed out?");
+                throw new Exception("You can not change a password when you are not logged in.  Maybe your session timed out? at "+AuthSession.currentTimeString());
             }
             if (postedObject==null) {
                 throw new Exception("to change a password there must be a posted JSON object");
@@ -120,6 +128,7 @@ public class APIHelper {
             aSession.clearConfirmBit();
             ssofi.sHand.saveAuthSession(aSession);
 
+            System.out.println("SSOFI ("+aSession.sessionId+"): setPassword successful for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
             return aSession.userStatusAsJSON(ssofi);
         }
         catch (Exception e) {
@@ -147,6 +156,7 @@ public class APIHelper {
             ssofi.authStyle.changeFullName(aSession.loggedUserId(), fullName);
             aSession.updateFullName(fullName);
             ssofi.sHand.saveAuthSession(aSession);
+            System.out.println("SSOFI ("+aSession.sessionId+"): setName successful for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
             return aSession.userStatusAsJSON(ssofi);
         }
         catch (Exception e) {
@@ -187,6 +197,7 @@ public class APIHelper {
         aSession.startRegistration(registerEmail);
         ssofi.emailHandler.sendVerifyEmail(registerEmail, magicNumber, aSession.return_to, ssofi.baseURL);
         ssofi.sHand.saveAuthSession(aSession);
+        System.out.println("SSOFI ("+aSession.sessionId+"): email password reset sent for user: "+registerEmail+" at "+AuthSession.currentTimeString());
         return aSession.userStatusAsJSON(ssofi);
     }
 
@@ -197,7 +208,7 @@ public class APIHelper {
         aSession.clearError();
         if (!aSession.loggedIn()) {
         	//this is an unusual situation, make noise
-            System.out.println("SSOFI: attempt to generate token when not logged in: "+aSession.sessionId);
+            System.out.println("SSOFI: attempt to generate token when not logged in: "+aSession.sessionId+" at "+AuthSession.currentTimeString());
             throw new Exception("You can not generate a token when you are not logged in.  Maybe your session timed out?");
         }
         if (postedObject==null) {
@@ -213,6 +224,7 @@ public class APIHelper {
         responseObj.put("challenge",  challenge);
         responseObj.put("token",      token);
         responseObj.put("msg",        "token has been generated, now give this to the server to authenticate");
+        System.out.println("SSOFI ("+aSession.sessionId+"): token generated for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
         return responseObj;
     }
 
@@ -246,13 +258,13 @@ public class APIHelper {
         //do not need to be logged in to verify a token, to log out or to ask whether logged in
         //do need to be logged in to send an email or to generate a token
         if (!aSession.loggedIn()) {
-            System.out.println("SSOFI LAuth request: not logged in, not allowed: "+mode);
+            System.out.println("SSOFI ("+aSession.sessionId+"): not logged in, not allowed: "+mode+" at "+AuthSession.currentTimeString());
             return aSession.userStatusAsJSON(ssofi);
         }
-        System.out.println("SSOFI LAuth request: "+mode+" - "+aSession.loggedUserId());
         if ("apiGenerate".equals(mode)) {
             return generateToken();
         }
+        System.out.println("SSOFI ("+aSession.sessionId+") UNRECOGNISED MODE: "+mode+" - "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
         throw new JSONException("Authentication API can not understand mode {0}", mode);
     }
 
@@ -285,6 +297,7 @@ public class APIHelper {
         JSONObject okResponse = new JSONObject();
         okResponse.put("result", "ok");
         okResponse.put("userId", inviteeId);
+        System.out.println("SSOFI ("+aSession.sessionId+"): email invite sent for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
         return okResponse;
     }
 

@@ -108,6 +108,7 @@ public class ChallengeTokenManager {
             responseObj.put("token", token);          //included so caller can identify request
             responseObj.put("verified", true);
             responseObj.put("msg", "Token matches with the challenge, and user information returned");
+            System.out.println("SSOFI: apiVerify successful for user: "+user.emailAddress);
             return responseObj;
         }
         else {
@@ -116,6 +117,7 @@ public class ChallengeTokenManager {
             responseObj.put("token", token);          //included so caller can identify request
             responseObj.put("verified", false);
             responseObj.put("msg", "Token does NOT match the challenge, so no user information returned");
+            System.out.println("SSOFI: apiVerify failed, token does not match.");
             return responseObj;
         }
     }
