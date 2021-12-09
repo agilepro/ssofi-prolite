@@ -81,7 +81,7 @@ public class EmailHandler {
 
         pattern = Pattern.compile(EMAIL_PATTERN);
 
-        System.out.println("SSOFI: Email configured: "+smtpHost+":"+smtpPort+":"+smtpUser);
+        System.out.println("SSOFI: Email configured: "+smtpHost+":"+smtpPort+":"+smtpUser+" at "+AuthSession.currentTimeString());
     }
 
     public void sendVerifyEmail(String emailId, String magicNumber, String app, String baseURL) throws Exception {
@@ -137,11 +137,11 @@ public class EmailHandler {
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
 
-            System.out.println("SSOFI: Email verification request sent to: "+emailId
+            System.out.println("SSOFI-EMAIL: Password reset email sent to: "+emailId
                      +" at "+AuthSession.currentTimeString());
         }
         catch (Exception e) {
-            throw new RuntimeException("Unable to send an email message for (" + emailId + ")", e);
+            throw new RuntimeException("Unable to send an email message for (" + emailId + ") at "+AuthSession.currentTimeString(), e);
         } finally {
             if (transport != null) {
                 try {
@@ -201,11 +201,11 @@ public class EmailHandler {
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
 
-            System.out.println("SSOFI: Invitation sent to: "+emailId+" at "+AuthSession.currentTimeString());
+            System.out.println("SSOFI-EMAIL: Invitation sent to: "+emailId+" at "+AuthSession.currentTimeString());
 
         }
         catch (Exception e) {
-            throw new RuntimeException("Unable to send an email message for (" + emailId + ")", e);
+            throw new RuntimeException("Unable to send an email message for (" + emailId + ") at "+AuthSession.currentTimeString(), e);
         } finally {
             if (transport != null) {
                 try {
