@@ -109,7 +109,9 @@ public class RestServlet extends javax.servlet.http.HttpServlet {
             //Controversial because this might be something critical and the server might not
             //be stable enough to return the result, and trying to return a result might make
             //things worse.   But then, if things are really so bad, who cares?
+            System.out.println("SSOFI-HANDLER-ERROR:"+e.toString());
             wr.streamException(e);
+            JSONException.traceException(e, "SSOFI RestServlet root level exception catcher");
         }
         long endTime = System.currentTimeMillis();
         long dur = endTime - startTime;

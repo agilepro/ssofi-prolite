@@ -69,14 +69,22 @@
         }
         
         function stdErrorFunction(data) {
+            if (!data || !data.data) {
+                console.log("NO ERROR DATA FOUND!", data);
+                alert("Unknown failure occurred, no error message reported");
+                return;
+            }
             $scope.status = null;
             console.log("ERROR: ", data);
             var exc = data.data.error;
             var messageList = [];
+            var oneString = "";
             data.data.error.details.forEach( function(item) {
                 messageList.push(item.message);
+                oneString = oneString + item.message;
             })
             $scope.info.errors = messageList;
+            alert("Failure occurred: "+oneString);
         }
         
         $scope.whoami = function() {
@@ -190,21 +198,40 @@
             }, stdErrorFunction)
         }
         $scope.savePasswordAndName = function() {
-        var savedName = $scope.info.userName;
+            console.log("SAVING password");
+            var savedName = $scope.info.userName;
             $scope.status = null;
-            $scope.savePassword( function(data) {
-                $scope.status = "Password Saved";
-                $scope.saveName( function(data) {
-                    $scope.status = "Name & Password Saved";
-                    $scope.info = data.data;
-                    if ($scope.info.go) {
-                        window.location.assign($scope.info.go);
-                    }
-                    else {
-                        $scope.backToMainMode();
-                    }
-                });
-            });
+            $scope.savePassword(saveNameAfterPassword);
+        }
+        function saveNameAfterPassword(data) {
+            console.log("SAVING Name");
+            $scope.status = "Password Saved";
+            $scope.saveName(checkThatNameSaved);
+        }
+        function checkThatNameSaved(data) {
+            $scope.status = "Name & Password Saved";
+            console.log("CHECKING that name was saved");
+            var url = "rest/whoAmI?ss="+$scope.info.ss;
+            var data = {};
+            $http({
+                url : url,
+                method : "POST",             
+                data: data 
+            }).then(checkNameCorrectAndNavigate, stdErrorFunction);
+        }
+        
+        function checkNameCorrectAndNavigate(data) {
+            var expectedName = $scope.info.fullName;
+            var nameOnServer = data.data.fullName;
+            if (expectedName != nameOnServer) {
+                alert("Something is wrong, your name/password was not saved.  Please try again or contact an administrator.");
+                return;
+            }
+            $scope.info = data.data;
+            $scope.backToMainMode();
+            if ($scope.info.go) {
+                window.location.assign($scope.info.go);
+            }
         }
         
         
