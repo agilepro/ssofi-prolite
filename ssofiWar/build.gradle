@@ -6,6 +6,9 @@ plugins {
     // Apply the application plugin to add support for building a CLI application in Java.
     id 'application'
     id 'war'
+    
+    //for automating build of container and upload to DockerHub
+    id "com.palantir.docker" version "0.22.1"
 }
 
 repositories {

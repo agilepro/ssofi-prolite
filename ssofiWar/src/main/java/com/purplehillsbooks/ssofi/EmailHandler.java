@@ -2,9 +2,13 @@ package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 import java.io.StringWriter;
+import java.io.Writer;
 import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.Vector;
 import java.util.regex.Matcher;
@@ -23,6 +27,7 @@ import javax.mail.internet.MimeMultipart;
 
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.streams.HTMLWriter;
+import com.purplehillsbooks.streams.MemFile;
 import com.purplehillsbooks.xml.Mel;
 
 public class EmailHandler {
@@ -87,6 +92,8 @@ public class EmailHandler {
     public void sendVerifyEmail(String emailId, String magicNumber, String app, String baseURL) throws Exception {
         Transport transport = null;
         try {
+            long currentTime = System.currentTimeMillis();
+            long timeOutTime = currentTime + 7L * 24 * 60 * 60000;
 
             String option = "Email Address Confirmation Message";
             if (app == null) {
@@ -113,7 +120,8 @@ public class EmailHandler {
                     + URLEncoder.encode(magicNumber, "UTF-8")
 		            + "&app="
 		            + URLEncoder.encode(app, "UTF-8");
-            StringWriter clone = new StringWriter();
+            MemFile mf = new MemFile();
+            Writer clone = mf.getWriter();
             clone.write("<html><body>\n");
             clone.write("<p>This message was sent to verify your email address: <b>");
             HTMLWriter.writeHtml(clone, emailId);
@@ -122,15 +130,19 @@ public class EmailHandler {
             HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("\"><b>SET YOUR PASSWORD</b></a>.</p>");
             clone.write("<p></p>");
-            clone.write("<p>(Note: You must use the link within 7 days of ");
-            clone.write("receiving the email, and you can only use the link once.  ");
-            clone.write("If you don't know who this message is from, and you are not ");
-            clone.write("aware of the project you can safely ignore this message. ");
-            clone.write("Someone may have entered your address by accident.)</p>");
+            clone.write("<p>(Note: This email was sent at ");
+            clone.write(getFormattedDate(currentTime));
+            clone.write(" on the server, you must use the link before ");
+            clone.write(getFormattedDate(timeOutTime));
+            clone.write(", and you can only use the link once.  \n");
+            clone.write("You can request a new link from the server.  \n");
+            clone.write("If you did not request this password reset email you can safely ignore this message. ");
+            clone.write("Someone may have entered your address by accident.)</p>\n");
             clone.write("</body></html>");
+            clone.flush();
 
             MimeBodyPart textPart = new MimeBodyPart();
-            textPart.setContent(clone.toString(), "text/html;encoding=UTF-8");
+            textPart.setText(mf.toString(), "UTF-8");
 
             Multipart mp = new MimeMultipart();
             mp.addBodyPart(textPart);
@@ -152,10 +164,14 @@ public class EmailHandler {
         }
     }
 
-    public void sendInviteEmail(String fromEmail, String fromName, String emailId, String body, String subject, String magicNumber,
+    public void sendInviteEmail(String fromEmail, String fromName, String emailId, 
+            String body, String subject, String magicNumber,
             String app, String baseURL) throws Exception {
         Transport transport = null;
         try {
+            
+            long currentTime = System.currentTimeMillis();
+            long timeOutTime = currentTime + 7L * 24 * 60 * 60000;
 
             Authenticator authenticator = new MyAuthenticator(savedProps);
             Session session = Session.getInstance(savedProps, authenticator);
@@ -177,30 +193,48 @@ public class EmailHandler {
                     + URLEncoder.encode(magicNumber, "UTF-8")
 		            + "&app="
 		            + URLEncoder.encode(app, "UTF-8");
-            StringWriter clone = new StringWriter();
+            
+            
+            MemFile mf = new MemFile();
+            Writer clone = mf.getWriter();
             clone.write("<html><body>\n");
             clone.write("<p>");
             HTMLWriter.writeHtmlWithLines(clone, body);
-            clone.write("</p>\n");
+            clone.write("</p>\n<hr/>\n");
+            clone.write("<p>You will need to authenticate with a password.  ");
+            clone.write("If you have already set up a password for ");
+            HTMLWriter.writeHtml(clone, emailId);
+            clone.write(" then you can access the site immediately:</p>\n\n");
+            clone.write("<p>Click to <a href=\"");
+            HTMLWriter.writeHtml(clone, app);
+            clone.write("\"><b>ACCESS SITE</b></a>.</p>\n\n");
+            clone.write("<p>If you have not set up a password, or you have ");
+            clone.write("forgotten your password, then you can use this convenient ");
+            clone.write("link to set your password for the site.</p>\n\n");
             clone.write("<p>Click to <a href=\"");
             HTMLWriter.writeHtml(clone, registerAddr);
             clone.write("\"><b>SET YOUR PASSWORD</b></a>.</p>");
             clone.write("<p></p>");
-            clone.write("<p>(Note: You must use the link within 7 days of ");
-            clone.write("receiving the email, and you can only use the link once.  ");
-            clone.write("If you don't know who this message is from, and you are not ");
-            clone.write("aware of the project you can safely ignore this message. ");
-            clone.write("Someone may have entered your address by accident.)</p>");
+            clone.write("<p>(Note: This email was sent at ");
+            clone.write(getFormattedDate(currentTime));
+            clone.write(" on the server, you must use the link before ");
+            clone.write(getFormattedDate(timeOutTime));
+            clone.write(", and you can only use the link once.  \n");
+            clone.write("You can request a new link from the server.  \n");
+            clone.write("If you don't know who sent this message, and you are not ");
+            clone.write("aware of the application mentioned, you can safely ignore this message. ");
+            clone.write("Someone may have entered your address by accident.)</p>\n");
             clone.write("</body></html>");
+            clone.flush();
 
             MimeBodyPart textPart = new MimeBodyPart();
-            textPart.setContent(clone.toString(), "text/html;encoding=UTF-8");
+            textPart.setText(mf.toString(), "UTF-8");
 
             Multipart mp = new MimeMultipart();
             mp.addBodyPart(textPart);
             message.setContent(mp);
             transport.sendMessage(message, message.getAllRecipients());
-
+            
             System.out.println("SSOFI-EMAIL: Invitation sent to: "+emailId+" at "+AuthSession.currentTimeString());
 
         }
@@ -381,5 +415,10 @@ public class EmailHandler {
         }
     }
 
+    private static DateFormat df = new SimpleDateFormat("dd-MMM-YYYY HH:mm");
+    private String getFormattedDate(long time) {
+        Date date = new Date(time);
+        return df.format(date);
+    }
 
 }
