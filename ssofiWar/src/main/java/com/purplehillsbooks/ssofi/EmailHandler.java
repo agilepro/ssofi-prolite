@@ -142,7 +142,7 @@ public class EmailHandler {
             clone.flush();
 
             MimeBodyPart textPart = new MimeBodyPart();
-            textPart.setText(mf.toString(), "UTF-8");
+            textPart.setText(mf.toString(), "UTF-8", "html");
 
             Multipart mp = new MimeMultipart();
             mp.addBodyPart(textPart);
@@ -228,7 +228,7 @@ public class EmailHandler {
             clone.flush();
 
             MimeBodyPart textPart = new MimeBodyPart();
-            textPart.setText(mf.toString(), "UTF-8");
+            textPart.setText(mf.toString(), "UTF-8", "html");
 
             Multipart mp = new MimeMultipart();
             mp.addBodyPart(textPart);
