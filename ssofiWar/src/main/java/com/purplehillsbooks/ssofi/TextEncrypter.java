@@ -5,8 +5,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.spec.KeySpec;
-import java.util.Vector;
-
+import java.util.ArrayList;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
@@ -27,7 +26,7 @@ class TextEncrypter {
     private KeySpec keySpec;
     private SecretKeyFactory keyFactory;
     private Cipher cipher;
-    private Vector<String> listOfKeys = new Vector<String>();
+    private ArrayList<String> listOfKeys = new ArrayList<String>();
 
     TextEncrypter(String encryptionScheme) throws Exception {
         this(encryptionScheme, DEFAULT_ENCRYPTION_KEY);

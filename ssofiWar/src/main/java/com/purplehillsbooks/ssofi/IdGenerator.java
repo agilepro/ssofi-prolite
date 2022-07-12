@@ -1,8 +1,7 @@
 package com.purplehillsbooks.ssofi;
 
-import java.util.Enumeration;
+import java.util.List;
 import java.util.Random;
-import java.util.Vector;
 
 /**
  * Generates three types of ID
@@ -45,7 +44,7 @@ public class IdGenerator {
      * for a user page, whatever) Generated four digit value will be random, and
      * will not be oneof the values in the vector.
      */
-    public synchronized static String generateFourDigit(Vector<String> existingIds)
+    public synchronized static String generateFourDigit(List<String> existingIds)
             throws Exception {
         int seed = (int) (System.currentTimeMillis() % 10000);
         int spin = seed;
@@ -59,13 +58,11 @@ public class IdGenerator {
         return id;
     }
 
-    private static boolean idAlreadyExists(Vector<String> existingIds, String currentId) {
+    private static boolean idAlreadyExists(List<String> existingIds, String currentId) {
         if (existingIds == null) {
             return false;
         }
-        Enumeration<String> en = existingIds.elements();
-        while (en.hasMoreElements()) {
-            String anId = en.nextElement();
+        for (String anId : existingIds) {
             if (anId.equals(currentId)) {
                 return true;
             }

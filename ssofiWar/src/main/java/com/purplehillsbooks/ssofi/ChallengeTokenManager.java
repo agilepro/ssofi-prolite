@@ -1,7 +1,7 @@
 package com.purplehillsbooks.ssofi;
 
-import java.util.Vector;
-
+import java.util.ArrayList;
+import java.util.List;
 import com.purplehillsbooks.json.JSONObject;
 
 /**
@@ -35,7 +35,7 @@ public class ChallengeTokenManager {
      * It will be cleared on a reboot, hanging anyone attempting verification at that moment.
      * Verification is usually short: only a few seconds, so unlikely to be a problem.
      */
-    private static Vector<ChallengeTokenEntry> challengeTokenMap = new Vector<ChallengeTokenEntry>();
+    private static List<ChallengeTokenEntry> challengeTokenMap = new ArrayList<ChallengeTokenEntry>();
 
 
     /**
@@ -67,7 +67,7 @@ public class ChallengeTokenManager {
      */
     public static synchronized UserInformation verifyToken(String challenge, String token) {
 
-        Vector<ChallengeTokenEntry> stillRelevant = new Vector<ChallengeTokenEntry>();
+        ArrayList<ChallengeTokenEntry> stillRelevant = new ArrayList<ChallengeTokenEntry>();
 
         long tenMinutesAgo = System.currentTimeMillis() - 600000;
         UserInformation selected = null;

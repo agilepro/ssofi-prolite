@@ -6,9 +6,8 @@ import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
-import java.util.Vector;
-
 import net.tanesha.recaptcha.ReCaptcha;
 import net.tanesha.recaptcha.ReCaptchaFactory;
 import net.tanesha.recaptcha.ReCaptchaImpl;
@@ -122,7 +121,7 @@ public class SecurityHandler {
         private long firstAccessTime = -1;
         private long lastAccessTime = -1;
         private String remoteIp = null;
-        private Vector<String> emilList = new Vector<String>();
+        private List<String> emilList = new ArrayList<String>();
         private String blockedFilePath = null;
 
         public UserRegRequest(String remoteIp, String blockedFilePath) {

@@ -1,8 +1,7 @@
 package com.purplehillsbooks.ssofi;
 
 import java.io.File;
-import java.util.Vector;
-
+import java.util.ArrayList;
 import javax.servlet.ServletContext;
 
 import com.purplehillsbooks.json.JSONException;
@@ -15,7 +14,7 @@ public class AuthStyleLocal implements AuthStyle {
 
     private Mel users = null;
     private File userFile;
-    private Vector<StoredUser> userList = new Vector<StoredUser>();
+    private ArrayList<StoredUser> userList = new ArrayList<StoredUser>();
     private long timestampLastRead = 0;
     private boolean ignorePasswordMode = false;
 
@@ -152,7 +151,7 @@ public class AuthStyleLocal implements AuthStyle {
         users.reformatXML();
         users.writeToFile(userFile);
         timestampLastRead = userFile.lastModified();
-        userList.removeAllElements();
+        userList.clear();
         userList.addAll(users.getChildren("user", StoredUser.class));
     }
 

@@ -6,8 +6,10 @@ import java.io.Writer;
 import java.net.URLEncoder;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Locale;
 import java.util.Properties;
 import java.util.Vector;
@@ -32,7 +34,7 @@ import com.purplehillsbooks.xml.Mel;
 
 public class EmailHandler {
 
-    private Vector<String> existingIds = null;
+    private ArrayList<String> existingIds = null;
     String smtpUser;
     String smtpPwd;
     String protocol;
@@ -48,7 +50,7 @@ public class EmailHandler {
     public static int REGISTER_PROFILE = 2;
 
     static Mel profileRequest;
-    static Vector<ProfileRequest> profileRequestList;
+    static ArrayList<ProfileRequest> profileRequestList;
     File profileRequestFile;
 
     private Pattern pattern;
@@ -80,7 +82,7 @@ public class EmailHandler {
             profileRequest = Mel.createEmpty("profilerequests", Mel.class);
             profileRequest.writeToFile(profileRequestFile);
         }
-        profileRequestList = new Vector<ProfileRequest>();
+        profileRequestList = new ArrayList<ProfileRequest>();
         profileRequestList.addAll(profileRequest
                 .getChildren("profilerequest", ProfileRequest.class));
 
@@ -286,7 +288,7 @@ public class EmailHandler {
      */
     public String getUniqueOnPage() throws Exception {
         if (existingIds == null) {
-            existingIds = new Vector<String>();
+            existingIds = new ArrayList<String>();
         }
         return IdGenerator.generateFourDigit(existingIds);
     }
@@ -357,11 +359,9 @@ public class EmailHandler {
     }
 
     public void removeProfileRequest(String id) throws Exception {
-        Vector<ProfileRequest> nl = profileRequest.getChildren("profilerequest",
+        List<ProfileRequest> nl = profileRequest.getChildren("profilerequest",
                 ProfileRequest.class);
-        Enumeration<ProfileRequest> en = nl.elements();
-        while (en.hasMoreElements()) {
-            ProfileRequest tEle = en.nextElement();
+        for (ProfileRequest tEle : nl) {
             if (id.equals(tEle.getAttribute("id"))) {
                 profileRequest.removeChild(tEle);
             }
@@ -372,7 +372,7 @@ public class EmailHandler {
 
     public void refreshProfReqList() throws Exception {
         profileRequest = Mel.readFile(profileRequestFile, Mel.class);
-        profileRequestList.removeAllElements();
+        profileRequestList.clear();
         profileRequestList.addAll(profileRequest
                 .getChildren("profilerequest", ProfileRequest.class));
     }
