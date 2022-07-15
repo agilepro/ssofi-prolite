@@ -29,6 +29,9 @@ dependencies {
     implementation fileTree(dir: 'thirdparty', include: ['*.jar'])
     
     compileOnly 'org.apache.tomcat:tomcat-catalina:8.5.46'
+    
+    // https://mvnrepository.com/artifact/com.purplehillsbooks.purple/purple
+    implementation 'com.purplehillsbooks.purple:purple:3.1'
 }
 
 //following code generates a build id from date, and puts into WEB-INF folder
