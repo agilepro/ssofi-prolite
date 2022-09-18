@@ -237,11 +237,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            String loginIndicator = " (anonymous) ";
-            if (aSession.loggedIn()) {
-                loginIndicator =    " (logged in) ";
-            }
-
             if (mode.startsWith("api")) {
                 // Want to avoid saving a session as a result of every API call.  The API call will never
                 // add or remove a session, it is only used to verify existing sessions.  In general API

@@ -162,7 +162,7 @@ public class EmailHandler {
         }
     }
 
-    public void sendInviteEmail(String fromEmail, String fromName, String emailId, 
+    public void sendInviteEmail(String fromName, String emailId, 
             String body, String subject, String magicNumber,
             String app, String baseURL) throws Exception {
         Transport transport = null;
@@ -178,7 +178,7 @@ public class EmailHandler {
             transport.connect();
 
             Message message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(fromEmail, fromName));
+            message.setFrom(new InternetAddress(smtpFrom, fromName));
             message.setSentDate(new Date());
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailId));
 

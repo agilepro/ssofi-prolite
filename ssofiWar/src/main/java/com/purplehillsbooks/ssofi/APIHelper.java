@@ -310,16 +310,14 @@ public class APIHelper {
         //significantly slow down a hacker
         Thread.sleep(3000);
         String magicNumber = ssofi.tokenManager.generateEmailToken(userId);
-        String fromAddress = "weaver@circleweaver.com";
+        
         String fromName = "Weaver";
         if (aSession.loggedIn()) {
-            fromAddress = aSession.loggedUserId();
+            //new email sender SMTP2GO does not allow this from address that is not verified
+            //fromAddress = aSession.loggedUserId();
             fromName = aSession.loggedUserName();
         }
-        if (userName==null || userName.length()<1) {
-            userName = aSession.loggedUserName();
-        }
-        ssofi.emailHandler.sendInviteEmail(fromAddress, fromName, userId, msg, subject, magicNumber, returnUrl, baseURL);
+        ssofi.emailHandler.sendInviteEmail(fromName, userId, msg, subject, magicNumber, returnUrl, baseURL);
     }
 
 
