@@ -7,7 +7,7 @@ import java.net.NetworkInterface;
 import java.util.Properties;
 import java.util.Set;
 
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.streams.SSLPatch;

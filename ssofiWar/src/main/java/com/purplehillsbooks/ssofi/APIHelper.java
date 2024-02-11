@@ -272,33 +272,41 @@ public class APIHelper {
     public JSONObject sendInvite() throws Exception {
         aSession.clearError();
         if (postedObject==null) {
-            throw new Exception("Received a request for sending email without any posted JSON information");
+            throw new Exception("Received a request for sending invite email without any posted JSON information");
         }
-        
-        //because this API is allowed without being authenticated, throttle to make sure it can not
-        //be used to send thousands of emails.
-        long waitTime = nextInviteTime-System.currentTimeMillis();
-        if (waitTime>0) {
-            nextInviteTime = nextInviteTime + 10000;   //10 seconds minimum between calls
-            Thread.sleep(waitTime);
-        }
-        else {
-            nextInviteTime = System.currentTimeMillis() + 10000;   //10 seconds minimum between calls
-        }
-        
-        //remember, this user ID is NOT the logged in user who is requesting the invitation
-        //but instead the user who is being sent the invitation.
         String inviteeId = postedObject.getString("userId");
-        String inviteeName = postedObject.optString("userName");
-        String msg = postedObject.getString("msg");
-        String returnUrl = postedObject.getString("return");
-        String subject = postedObject.optString("subject", "Invitation to Collaborate");
-        sendInviteEmail(inviteeId, inviteeName, msg, returnUrl, subject, baseURL);
-        JSONObject okResponse = new JSONObject();
-        okResponse.put("result", "ok");
-        okResponse.put("userId", inviteeId);
-        System.out.println("SSOFI ("+aSession.sessionId+"): email invite sent for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
-        return okResponse;
+        if (inviteeId == null || inviteeId.length()==0) {
+            throw new Exception("Posted object does not contain a 'userId' value to send invite to");
+        }
+            
+        try {
+            //because this API is allowed without being authenticated, throttle to make sure it can not
+            //be used to send thousands of emails.
+            long waitTime = nextInviteTime-System.currentTimeMillis();
+            if (waitTime>0) {
+                nextInviteTime = nextInviteTime + 10000;   //10 seconds minimum between calls
+                Thread.sleep(waitTime);
+            }
+            else {
+                nextInviteTime = System.currentTimeMillis() + 10000;   //10 seconds minimum between calls
+            }
+            
+            //remember, this user ID is NOT the logged in user who is requesting the invitation
+            //but instead the user who is being sent the invitation.
+            String inviteeName = postedObject.optString("userName");
+            String msg = postedObject.getString("msg");
+            String returnUrl = postedObject.getString("return");
+            String subject = postedObject.optString("subject", "Invitation to Collaborate");
+            sendInviteEmail(inviteeId, inviteeName, msg, returnUrl, subject, baseURL);
+            JSONObject okResponse = new JSONObject();
+            okResponse.put("result", "ok");
+            okResponse.put("userId", inviteeId);
+            System.out.println("SSOFI ("+aSession.sessionId+"): email invite sent for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
+            return okResponse;
+        }
+        catch (Exception e) {
+            throw new JSONException("Unable to send invite message to {0}", inviteeId);
+        }
     }
 
     private void sendInviteEmail(String userId, String userName, String msg, String returnUrl, String subject, String baseURL) throws Exception {

@@ -4,10 +4,10 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import com.purplehillsbooks.json.JSONArray;
 import com.purplehillsbooks.json.JSONException;
@@ -25,7 +25,7 @@ import com.purplehillsbooks.json.JSONObject;
  */
 
 @SuppressWarnings("serial")
-public class RestServlet extends javax.servlet.http.HttpServlet {
+public class RestServlet extends jakarta.servlet.http.HttpServlet {
 
     /**
      * If initError is null, it means it was initialized correctly.

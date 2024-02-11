@@ -4,8 +4,8 @@
 
 package com.purplehillsbooks.ssofi;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
 
 import com.purplehillsbooks.json.JSONObject;
 

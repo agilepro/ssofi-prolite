@@ -11,8 +11,8 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.List;
 
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletConfig;
+import jakarta.servlet.ServletContext;
 
 import com.purplehillsbooks.json.JSONException;
 import com.purplehillsbooks.json.JSONObject;
@@ -491,7 +491,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     }
 
     private void streamTemplate(String fileName) throws Exception {
-        javax.servlet.ServletContext sc2 = wr.session.getServletContext();
+        jakarta.servlet.ServletContext sc2 = wr.session.getServletContext();
         File ctxPath = new File(sc2.getRealPath("/"));
 
         // fist check to see if a special auth style specific version exists
