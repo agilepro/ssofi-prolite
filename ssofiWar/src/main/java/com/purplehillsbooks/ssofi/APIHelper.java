@@ -3,7 +3,7 @@ package com.purplehillsbooks.ssofi;
 import java.io.Writer;
 import java.util.Properties;
 
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 import com.purplehillsbooks.json.JSONObject;
 
 public class APIHelper {
@@ -112,14 +112,14 @@ public class APIHelper {
             else {
                 userInfo = ssofi.authStyle.getExistingUserOrNull(aSession.loggedUserId());
                 if (userInfo == null) {
-                    throw new JSONException("Unable to set password because user {0} does not exist, and email has not been confirmed.", aSession.emailTested);
+                    throw new SimpleException("Unable to set password because user %s does not exist, and email has not been confirmed.", aSession.emailTested);
                 }
                 String oldPwd = postedObject.optString("oldPwd");
                 if (oldPwd==null) {
                     throw new Exception("Must pass 'oldPwd' when setting password, and when you have not just confirmed the email address.");
                 }
                 if (!ssofi.authStyle.authenticateUser(aSession.loggedUserId(), oldPwd)) {
-                    throw new JSONException("The 'oldPwd' submitted does not appear to be the correct one for user {0}", aSession.emailTested);
+                    throw new SimpleException("The 'oldPwd' submitted does not appear to be the correct one for user %s", aSession.emailTested);
                 }
             }
 
@@ -132,7 +132,7 @@ public class APIHelper {
             return aSession.userStatusAsJSON(ssofi);
         }
         catch (Exception e) {
-            throw new JSONException("Unable to set password for user ({0})",  e, aSession.loggedUserId());
+            throw new SimpleException("Unable to set password for user (%s)",  e, aSession.loggedUserId());
         }
     }
 
@@ -160,7 +160,7 @@ public class APIHelper {
             return aSession.userStatusAsJSON(ssofi);
         }
         catch (Exception e) {
-            throw new JSONException("Unable to set name for user {0}",  e, aSession.loggedUserId());
+            throw new SimpleException("Unable to set name for user %s",  e, aSession.loggedUserId());
         }
     }
 
@@ -265,7 +265,7 @@ public class APIHelper {
             return generateToken();
         }
         System.out.println("SSOFI ("+aSession.sessionId+") UNRECOGNISED MODE: "+mode+" - "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
-        throw new JSONException("Authentication API can not understand mode {0}", mode);
+        throw new SimpleException("Authentication API can not understand mode %s", mode);
     }
 
     static long nextInviteTime = System.currentTimeMillis();
@@ -305,13 +305,13 @@ public class APIHelper {
             return okResponse;
         }
         catch (Exception e) {
-            throw new JSONException("Unable to send invite message to {0}", inviteeId);
+            throw new SimpleException("Unable to send invite message to %s", inviteeId);
         }
     }
 
     private void sendInviteEmail(String userId, String userName, String msg, String returnUrl, String subject, String baseURL) throws Exception {
         if (!ssofi.emailHandler.validAddressFormat(userId)) {
-            throw new JSONException("The id supplied ({0}) does not appear to be a valid email address.", userId);
+            throw new SimpleException("The id supplied (%s) does not appear to be a valid email address.", userId);
         }
         //The idea here is to slow down any attempt to send email.
         //one user to wait 3 seconds is not a problem, but this will

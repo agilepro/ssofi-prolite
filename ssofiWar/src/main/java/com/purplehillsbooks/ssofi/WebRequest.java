@@ -14,7 +14,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import com.purplehillsbooks.json.JSONArray;
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 import com.purplehillsbooks.json.JSONObject;
 import com.purplehillsbooks.json.JSONTokener;
 import com.purplehillsbooks.streams.StreamHelper;
@@ -143,7 +143,7 @@ public class WebRequest {
 
         String val = request.getParameter(name);
         if (val == null || val.length() == 0) {
-            throw new JSONException("Got a request without a required '{0}' parameter", name);
+            throw new SimpleException("Got a request without a required '%s' parameter", name);
         }
         return val;
     }
@@ -178,7 +178,7 @@ public class WebRequest {
             streamException(e, request, response, w);
         }
         catch (Exception xxx) {
-            JSONException.traceException(xxx, "FATAL EXCEPTION WHILE STREAMING EXCEPTION");
+            SimpleException.traceException(xxx, "FATAL EXCEPTION WHILE STREAMING EXCEPTION");
         }
 
     }
@@ -186,13 +186,13 @@ public class WebRequest {
             HttpServletResponse response, Writer w) {
         try {
             if (w==null) {
-                JSONException.traceException(e, "a null writer object was passed into streamException");
+                SimpleException.traceException(e, "a null writer object was passed into streamException");
                 throw new Exception("a null writer object was passed into streamException");
             }
             if (e==null) {
                 throw new Exception("a null exception object was passed into streamException");
             }
-            JSONObject responseBody = JSONException.convertToJSON(e, "Web request for: "+request.getRequestURI());
+            JSONObject responseBody = SimpleException.convertToJSON(e, "Web request for: "+request.getRequestURI());
 
             //remove the bottom of the stack trace below the HttpServlet.service call
             //because it is all arbitrary garbage below that point and usually quite a lot of noise.
@@ -220,12 +220,12 @@ public class WebRequest {
             response.setContentType("application/json");
             response.setStatus(400);
 
-            JSONException.traceConvertedException(System.out, responseBody);
+            SimpleException.traceConvertedException(System.out, responseBody);
             responseBody.write(w, 2, 0);
             w.flush();
         } catch (Exception eeeee) {
             // nothing we can do here...
-            JSONException.traceException(eeeee, "EXCEPTION_WITHIN_EXCEPTION");
+            SimpleException.traceException(eeeee, "EXCEPTION_WITHIN_EXCEPTION");
         }
     }
 

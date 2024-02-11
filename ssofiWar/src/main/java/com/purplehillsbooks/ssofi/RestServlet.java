@@ -1,16 +1,12 @@
 package com.purplehillsbooks.ssofi;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.purplehillsbooks.json.JSONArray;
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 import com.purplehillsbooks.json.JSONObject;
 
 /**
@@ -78,7 +74,7 @@ public class RestServlet extends jakarta.servlet.http.HttpServlet {
             //and we can not return an error to them, so simply report to the
             //server log file and give up.
             System.out.println("SSOFI-FATAL-ERROR:"+nonReturnable.toString());
-            JSONException.traceException(nonReturnable, "RestServlet.service");
+            SimpleException.traceException(nonReturnable, "RestServlet.service");
             resp.setStatus(501);
             return;
         }
@@ -111,7 +107,7 @@ public class RestServlet extends jakarta.servlet.http.HttpServlet {
             //things worse.   But then, if things are really so bad, who cares?
             System.out.println("SSOFI-HANDLER-ERROR:"+e.toString());
             wr.streamException(e);
-            JSONException.traceException(e, "SSOFI RestServlet root level exception catcher");
+            SimpleException.traceException(e, "SSOFI RestServlet root level exception catcher");
         }
         long endTime = System.currentTimeMillis();
         long dur = endTime - startTime;
@@ -123,6 +119,8 @@ public class RestServlet extends jakarta.servlet.http.HttpServlet {
     /**
      * this converts to JSON and includes some special rules for IBPM Model exceptions
      */
+    
+    /*
     public static JSONObject convertModelExceptionToJSON(Throwable e, String context) throws Exception {
         JSONObject responseBody = new JSONObject();
         JSONObject errorTag = new JSONObject();
@@ -220,6 +218,10 @@ public class RestServlet extends jakarta.servlet.http.HttpServlet {
 
         return responseBody;
     }
+    */
+    
+    
+    /*
     static class ExceptionTracer {
         public Throwable t;
         public String msg;
@@ -256,4 +258,5 @@ public class RestServlet extends jakarta.servlet.http.HttpServlet {
             }
         }
     }
+    */
 }

@@ -2,7 +2,7 @@ package com.purplehillsbooks.ssofi;
 
 import java.io.File;
 
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 
 /**
  * This saves the sessions in files in a folder
@@ -93,7 +93,7 @@ public class SessionHandlerFile {
             return as;
         }
         catch (Exception e) {
-            JSONException.traceException(e, "Failure loading session file for sessionId="+sessionId);
+            SimpleException.traceException(e, "Failure loading session file for sessionId="+sessionId);
             AuthSession as2 = new AuthSession(SSOFI.createSSOFISessionId(wr));
             return as2;
         }

@@ -14,7 +14,7 @@ import java.util.List;
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 import com.purplehillsbooks.json.JSONObject;
 import com.purplehillsbooks.streams.HTMLWriter;
 import com.purplehillsbooks.temps.TemplateStreamer;
@@ -144,7 +144,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             //this exception is not from the operational logic, but the preparation
             //logic or finalization logic which does not deserve sending results
             System.out.println("SSOFI: !!! Error getting or saving session information !!!  at "+AuthSession.currentTimeString());
-            JSONException.traceException(e, "GET: session: "+sessionId
+            SimpleException.traceException(e, "GET: session: "+sessionId
                      +" at "+AuthSession.currentTimeString());
         }
     }
@@ -173,19 +173,19 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         catch (Exception e) {
             System.out.println("SSOFI: !!! Unable to handle post to: "+wr.requestURL
                      +" at "+AuthSession.currentTimeString());
-            JSONException.traceException(e, "POST failed to "+wr.requestURL);
+            SimpleException.traceException(e, "POST failed to "+wr.requestURL);
         }
     }
 /*
     private void assertPost(String mode) throws Exception {
         if (!isPost) {
-            throw new JSONException("The request for mode ({0}) must be a POST request.", mode);
+            throw new SimpleException("The request for mode (%s) must be a POST request.", mode);
         }
     }
     */
     private void assertGet(String mode) throws Exception {
         if (isPost) {
-            throw new JSONException("The request for mode ({0}) must be a GET request.", mode);
+            throw new SimpleException("The request for mode (%s) must be a GET request.", mode);
         }
     }
 
@@ -228,7 +228,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
-                throw new JSONException("sorry, request must start with ({0}):  ({1})", ssofi.rootURL, requestURL);
+                throw new SimpleException("sorry, request must start with (%s):  (%s)", ssofi.rootURL, requestURL);
             }
 
             //this is rootURL + "$/" and it is for the bits and pieces for the page
@@ -288,7 +288,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else {
                 if (!"loginView".equals(mode) && !"displayForm".equals(mode)) {
-                    throw new JSONException("Don't understand the mode ({0})", mode);
+                    throw new SimpleException("Don't understand the mode (%s)", mode);
                 }
                 assertGet(mode);
                 // login or display or display any kind of error
@@ -303,7 +303,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 reDirectHome();
             }
             catch (Exception eeeee) {
-                JSONException.traceException(eeeee, "EXCEPTION during EXCEPTION - doGetWithSession");
+                SimpleException.traceException(eeeee, "EXCEPTION during EXCEPTION - doGetWithSession");
             }
         }
     }
@@ -389,9 +389,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //you might just want to follow the link, and forget about the invite aspect.
                 //The solution to this is to put both an invite and a non-invite link
                 //in the email so that the user has the choice.
-                throw new JSONException("Sorry there is a problem.  You are logged in as "
-                        +"{0} but you have clicked on a link validating the email for "
-                        +"{1}.  If you wish to validate that other email address, please logout before clicking on the link again.",
+                throw new SimpleException("Sorry there is a problem.  You are logged in as %s.  "
+                        +"%s but you have clicked on a link validating the email for "
+                        +"If you wish to validate that other email address, please logout before clicking on the link again.",
                         aSession.loggedUserId(), registerEmail);
             }
         }        
@@ -594,12 +594,12 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         	HTMLWriter.writeHtml(out, "EXCEPTION (" + tokenName + ")");
         	out.write("\n<!--\n");
-        	JSONException.convertToJSON(e, "EXCEPTION (" + tokenName + ")")
+        	SimpleException.convertToJSON(e, "EXCEPTION (" + tokenName + ")")
         	        .write(out, 2, 2);
         	out.write("\n-->\n");
 
         	//ALSO put it into the system log
-        	JSONException.traceException(e, "EXCEPTION while printing token "+tokenName);
+        	SimpleException.traceException(e, "EXCEPTION while printing token "+tokenName);
         }
     }
 
@@ -623,7 +623,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         }
 
         out.write("\n<!--");
-        JSONException.convertToJSON(anException, "").write(out,2,2);
+        SimpleException.convertToJSON(anException, "").write(out,2,2);
         out.write("\n-->");
     }
 

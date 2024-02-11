@@ -11,7 +11,7 @@ import javax.naming.directory.ModificationItem;
 import javax.naming.directory.SearchControls;
 import javax.naming.directory.SearchResult;
 
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 
 
 /**
@@ -91,7 +91,7 @@ public class AuthStyleLDAP implements AuthStyle {
 
     private void assertValidFormat(String uid) throws Exception {
 		if (rejectAtSign && uid.contains("@")) {
-			throw new JSONException("Did you put an email address in?  Something is wrong because we found an @ in your id ({0}).  Please be sure to enter your windows user login id. ", uid);
+			throw new SimpleException("Did you put an email address in?  Something is wrong because we found an @ in your id (%s).  Please be sure to enter your windows user login id. ", uid);
 		}
     }
 
@@ -145,10 +145,10 @@ public class AuthStyleLDAP implements AuthStyle {
         catch (Exception e) {
             String msg = e.toString();
             if (msg.contains("Invalid Credentials")) {
-                JSONException.traceException(e, "SSOFI: error while authenticating: "+userNetId+", returning false.");
+                SimpleException.traceException(e, String.format("SSOFI: error while authenticating: %s, returning false.", userNetId));
                 return false;
             }
-            throw new JSONException("Unable to authenticate user '{0}'", e, userNetId);
+            throw new SimpleException("Unable to authenticate user '%s'", e, userNetId);
         }
     }
 
@@ -197,7 +197,7 @@ public class AuthStyleLDAP implements AuthStyle {
             //must compare case insensitive because user ids are case insensitive
             //and directory will return in a different way, sometimes upper sometimes lower
             if (!userNetId.equalsIgnoreCase(uret.userId)) {
-                throw new JSONException("Ooops, don't understand we were looking up user ({0}) but got user ({1})",
+                throw new SimpleException("Ooops, don't understand we were looking up user (%s) but got user (%s)",
                         userNetId, uret.userId);
             }
             uret.alreadyInFile = true;
@@ -213,7 +213,7 @@ public class AuthStyleLDAP implements AuthStyle {
                 uret.fullName = userNetId;
                 return uret;
             }
-            throw new JSONException("Unable to find user '{0}'", e, userNetId);
+            throw new SimpleException("Unable to find user '%s'", e, userNetId);
         }
     }
 

@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import com.purplehillsbooks.json.JSONArray;
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 import com.purplehillsbooks.json.JSONObject;
 
 /**
@@ -122,9 +122,9 @@ public class AuthSession implements Serializable {
     public JSONObject saveError(Exception e, String explain) {
     	JSONObject jo = null;
     	try {
-	        jo = JSONException.convertToJSON(e, explain);
+	        jo = SimpleException.convertToJSON(e, explain);
 	    	
-	    	JSONException.traceConvertedException(System.out, jo);
+	    	SimpleException.traceConvertedException(System.out, jo);
 	        ArrayList<String> newErrs = new ArrayList<String>();
 	        Throwable runner = e;
 	        while (runner!=null) {
@@ -147,7 +147,7 @@ public class AuthSession implements Serializable {
 	        return jo;
     	}
     	catch (Exception e2) {
-    		JSONException.traceException(e2, "EXCEPTION while handling EXCEPTION . . . give up");
+    		SimpleException.traceException(e2, "EXCEPTION while handling EXCEPTION . . . give up");
     	}
     	return jo;
     }

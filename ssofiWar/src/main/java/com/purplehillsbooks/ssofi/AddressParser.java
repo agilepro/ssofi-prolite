@@ -1,6 +1,6 @@
 package com.purplehillsbooks.ssofi;
 
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 
 /**
  * Parses the address to determine the OpenId and/or the resource
@@ -74,8 +74,8 @@ public class AddressParser {
         String addr = address.toLowerCase();
 
         if (!addr.startsWith(valueBeforeId)) {
-            throw new JSONException(
-                    "Address Parser only works with requested ID, and that ID must start with ({0}), got this instead: {1}",
+            throw new SimpleException(
+                    "Address Parser only works with requested ID, and that ID must start with (%s), got this instead: %s",
                     valueBeforeId, addr);
         }
 

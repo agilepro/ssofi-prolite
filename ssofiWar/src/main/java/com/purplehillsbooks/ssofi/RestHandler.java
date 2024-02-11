@@ -50,7 +50,7 @@ public class RestHandler {
     /**
      * Request handler does one of three things:
      * (1) it returns a JSONObject to stream to the caller
-     * (2) it throws an exception that will be returned as JSONException
+     * (2) it throws an exception that will be returned as SimpleException
      * (3) it returns null which means response has been streamed already
      *
      * request url:   {baseUrl}/rest/{this}/...

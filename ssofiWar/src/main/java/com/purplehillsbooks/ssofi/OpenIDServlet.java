@@ -12,7 +12,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-import com.purplehillsbooks.json.JSONException;
+import com.purplehillsbooks.json.SimpleException;
 import com.purplehillsbooks.streams.HTMLWriter;
 import com.purplehillsbooks.temps.TemplateStreamer;
 
@@ -126,7 +126,7 @@ public class OpenIDServlet extends HttpServlet {
             out.write("<hr/>\n");
             out.write("<a href=\"../main.jsp\" title=\"Access the main page\">Main</a>\n");
             out.write("<hr/>\n<pre>");
-            JSONException.convertToJSON(e, "").write(new HTMLWriter(out),2,2);
+            SimpleException.convertToJSON(e, "").write(new HTMLWriter(out),2,2);
             out.write("</pre></body></html>\n");
             out.flush();
         }
