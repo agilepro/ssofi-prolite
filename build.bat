@@ -1,3 +1,3 @@
 cd ssofiWar
-call gradle clean build war
+call mvn clean package
 pause
