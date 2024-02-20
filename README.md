@@ -40,7 +40,9 @@ Future direction is to integrate with external OAuth implementations so that use
 
 # How To Use
 
-SSOFI is a service that handles the task of authentication, that is, **Logging in**. 
+SSOFI is a service that handles the task of authentication, that is, **Logging in**.  It will allow a user to log in once, and then use a collection of web applications freely with the same login.  none of the applications ever sees or handles the password, and so the password is safe from possible rogue applications.  At the same time, a large collectoin of application could be combined together and reliably know who the user is.
+
+See the detail page on [Client Usage of SSOFI](ClientUse.md) to understand how to link an application to allow users to authenticate this way.
 
 
 # How To Build
@@ -56,4 +58,4 @@ The WAR file is then located in the `target` folder and can be installed into **
 
 # How to Install
 
-It is not difficult to install SSOFI.  You only need a current version of **TomCat** installed.  SSOFI is an application in TomCat and it saves everything as files in a designated folder.  See the [Detailed Installation and Configuration Instructions](InstallConfigure.md) for details.
+It is not difficult to install SSOFI.  You only need a current version of **TomCat** installed.  SSOFI is an application in TomCat and it saves everything as files in a designated folder.  See the [Detailed Installation and Configuration Instructions](Install-Configure.md) for details.

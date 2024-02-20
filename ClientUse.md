@@ -29,7 +29,7 @@ This may seem at first glance complicated, but the SSOFI side of the protocol is
 
 SSOFI makes distributed application development easier by taking the entire burden of authentication out of the application, and into a standard very secure service.
 
-# SLAP CLient Library
+# SLAP Client Library
 
 SSOFI provides a JavaScript client library to implement all the interactions that are needed in a client web application.  it is called `slap.js` and is easily incorporated into any web UI that needs to allow users to log in.  Below is a description of the client library and how to use it.
 
@@ -40,12 +40,13 @@ the server if necessary.  The three parameters are `loginConfig, loginInfo, stat
 
 ```
 loginConfig = {
-    "providerUrl": (url to identity provider api),
-    "serverUrl": (url to server auth api)
+    "serverUrl": (url to access server authentication)
 }
 ```
 
-The first parameter needs a structure like above.  The `providerUrl` is the HTTP web address of the existing SSOFI server, and currently a public server is available at `https://s06.circleweaver.com/ssofi` .  The `serverURL` is the web address of the server application that the user needs to authenticate to.  If you are implementing a client, then this is the server side of the application that giving access to resources for that user.  
+The first parameter needs a structure like above.   The `serverURL` is the web address of the server application that the user needs to authenticate to.  If you are implementing a client, then this is the server side of the application that giving access to resources for that user.  
+
+As part of the interaction, the server will put the `providerUrl` into this object which is the HTTP web address of the existing SSOFI server. Currently a public SSOFI server is available at `https://s06.circleweaver.com/ssofi` . 
 
 
 ```
@@ -65,7 +66,7 @@ loginInfo = {
 }
 ```
 
-This structure is managed by the SLAP library, so this can be an empty object initially, but this object will collect information as the protocol proceeds.  You can persist this structure to preserve login from browser session to session if you wish.  Some of the aspects of the protocol have timeouts, and so the user might be required to log in again if it has been too long, but the client library will take care of that for you.
+Provide an empty object the first time.  Not all of these will be present at all times.   This structure is managed by the SLAP library, so this can be an empty object initially, but this object will collect information as the protocol proceeds.  You can persist this structure to preserve login from browser session to session if you wish.  Some of the aspects of the protocol have timeouts, and so the user might be required to log in again if it has been too long, but the client library will take care of that for you.
 
 `statusCallback` is a function that takes loginInfo as a parameter.  Every time
 the login state is changed, this callback is called.  You can use this function to update the user interface as the login proceeds.  Most important: when the user is ultimately authenticated a call to this function will tell the client application.
