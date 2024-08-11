@@ -91,7 +91,7 @@ public class AuthStyleLDAP implements AuthStyle {
 
     private void assertValidFormat(String uid) throws Exception {
 		if (rejectAtSign && uid.contains("@")) {
-			throw new SimpleException("Did you put an email address in?  Something is wrong because we found an @ in your id (%s).  Please be sure to enter your windows user login id. ", uid);
+			throw SsofiException.newBasic("Did you put an email address in?  Something is wrong because we found an @ in your id (%s).  Please be sure to enter your windows user login id. ", uid);
 		}
     }
 
@@ -148,7 +148,7 @@ public class AuthStyleLDAP implements AuthStyle {
                 SimpleException.traceException(e, String.format("SSOFI: error while authenticating: %s, returning false.", userNetId));
                 return false;
             }
-            throw new SimpleException("Unable to authenticate user '%s'", e, userNetId);
+            throw SsofiException.newBasic("Unable to authenticate user '%s'", e, userNetId);
         }
     }
 
@@ -197,7 +197,7 @@ public class AuthStyleLDAP implements AuthStyle {
             //must compare case insensitive because user ids are case insensitive
             //and directory will return in a different way, sometimes upper sometimes lower
             if (!userNetId.equalsIgnoreCase(uret.userId)) {
-                throw new SimpleException("Ooops, don't understand we were looking up user (%s) but got user (%s)",
+                throw SsofiException.newBasic("Ooops, don't understand we were looking up user (%s) but got user (%s)",
                         userNetId, uret.userId);
             }
             uret.alreadyInFile = true;
@@ -213,7 +213,7 @@ public class AuthStyleLDAP implements AuthStyle {
                 uret.fullName = userNetId;
                 return uret;
             }
-            throw new SimpleException("Unable to find user '%s'", e, userNetId);
+            throw SsofiException.newWrap("Unable to find user '%s'", e, userNetId);
         }
     }
 

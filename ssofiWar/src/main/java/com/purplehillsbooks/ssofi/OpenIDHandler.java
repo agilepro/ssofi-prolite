@@ -176,16 +176,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             SimpleException.traceException(e, "POST failed to "+wr.requestURL);
         }
     }
-/*
-    private void assertPost(String mode) throws Exception {
-        if (!isPost) {
-            throw new SimpleException("The request for mode (%s) must be a POST request.", mode);
-        }
-    }
-    */
+    
     private void assertGet(String mode) throws Exception {
         if (isPost) {
-            throw new SimpleException("The request for mode (%s) must be a GET request.", mode);
+            throw SsofiException.newBasic("The request for mode (%s) must be a GET request.", mode);
         }
     }
 
@@ -228,7 +222,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
-                throw new SimpleException("sorry, request must start with (%s):  (%s)", ssofi.rootURL, requestURL);
+                throw SsofiException.newBasic("sorry, SSOFI request must start with (%s):  (%s)", ssofi.rootURL, requestURL);
             }
 
             //this is rootURL + "$/" and it is for the bits and pieces for the page
@@ -288,7 +282,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
             else {
                 if (!"loginView".equals(mode) && !"displayForm".equals(mode)) {
-                    throw new SimpleException("Don't understand the mode (%s)", mode);
+                    throw SsofiException.newBasic("Don't understand the SSOFI mode (%s)", mode);
                 }
                 assertGet(mode);
                 // login or display or display any kind of error
@@ -389,7 +383,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //you might just want to follow the link, and forget about the invite aspect.
                 //The solution to this is to put both an invite and a non-invite link
                 //in the email so that the user has the choice.
-                throw new SimpleException("Sorry there is a problem.  You are logged in as %s.  "
+                throw SsofiException.newBasic("Sorry there is a problem.  You are logged in as %s.  "
                         +"%s but you have clicked on a link validating the email for "
                         +"If you wish to validate that other email address, please logout before clicking on the link again.",
                         aSession.loggedUserId(), registerEmail);

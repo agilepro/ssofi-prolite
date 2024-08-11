@@ -143,7 +143,7 @@ public class WebRequest {
 
         String val = request.getParameter(name);
         if (val == null || val.length() == 0) {
-            throw new SimpleException("Got a request without a required '%s' parameter", name);
+            throw SsofiException.newBasic("Got a request without a required '%s' parameter", name);
         }
         return val;
     }

@@ -59,7 +59,7 @@ public class AuthStyleLocal implements AuthStyle {
             userList.addAll(users.getChildren("user", StoredUser.class));
         }
         catch (Exception e) {
-            throw new SimpleException("Unable to access user file (%s)", e, userFile.getAbsolutePath());
+            throw SsofiException.newWrap("Unable to access user file (%s)", e, userFile.getAbsolutePath());
         }
 
     }
@@ -140,7 +140,7 @@ public class AuthStyleLocal implements AuthStyle {
     public void setPassword(String userId, String newPwd) throws Exception {
         StoredUser foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
-            throw new SimpleException("Internal consistency error: unable to find user record for: %s", userId);
+            throw SsofiException.newBasic("Internal consistency error: unable to find user record for: %s", userId);
         }
         foundUser.setPassword(PasswordEncrypter.getSaltedHash(newPwd));
         saveUserFile();
@@ -158,7 +158,7 @@ public class AuthStyleLocal implements AuthStyle {
     public void changePassword(String userId, String oldPwd, String newPwd) throws Exception {
         StoredUser foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
-            throw new SimpleException("Internal consistency error: unable to find user record for: %s", userId);
+            throw SsofiException.newBasic("Internal consistency error: unable to find user record for: %s", userId);
         }
         String storedHash = foundUser.getPassword();
         // transition hack ... the encrypted versions are long, but use it as a
@@ -183,7 +183,7 @@ public class AuthStyleLocal implements AuthStyle {
     public void changeFullName(String userId, String newName) throws Exception {
         StoredUser foundUser = searchUsersByAny(userId);
         if (foundUser == null) {
-            throw new SimpleException("Internal consistency error: unable to find user record for: %s", userId);
+            throw SsofiException.newBasic("Internal consistency error: unable to find user record for: %s", userId);
         }
         String oldName = foundUser.getFullName();
         if (!oldName.equals(newName)) {
@@ -205,7 +205,7 @@ public class AuthStyleLocal implements AuthStyle {
             userRec.setKey(userInfo.uniqueKey);
         }
         else if (!userInfo.alreadyInFile) {
-            throw new SimpleException(
+            throw SsofiException.newBasic(
                     "Don't understand attempt to create a new profile when one with id=%s already exists.  Set the exist flag to update existing profile.", userInfo.userId);
         }
         userRec.setFullName(userInfo.fullName);

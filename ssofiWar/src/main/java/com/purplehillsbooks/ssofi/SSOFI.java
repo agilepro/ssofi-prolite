@@ -342,6 +342,13 @@ public class SSOFI {
             //generate a new session.
             sessionId = createSSOFISessionId(wr);
         }
+        
+        if (hasBadChars(sessionId)) {
+            // can't allow bad characters like slash
+            // was a bug where slash was used in name.
+            // Has to be a valid file name
+            sessionId = createSSOFISessionId(wr);
+        }
 
         //Store the session in the java session so that the normal UI can leverage
         //that session reliably why the user is actually on the SSOFI site.
@@ -354,6 +361,33 @@ public class SSOFI {
             wr.setCookieSecure("SSOFISession", "XYZ");
         }
         return sessionId;
+    }
+
+    /**
+     * Return true if the string has a character not allowed in a 
+     * file name.  Restrict to alpha numeric, underscore, hyphen 
+     */
+    private boolean hasBadChars(String input) {
+        for (int i=0; i<input.length(); i++) {
+            char ch = input.charAt(i);
+            if (ch >= 'A' && ch <= 'Z' ) {
+                continue;
+            }
+            if (ch >= 'a' && ch <= 'z' ) {
+                continue;
+            }
+            if (ch >= '0' && ch <= '9' ) {
+                continue;
+            }
+            if (ch == '_') {
+                continue;
+            }
+            if (ch == '-') {
+                continue;
+            }
+            return true;
+        }
+        return false;
     }
     /**
      * Generate a new, different session ID.
