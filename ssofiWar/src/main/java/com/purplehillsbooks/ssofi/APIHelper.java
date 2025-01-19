@@ -295,7 +295,7 @@ public class APIHelper {
             String inviteeName = postedObject.optString("userName");
             String msg = postedObject.getString("msg");
             String returnUrl = postedObject.getString("return");
-            String subject = postedObject.optString("subject", "Invitation to Collaborate");
+            String subject = postedObject.optString("subject", "Invitation to Collaborate "+AuthSession.currentTimeString());
             sendInviteEmail(inviteeId, inviteeName, msg, returnUrl, subject, baseURL);
             JSONObject okResponse = new JSONObject();
             okResponse.put("result", "ok");

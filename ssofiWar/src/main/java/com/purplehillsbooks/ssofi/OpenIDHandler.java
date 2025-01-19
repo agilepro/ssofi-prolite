@@ -383,9 +383,9 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 //you might just want to follow the link, and forget about the invite aspect.
                 //The solution to this is to put both an invite and a non-invite link
                 //in the email so that the user has the choice.
-                throw SsofiException.newBasic("Sorry there is a problem.  You are logged in as %s.  "
-                        +"%s but you have clicked on a link validating the email for "
-                        +"If you wish to validate that other email address, please logout before clicking on the link again.",
+                throw SsofiException.newBasic("Sorry there is a problem.  You are logged in as (%s) "
+                        +"but you have clicked on a link validating the email for (%s). "
+                        +"If you wish to validate that OTHER email address, please LOGOUT before clicking on the link again.",
                         aSession.loggedUserId(), registerEmail);
             }
         }        
