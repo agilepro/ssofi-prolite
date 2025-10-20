@@ -53,6 +53,7 @@
     var app = angular.module('myApp', []);
     app.controller('myCtrl', function($scope, $http) {
         $scope.info = {{userInfo}};
+        $scope.google = {{google}};
         $scope.error = {};
         $scope.status = "";
         
@@ -135,13 +136,13 @@
             }, stdErrorFunction)
         }
         $scope.saveName = function(successFunction) {
-            if (!$scope.info.userName) {
+            if (!$scope.info.user.userName) {
                 alert("Enter a full name for the user.");
                 return;
             }
             $scope.status = null;
             var url = "rest/setName?ss="+$scope.info.ss; 
-            var data = {fullName: $scope.info.userName};
+            var data = {fullName: $scope.info.user.userName};
             if (!successFunction) {
                 successFunction = function(data) {
                     $scope.info = data.data;
@@ -199,7 +200,7 @@
         }
         $scope.savePasswordAndName = function() {
             console.log("SAVING password");
-            var savedName = $scope.info.userName;
+            var savedName = $scope.info.user.userName;
             $scope.status = null;
             $scope.savePassword(saveNameAfterPassword);
         }
@@ -305,6 +306,19 @@
                     </div>
                     <div style="clear:both;"></div>
                 </div>
+                    <hr/>
+                
+                <div class="loginSpacing">
+                  <div style="float:left;">
+                        <div style="font-size: x-small;width:200px;">
+                        By clicking Log In you indicate that you have read and agree with
+                        our <a href="$/PrivacyPolicy.html" target="_blank">Privacy Policy</a>.</div>
+                  </div>
+                  <div style="float:right;">
+                    <a href="https://accounts.google.com/o/oauth2/v2/auth?client_id={{google.clientId}}&redirect_uri={{info.baseUrl}}google&response_type=code&scope=email%20profile%20openid"/><button class="btn btn-primary">Log in With Google</button></a>
+                  </div>
+                </div>
+                
                 <div class="loginSpacing"></div>
                 <hr/>
                 <div class="registerArea" ng-show="info.isLocal">
@@ -340,7 +354,7 @@
                     </div>
                     <div class="loginSpacing">
                         You are logged in as:<br /><br/>
-                        <span class="userNameClass">{{info.userName}}</span><br />
+                        <span class="userNameClass">{{info.user.userName}}</span><br />
                         <span><b>{{info.userId}}</b></span>
                         
                         <br /><br />
@@ -389,7 +403,7 @@
                     <tr>
                         <td><strong>Full Name:</strong></td>
                         <td width="10px"></td>
-                        <td><input type="text" class="form-control" ng-model="info.userName"
+                        <td><input type="text" class="form-control" ng-model="info.user.userName"
                                    placeholder="Enter Your Full Name"/></td>
                     </tr>
                     <tr>
@@ -567,7 +581,7 @@
                     <td><strong>Full Name:</strong></td>
                     <td width="10px"></td>
                     <td><input type="text" class="form-control" 
-                               ng-model="info.userName"
+                               ng-model="info.user.userName"
                                placeholder="Enter Your Full Name"/></td>
                 </tr>
                 <tr>

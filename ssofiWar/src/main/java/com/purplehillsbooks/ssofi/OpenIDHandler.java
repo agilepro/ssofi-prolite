@@ -13,9 +13,7 @@ import java.util.List;
 
 import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
-
 import com.purplehillsbooks.json.SimpleException;
-import com.purplehillsbooks.json.JSONObject;
 import com.purplehillsbooks.streams.HTMLWriter;
 import com.purplehillsbooks.temps.TemplateStreamer;
 import com.purplehillsbooks.temps.TemplateTokenRetriever;
@@ -82,7 +80,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     // might have been passed as part of the protocol to
     // request authentication, or it might come from the
     // cookies that remember who you logged in as last time.
-    //private AddressParser requestedIdentity = null;
+    // private AddressParser requestedIdentity = null;
 
     /**
      * Handler static variables must be set up before handling any request. This
@@ -93,7 +91,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         ServletContext sc = config.getServletContext();
 
         ssofi = SSOFI.getSSOFI(sc);
-
+        GoogleHandler.initialize(ssofi);
     }
 
     /**
@@ -110,6 +108,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void doGet() {
         String sessionId = "?";
         try {
+
             String mode = wr.defParam("openid.mode", "displayForm");
 
             //the verify can be done without any session and by anyone, so
@@ -185,7 +184,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
 
     private void reDirectHome() throws Exception {
-        wr.response.sendRedirect("?openid.mode=displayForm&ss="+aSession.sessionId);
+        wr.response.sendRedirect(ssofi.baseURL+"?openid.mode=displayForm&ss="+aSession.sessionId);
     }
 
     private void redirectBackToCaller() throws Exception {
@@ -193,7 +192,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             wr.response.sendRedirect(aSession.return_to);
         }
         else {
-            wr.response.sendRedirect("?openid.mode=displayForm&ss="+aSession.sessionId);
+            wr.response.sendRedirect(ssofi.baseURL+"?openid.mode=displayForm&ss="+aSession.sessionId);
         }
     }
 
@@ -204,8 +203,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * fetched, and will be saved afterwards.
      */
     public void doGetWithSession(String mode) {
-        String requestURL = "";
-
+        // System.out.println("DO GET WITH SESSION: "+ wr.requestURL);
         // check and see if this is the very first access in an attempt stream
         // initialize this object if there is not one already
         try {
@@ -215,20 +213,32 @@ public class OpenIDHandler implements TemplateTokenRetriever {
                 return;
             }
 
-            requestURL = wr.requestURL;
+            String requestURL = wr.requestURL;
             wr.response.setContentType("text/html; charset=utf-8");
             if (aSession.loggedIn()) {
                 wr.setCookie("SSOFIUser", aSession.loggedUserId());
             }
 
             if (!requestURL.startsWith(ssofi.rootURL)) {
-                throw SsofiException.newBasic("sorry, SSOFI request must start with (%s):  (%s)", ssofi.rootURL, requestURL);
+                if (!requestURL.startsWith(ssofi.rootURL.substring(0,ssofi.rootURL.length()-1))) {
+                    throw SsofiException.newBasic(
+                        "Sorry, SSOFI is configured to handle requests starting with (%s), but this request is: (%s)", 
+                        ssofi.rootURL, requestURL);
+                }
             }
 
             //this is rootURL + "$/" and it is for the bits and pieces for the page
             if (requestURL.startsWith(ssofi.knownAssetPath)) {
                 serveUpAsset(requestURL.substring(ssofi.knownAssetPath.length()));
                 return;
+            }
+
+            // handle the Google case
+            if (requestURL.startsWith(ssofi.baseURL+"google")) {
+                if (handleExtendedPath("google")) {
+                    saveSession = true;
+                    return;
+                }
             }
 
             if (mode.startsWith("api")) {
@@ -301,16 +311,6 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
         }
     }
-
-
-    /*
-    private void setRequestedId() throws Exception  {
-        String email = wr.request.getParameter("email");
-        if (email!=null) {
-            requestedIdentity = new AddressParser(ssofi.baseURL + email);
-        }
-    }
-    */
 
     /**
      * get the value directly from the current request object
@@ -440,7 +440,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
 
         if (valid) {
         	//now the user is officially logged in
-            setLogin(registerEmail);
+            setLogin(ui);
 
             //always go to register because they might have chose this link in order to reset their password
             reDirectHome();
@@ -454,19 +454,18 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * Set to null to clear the login
      */
     
-    private void setLogin(String loggedId) throws Exception {
-        if (loggedId == null) {
+    private void setLogin(UserInformation ui) throws Exception {
+        if (ui == null) {
             aSession.logout();
         }
         else {
-			UserInformation ui = ssofi.authStyle.getOrCreateUser(loggedId);
 			aSession.setUserOnSession(ui);
 
             // This is a 'low security' cookie.  It keeps the Id of the usr
             // that successfully logged in so that next time we can
             // remember and save the user having to type in again.
             // But there is no security value here.
-            wr.setCookie("SSOFIUser", loggedId);
+            wr.setCookie("SSOFIUser", ui.emailAddress);
             System.out.println("SSOFI ("+aSession.sessionId+"): login successful for user: "+aSession.loggedUserId()+" at "+AuthSession.currentTimeString());
         }
     }
@@ -548,8 +547,10 @@ public class OpenIDHandler implements TemplateTokenRetriever {
     public void writeTokenValue(Writer out, String tokenName) throws Exception {
         try {
             if ("userInfo".equals(tokenName)) {
-                JSONObject jo = aSession.userStatusAsJSON(ssofi);
-                jo.write(out,2,12);
+                aSession.userStatusAsJSON(ssofi).write(out,2,12);
+            }
+            else if ("google".equals(tokenName)) {
+                GoogleHandler.embeddedData().write(out,2,12);
             }
             else if ("thisPage".equals(tokenName)) {
                 HTMLWriter.writeHtml(out, ssofi.baseURL);
@@ -681,5 +682,23 @@ public class OpenIDHandler implements TemplateTokenRetriever {
         throw new Exception("writeTokenValueRaw not implemented");
     }
 
+    private boolean handleExtendedPath(String token) throws Exception {
+        if ("google".equals(token)) {
+            
+            String sessionId = ssofi.getSSOFISessionId(wr);
+            aSession = ssofi.sHand.getAuthSession(wr, sessionId);
+            String code = wr.defParam("code", "UNKNOWN");
+            String scope = wr.defParam("scope", "UNKNOWN");
+            String authuser = wr.defParam("authuser", "UNKNOWN");
+            String prompt = wr.defParam("prompt", "UNKNOWN");
+
+            UserInformation ui = GoogleHandler.loggedInResponse(code, scope, authuser, prompt, aSession, wr);
+            setLogin(ui);
+            redirectBackToCaller();
+            return true;
+        }
+        
+        return false;
+    }
 
 }

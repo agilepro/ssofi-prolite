@@ -92,7 +92,6 @@ public class EmailHandler {
             long currentTime = System.currentTimeMillis();
             long timeOutTime = currentTime + 7L * 24 * 60 * 60000;
 
-            String option = "Email Address Confirmation Message";
             if (app == null) {
                 app = "";
             }
@@ -108,7 +107,7 @@ public class EmailHandler {
             message.setSentDate(new Date());
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(emailId));
 
-            message.setSubject(option);
+            message.setSubject("Email Address Confirmation at "+AuthSession.currentTimeString());
 
             String registerAddr = baseURL
                     + "?openid.mode=validateKeyAction&registerEmail="
