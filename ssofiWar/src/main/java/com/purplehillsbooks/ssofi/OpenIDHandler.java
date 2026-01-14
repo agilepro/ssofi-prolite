@@ -203,7 +203,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
      * fetched, and will be saved afterwards.
      */
     public void doGetWithSession(String mode) {
-        // System.out.println("DO GET WITH SESSION: "+ wr.requestURL);
+        System.out.println("DO GET WITH SESSION: "+ wr.requestURL);
         // check and see if this is the very first access in an attempt stream
         // initialize this object if there is not one already
         try {
@@ -234,7 +234,7 @@ public class OpenIDHandler implements TemplateTokenRetriever {
             }
 
             // handle the Google case
-            if (requestURL.startsWith(ssofi.baseURL+"google")) {
+            if (requestURL.startsWith(ssofi.rootURL+"google")) {
                 if (handleExtendedPath("google")) {
                     saveSession = true;
                     return;

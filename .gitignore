@@ -9,3 +9,6 @@ target
 .settings
 .classpath
 bin
+
+# from VSCode
+.vscode

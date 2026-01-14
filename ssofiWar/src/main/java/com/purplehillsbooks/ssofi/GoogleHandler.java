@@ -34,13 +34,14 @@ public class GoogleHandler {
     public static String clientId = null;
     public static String getTokenEndpoint = "https://oauth2.googleapis.com/token";
     public static String clientSecret = null;
-    public static String redirectUri = "http://localhost:8080/ssofi/google";
+    public static String redirectUri = null;
 /* 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 */
     public GoogleHandler() {}
 
     public static void initialize(SSOFI newSsofi) {
 
         ssofi = newSsofi;
+        redirectUri = ssofi.baseURL + "google";
 
         if (authorizationEndpoint != null) {
             return;
@@ -65,6 +66,7 @@ public class GoogleHandler {
 
             authorizationEndpoint = googleWellKnown.getString("authorization_endpoint");
             authScopes = "openid email profile";
+            System.out.println("GOOGLE login enabled.");
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -89,6 +91,8 @@ public class GoogleHandler {
     public static UserInformation loggedInResponse(String code, String scope, 
             String authuser, String prompt, AuthSession aSession, WebRequest wr) throws Exception {
         try {
+            aSession.clearError();
+            
             if (clientId==null || clientId.isEmpty()) {
                 throw SsofiException.newBasic("Missing Google client ID");
             }
@@ -117,14 +121,21 @@ public class GoogleHandler {
             HttpResponse response = httpclient.execute(httpPost);
             JSONObject tokenBody = getBodyAsJson(response);
 
-            String accessToken = tokenBody.getString("access_token");
+            System.out.println("GOOGLE RESPONSE: \n"+tokenBody.toString(2));
+
+            if (tokenBody.has("error")) {
+                throw SsofiException.newBasic("Error from Google: %s, %s", 
+                        tokenBody.getString("error"), 
+                        tokenBody.optString("error_description"));
+            }
+            // String accessToken = tokenBody.getString("access_token");
             String idToken = tokenBody.getString("id_token");
-            String scope2 = tokenBody.getString("scope");
-            String token_type = tokenBody.getString("token_type");
+            // String scope2 = tokenBody.getString("scope");
+            // String token_type = tokenBody.getString("token_type");
 
             String[] threeParts = idToken.split("\\.");
             if (threeParts.length != 3) {
-                throw SsofiException.newBasic("not able to parse the idToken as JWT it has "+threeParts.length+" parts.");
+                throw SsofiException.newBasic("Not able to parse the idToken as JWT it has "+threeParts.length+" of 3 parts.");
             }
             String claimPart = threeParts[1];
 
@@ -137,6 +148,9 @@ public class GoogleHandler {
             System.out.println("GOOGLE USER:  email=" +userEmail + ", name=" + userName);
             UserInformation ui = ssofi.authStyle.getOrCreateUser(userEmail);
             ui.fullName = userName;
+            aSession.setUserOnSession(ui);
+            ssofi.authStyle.changeFullName(aSession.loggedUserId(), userName);
+            aSession.updateFullName(userName);
             return ui;
         }
         catch (Exception e) {
